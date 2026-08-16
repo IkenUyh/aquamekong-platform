@@ -1,0 +1,63 @@
+# =========================
+# Java / Maven
+# =========================
+backend-springboot/target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+hs_err_pid*
+
+# =========================
+# Node / Frontend
+# =========================
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+
+# =========================
+# Python / ML Service
+# =========================
+ml-service/__pycache__/
+ml-service/**/__pycache__/
+ml-service/*.pyc
+ml-service/.venv/
+ml-service/venv/
+ml-service/*.egg-info/
+ml-service/trained_models/*.pkl
+ml-service/trained_models/*.h5
+ml-service/trained_models/*.joblib
+!ml-service/trained_models/.gitkeep
+ml-service/.ipynb_checkpoints/
+
+# =========================
+# Environment & Secrets
+# =========================
+.env
+*.env.local
+
+# =========================
+# IDE
+# =========================
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# =========================
+# Docker
+# =========================
+docker-compose.override.yml
+
+# =========================
+# OS
+# =========================
+.DS_Store
+*.bak
+*.tmp

@@ -1,0 +1,98 @@
+version: "3.9"
+
+services:
+  # ============================================
+  # PostgreSQL + PostGIS
+  # ============================================
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: aquamekong-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-aquamekong}
+      POSTGRES_USER: ${POSTGRES_USER:-aquamekong}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aquamekong_secret}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aquamekong} -d ${POSTGRES_DB:-aquamekong}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aquamekong-network
+
+  # ============================================
+  # Backend — Spring Boot 3.x + Java 21
+  # ============================================
+  backend:
+    build:
+      context: ./backend-springboot
+      dockerfile: Dockerfile
+    container_name: aquamekong-backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-aquamekong}
+      DB_USERNAME: ${POSTGRES_USER:-aquamekong}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-aquamekong_secret}
+      ML_SERVICE_URL: http://ml-service:8000
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aquamekong-network
+
+  # ============================================
+  # ML Service — Python FastAPI
+  # ============================================
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    container_name: aquamekong-ml-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-aquamekong}:${POSTGRES_PASSWORD:-aquamekong_secret}@postgres:5432/${POSTGRES_DB:-aquamekong}
+      ML_SERVICE_PORT: ${ML_SERVICE_PORT:-8000}
+    ports:
+      - "${ML_SERVICE_PORT:-8000}:8000"
+    volumes:
+      - ml_models:/app/trained_models
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aquamekong-network
+
+  # ============================================
+  # Frontend — React + Vite (dev/prod)
+  # ============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: aquamekong-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - aquamekong-network
+
+volumes:
+  postgres_data:
+    driver: local
+  ml_models:
+    driver: local
+
+networks:
+  aquamekong-network:
+    driver: bridge
