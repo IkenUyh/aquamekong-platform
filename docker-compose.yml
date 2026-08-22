@@ -25,6 +25,18 @@ services:
       - aquamekong-network
 
   # ============================================
+  # Redis Cache
+  # ============================================
+  redis:
+    image: redis:alpine
+    container_name: aquamekong-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - aquamekong-network
+
+  # ============================================
   # Backend — Spring Boot 3.x + Java 21
   # ============================================
   backend:
@@ -61,6 +73,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-aquamekong}:${POSTGRES_PASSWORD:-aquamekong_secret}@postgres:5432/${POSTGRES_DB:-aquamekong}
       ML_SERVICE_PORT: ${ML_SERVICE_PORT:-8000}
+      REDIS_URL: redis://redis:6379/0
     ports:
       - "${ML_SERVICE_PORT:-8000}:8000"
     volumes:
