@@ -1,0 +1,76 @@
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "6a97adf3997858ddc1f4eb33",
+      "SensorNodeCode": "A1245R1M001N004",
+      "WarningSalinity": 5,
+      "ListSettingsWarning": {},
+      "IndexShow": 0,
+      "ListImage": [
+        "Images/MeKong_AvatarStaff/A1245R1M001N004/A1245R1M001N004/yenthanh.nguyen_1317909_HS7YTjPUGT.jpg"
+      ],
+      "NameLine_2": "Vị Thanh - Hậu Giang",
+      "NameLine_1": "KCVH - Cầu Cái Tư",
+      "DeviceCalib": {
+        "Calibrate": 0,
+        "SampleTime": 5,
+        "SubscribeTime": null
+      },
+      "IsShowPublic": 1,
+      "IsUserAdd": 1,
+      "PolyPath": [],
+      "GateWayCode": "A1245R1M001N004",
+      "SensorType": 1,
+      "ListSettingsAlert": {},
+      "SettingCalib": {
+        "TemperatureCalib": null,
+        "PHCalib": null,
+        "SalinityCalib": null
+      },
+      "ProvinceName": "Xã Hỏa Lựu",
+      "ProvinceCode": "31338",
+      "ListParamSetting": {
+        "WATERLEVEL": 1,
+        "TEMPERATURE": 0,
+        "PH": 0,
+        "SALINITY": 1
+      },
+      "Status": 1,
+      "DeleteBy": "",
+      "DeleteDate": null,
+      "SNActiveDate": "2025-01-19T17:00:00.000Z",
+      "SNCreateDate": "2025-01-17T02:27:02.582Z",
+      "SNExpireDate": "2025-01-19T17:00:00.000Z",
+      "AreaMK": "a1b9b101-f8bc-49e4-8488-2c6a784c72c4",
+      "TopicPublish": "W/JSON/WQS/V1/A1245R1M001N004",
+      "Topic": "R/JSON/WQS/V1/A1245R1M001N004",
+      "SimNumber": "933384421",
+      "SNShortName": "KCVH - Cầu Cái Tư",
+      "SNDescription": "KCVH - Cầu Cái Tư",
+      "SNShortNameEN": "KCVH - Cai Tu Bridge",
+      "SNDescriptionEN": "KCVH - Cai Tu Bridge",
+      "SerialNumber": "A1245R1M001N004",
+      "Latitude": 9.742239,
+      "Longitude": 105.393314,
+      "LatitudeSetup": 9.742239,
+      "LongitudeSetup": 105.393314,
+      "ProvinceCodeOld": "31338",
+      "ProvinceNameOld": "Xã Tân Tiến",
+      "Temperature": 0,
+      "AirTemperature": 29.95,
+      "Conductivity": null,
+      "Salinity": 0.05,
+      "PH": 0,
+      "DateTimeAdr": "2026-09-02T05:05:00.000Z",
+      "WaterLevelInfo": {
+        "_id": "6a97adf3997858ddc1f4eb2c",
+        "IDAWD": "A1245R1M001N004",
+        "WaterLevel": 57,
+        "SendDate": "2026-09-02T05:05:00.000Z",
+        "CalibValue": 192,
+        "AdrWaterLevel": 135.47
+      }
+    }
+  ]
+}

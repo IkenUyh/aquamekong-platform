@@ -1,0 +1,84 @@
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "6a97b0fbd72f76aceccc7b3c",
+      "SensorNodeCode": "K0149R1M001N001",
+      "Longitude": 106.1155603,
+      "Latitude": 9.609385,
+      "WarningSalinity": 5,
+      "ListSettingsWarning": {},
+      "LongitudeSetup": 106.1155603,
+      "LatitudeSetup": 9.609385,
+      "IndexShow": 83.21,
+      "DeviceCalib": {
+        "Calibrate": 0,
+        "SampleTime": 15,
+        "SubscribeTime": null
+      },
+      "IsShowPublic": 1,
+      "IsUserAdd": 1,
+      "PolyPath": [],
+      "GateWayCode": "K0149R1M001N001",
+      "SensorType": 1,
+      "ListSettingsAlert": {},
+      "SettingCalib": {
+        "SalinityCalib": 0,
+        "PHCalib": 0,
+        "TemperatureCalib": 0
+      },
+      "ProvinceName": "Xã Long Phú",
+      "ProvinceCode": "31639",
+      "ListParamSetting": {
+        "SALINITY": 1,
+        "PH": 0,
+        "TEMPERATURE": 0,
+        "WATERLEVEL": 1
+      },
+      "Status": 1,
+      "DeleteBy": "",
+      "DeleteDate": null,
+      "SNActiveDate": "2019-11-03T17:00:00.000Z",
+      "SNCreateDate": "2019-11-04T06:55:26.680Z",
+      "SNExpireDate": "2020-11-03T17:00:00.000Z",
+      "AreaMK": "15b4c330-65d9-4d21-8221-5faf33f6941e",
+      "TopicPublish": "W/JSON/WQS/V1/K0149R1M001N001",
+      "Topic": "R/JSON/WQS/V1/K0149R1M001N001",
+      "SimNumber": "0384065549",
+      "SNShortName": "Long Phú - ST",
+      "SNDescription": "Long Phú - ST",
+      "SNShortNameEN": "Long Phu - ST",
+      "SNDescriptionEN": "Long Phu - ST",
+      "SerialNumber": "K0149R1M001N001",
+      "SettingViewMap": {
+        "Zoom": "9.5"
+      },
+      "ListSettingChart": {
+        "RoundNumberSalinity": 2
+      },
+      "NameLine_1": "Trạm",
+      "NameLine_2": "Long Phú",
+      "ListImage": [
+        "Images/MeKong_AvatarStaff/K0149R1M001N001/K0149R1M001N001/nguyen.tranhoang_710598_Q2VSCEptPq.jpg",
+        "Images/MeKong_AvatarStaff/K0149R1M001N001/K0149R1M001N001/nguyen.tranhoang_475196_U442f0XC16.jpg",
+        "Images/MeKong_AvatarStaff/K0149R1M001N001/K0149R1M001N001/nguyen.tranhoang_375770_q3wdZ2YMhA.jpg"
+      ],
+      "ProvinceCodeOld": "31639",
+      "ProvinceNameOld": "Thị Trấn Long Phú",
+      "Temperature": 0,
+      "AirTemperature": 31.22,
+      "Conductivity": null,
+      "Salinity": 0.1,
+      "PH": 0,
+      "DateTimeAdr": "2026-09-02T05:15:00.000Z",
+      "WaterLevelInfo": {
+        "_id": "6a97b0fbd72f76aceccc7b35",
+        "IDAWD": "WLS7401036",
+        "WaterLevel": 68,
+        "SendDate": "2026-09-02T05:15:00.000Z",
+        "CalibValue": 223,
+        "AdrWaterLevel": 155.5
+      }
+    }
+  ]
+}

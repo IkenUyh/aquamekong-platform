@@ -1,5 +1,5 @@
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Area, AreaChart
 } from 'recharts';
 import type { SalinityForecast } from '../types';

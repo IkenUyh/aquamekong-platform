@@ -1,0 +1,565 @@
+{
+  "success": true,
+  "ActiveDate": "2024-11-17T17:00:00.000Z",
+  "Status": 1,
+  "data": [
+    {
+      "_id": {
+        "Day": 1,
+        "Month": 8
+      },
+      "MinTemperature": 26.39,
+      "MaxTemperature": 30.31,
+      "MinAirTemperature": 25.09,
+      "MaxAirTemperature": 31.74,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.13,
+      "MinPH": 6.61,
+      "MaxPH": 7.44,
+      "MinDO": 0.24,
+      "MaxDO": 0.36,
+      "TimeLabel": "01",
+      "Time": 1
+    },
+    {
+      "_id": {
+        "Day": 2,
+        "Month": 8
+      },
+      "MinTemperature": 26.8,
+      "MaxTemperature": 30.49,
+      "MinAirTemperature": 25.03,
+      "MaxAirTemperature": 32.8,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.11,
+      "MinPH": 6.57,
+      "MaxPH": 7.38,
+      "MinDO": 0.23,
+      "MaxDO": 0.47,
+      "TimeLabel": "02",
+      "Time": 2
+    },
+    {
+      "_id": {
+        "Day": 3,
+        "Month": 8
+      },
+      "MinTemperature": 27.18,
+      "MaxTemperature": 30.51,
+      "MinAirTemperature": 25.25,
+      "MaxAirTemperature": 33.64,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.14,
+      "MinPH": 6.61,
+      "MaxPH": 7.34,
+      "MinDO": 0.22,
+      "MaxDO": 0.32,
+      "TimeLabel": "03",
+      "Time": 3
+    },
+    {
+      "_id": {
+        "Day": 4,
+        "Month": 8
+      },
+      "MinTemperature": 27.58,
+      "MaxTemperature": 30.29,
+      "MinAirTemperature": 25.9,
+      "MaxAirTemperature": 34.33,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.1,
+      "MinPH": 6.62,
+      "MaxPH": 7.21,
+      "MinDO": 0.23,
+      "MaxDO": 0.48,
+      "TimeLabel": "04",
+      "Time": 4
+    },
+    {
+      "_id": {
+        "Day": 5,
+        "Month": 8
+      },
+      "MinTemperature": 27.65,
+      "MaxTemperature": 30.09,
+      "MinAirTemperature": 25.32,
+      "MaxAirTemperature": 33.65,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.11,
+      "MinPH": 6.69,
+      "MaxPH": 7.28,
+      "MinDO": 0.24,
+      "MaxDO": 0.49,
+      "TimeLabel": "05",
+      "Time": 5
+    },
+    {
+      "_id": {
+        "Day": 6,
+        "Month": 8
+      },
+      "MinTemperature": 27.01,
+      "MaxTemperature": 29.37,
+      "MinAirTemperature": 26.18,
+      "MaxAirTemperature": 32.01,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.11,
+      "MinPH": 6.88,
+      "MaxPH": 7.36,
+      "MinDO": 0.24,
+      "MaxDO": 0.31,
+      "TimeLabel": "06",
+      "Time": 6
+    },
+    {
+      "_id": {
+        "Day": 7,
+        "Month": 8
+      },
+      "MinTemperature": 27.15,
+      "MaxTemperature": 29.56,
+      "MinAirTemperature": 25.61,
+      "MaxAirTemperature": 32.91,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.11,
+      "MinPH": 6.86,
+      "MaxPH": 7.5,
+      "MinDO": 0.24,
+      "MaxDO": 0.34,
+      "TimeLabel": "07",
+      "Time": 7
+    },
+    {
+      "_id": {
+        "Day": 8,
+        "Month": 8
+      },
+      "MinTemperature": 26.93,
+      "MaxTemperature": 30.01,
+      "MinAirTemperature": 26.02,
+      "MaxAirTemperature": 32.78,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.11,
+      "MinPH": 6.77,
+      "MaxPH": 7.58,
+      "MinDO": 0.23,
+      "MaxDO": 0.48,
+      "TimeLabel": "08",
+      "Time": 8
+    },
+    {
+      "_id": {
+        "Day": 9,
+        "Month": 8
+      },
+      "MinTemperature": 25.9,
+      "MaxTemperature": 29.28,
+      "MinAirTemperature": 25.83,
+      "MaxAirTemperature": 32.62,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.11,
+      "MinPH": 6.95,
+      "MaxPH": 7.62,
+      "MinDO": 0.24,
+      "MaxDO": 0.34,
+      "TimeLabel": "09",
+      "Time": 9
+    },
+    {
+      "_id": {
+        "Day": 10,
+        "Month": 8
+      },
+      "MinTemperature": 25.27,
+      "MaxTemperature": 29.2,
+      "MinAirTemperature": 26.84,
+      "MaxAirTemperature": 32.36,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.11,
+      "MinPH": 6.75,
+      "MaxPH": 7.76,
+      "MinDO": 0.25,
+      "MaxDO": 0.36,
+      "TimeLabel": "10",
+      "Time": 10
+    },
+    {
+      "_id": {
+        "Day": 11,
+        "Month": 8
+      },
+      "MinTemperature": 25.26,
+      "MaxTemperature": 29.19,
+      "MinAirTemperature": 26.83,
+      "MaxAirTemperature": 32.97,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.13,
+      "MinPH": 6.74,
+      "MaxPH": 7.67,
+      "MinDO": 0.25,
+      "MaxDO": 0.37,
+      "TimeLabel": "11",
+      "Time": 11
+    },
+    {
+      "_id": {
+        "Day": 12,
+        "Month": 8
+      },
+      "MinTemperature": 26.84,
+      "MaxTemperature": 29.72,
+      "MinAirTemperature": 26.7,
+      "MaxAirTemperature": 35.14,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.11,
+      "MinPH": 6.68,
+      "MaxPH": 7.24,
+      "MinDO": 0.24,
+      "MaxDO": 0.49,
+      "TimeLabel": "12",
+      "Time": 12
+    },
+    {
+      "_id": {
+        "Day": 13,
+        "Month": 8
+      },
+      "MinTemperature": 26.56,
+      "MaxTemperature": 29.58,
+      "MinAirTemperature": 26.41,
+      "MaxAirTemperature": 34.42,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.14,
+      "MinPH": 6.66,
+      "MaxPH": 7.26,
+      "MinDO": 0.25,
+      "MaxDO": 0.49,
+      "TimeLabel": "13",
+      "Time": 13
+    },
+    {
+      "_id": {
+        "Day": 14,
+        "Month": 8
+      },
+      "MinTemperature": 26.99,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 26.45,
+      "MaxAirTemperature": 32.4,
+      "MinSalinity": 0.018,
+      "MaxSalinity": 0.18,
+      "MinPH": 6.72,
+      "MaxPH": 7.25,
+      "MinDO": 0,
+      "MaxDO": 0.28,
+      "TimeLabel": "14",
+      "Time": 14
+    },
+    {
+      "_id": {
+        "Day": 15,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 26.12,
+      "MaxAirTemperature": 31.09,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.11,
+      "MinPH": 6.75,
+      "MaxPH": 7.27,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "15",
+      "Time": 15
+    },
+    {
+      "_id": {
+        "Day": 16,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 23.82,
+      "MaxAirTemperature": 33.34,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.11,
+      "MinPH": 6.68,
+      "MaxPH": 7.23,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "16",
+      "Time": 16
+    },
+    {
+      "_id": {
+        "Day": 17,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 25.86,
+      "MaxAirTemperature": 32.19,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.11,
+      "MinPH": 6.58,
+      "MaxPH": 7.18,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "17",
+      "Time": 17
+    },
+    {
+      "_id": {
+        "Day": 18,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 27.08,
+      "MaxAirTemperature": 32.02,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.11,
+      "MinPH": 6.77,
+      "MaxPH": 7.26,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "18",
+      "Time": 18
+    },
+    {
+      "_id": {
+        "Day": 19,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 26.31,
+      "MaxAirTemperature": 29.68,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.13,
+      "MinPH": 7.08,
+      "MaxPH": 7.42,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "19",
+      "Time": 19
+    },
+    {
+      "_id": {
+        "Day": 20,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 25.46,
+      "MaxAirTemperature": 32.33,
+      "MinSalinity": 0.02,
+      "MaxSalinity": 0.14,
+      "MinPH": 7.29,
+      "MaxPH": 7.58,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "20",
+      "Time": 20
+    },
+    {
+      "_id": {
+        "Day": 21,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 25.2,
+      "MaxAirTemperature": 33.88,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.14,
+      "MinPH": 7.28,
+      "MaxPH": 7.71,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "21",
+      "Time": 21
+    },
+    {
+      "_id": {
+        "Day": 22,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 25.54,
+      "MaxAirTemperature": 34.1,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.13,
+      "MinPH": 7.37,
+      "MaxPH": 7.69,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "22",
+      "Time": 22
+    },
+    {
+      "_id": {
+        "Day": 23,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 25.91,
+      "MaxAirTemperature": 31.51,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.11,
+      "MinPH": 6.93,
+      "MaxPH": 7.7,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "23",
+      "Time": 23
+    },
+    {
+      "_id": {
+        "Day": 24,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 25.65,
+      "MaxAirTemperature": 34.27,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.11,
+      "MinPH": 7.02,
+      "MaxPH": 7.55,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "24",
+      "Time": 24
+    },
+    {
+      "_id": {
+        "Day": 25,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 27.14,
+      "MaxAirTemperature": 34,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.11,
+      "MinPH": 7.27,
+      "MaxPH": 7.58,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "25",
+      "Time": 25
+    },
+    {
+      "_id": {
+        "Day": 26,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 26.01,
+      "MaxAirTemperature": 32.04,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.1,
+      "MinPH": 7.3,
+      "MaxPH": 7.65,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "26",
+      "Time": 26
+    },
+    {
+      "_id": {
+        "Day": 27,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 26.47,
+      "MaxAirTemperature": 33.54,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.1,
+      "MinPH": 7.35,
+      "MaxPH": 7.62,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "27",
+      "Time": 27
+    },
+    {
+      "_id": {
+        "Day": 28,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 26.1,
+      "MaxAirTemperature": 32.01,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.1,
+      "MinPH": 7.23,
+      "MaxPH": 7.69,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "28",
+      "Time": 28
+    },
+    {
+      "_id": {
+        "Day": 29,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 25.28,
+      "MaxAirTemperature": 30.17,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.1,
+      "MinPH": 7.18,
+      "MaxPH": 7.59,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "29",
+      "Time": 29
+    },
+    {
+      "_id": {
+        "Day": 30,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 26.19,
+      "MaxAirTemperature": 31.83,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.1,
+      "MinPH": 7.21,
+      "MaxPH": 7.65,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "30",
+      "Time": 30
+    },
+    {
+      "_id": {
+        "Day": 31,
+        "Month": 8
+      },
+      "MinTemperature": 29.41,
+      "MaxTemperature": 29.41,
+      "MinAirTemperature": 25.95,
+      "MaxAirTemperature": 31.17,
+      "MinSalinity": 0.01,
+      "MaxSalinity": 0.1,
+      "MinPH": 7.14,
+      "MaxPH": 7.68,
+      "MinDO": 0,
+      "MaxDO": 0,
+      "TimeLabel": "31",
+      "Time": 31
+    }
+  ]
+}

@@ -1,0 +1,207 @@
+{
+  "success": true,
+  "data": [
+    {
+      "data": [
+        {
+          "MinWaterLevel": 8,
+          "MaxWaterLevel": 74,
+          "Time": 1,
+          "TimeLabel": "1"
+        },
+        {
+          "MinWaterLevel": 13,
+          "MaxWaterLevel": 74,
+          "Time": 2,
+          "TimeLabel": "2"
+        },
+        {
+          "MinWaterLevel": 13,
+          "MaxWaterLevel": 72,
+          "Time": 3,
+          "TimeLabel": "3"
+        },
+        {
+          "MinWaterLevel": 15,
+          "MaxWaterLevel": 71,
+          "Time": 4,
+          "TimeLabel": "4"
+        },
+        {
+          "MinWaterLevel": 8,
+          "MaxWaterLevel": 57,
+          "Time": 5,
+          "TimeLabel": "5"
+        },
+        {
+          "MinWaterLevel": 7,
+          "MaxWaterLevel": 77,
+          "Time": 6,
+          "TimeLabel": "6"
+        },
+        {
+          "MinWaterLevel": 9,
+          "MaxWaterLevel": 78,
+          "Time": 7,
+          "TimeLabel": "7"
+        },
+        {
+          "MinWaterLevel": 0,
+          "MaxWaterLevel": 93,
+          "Time": 8,
+          "TimeLabel": "8"
+        },
+        {
+          "MinWaterLevel": 7,
+          "MaxWaterLevel": 99,
+          "Time": 9,
+          "TimeLabel": "9"
+        },
+        {
+          "MinWaterLevel": 4,
+          "MaxWaterLevel": 99,
+          "Time": 10,
+          "TimeLabel": "10"
+        },
+        {
+          "MinWaterLevel": -7,
+          "MaxWaterLevel": 91,
+          "Time": 11,
+          "TimeLabel": "11"
+        },
+        {
+          "MinWaterLevel": -1,
+          "MaxWaterLevel": 105,
+          "Time": 12,
+          "TimeLabel": "12"
+        },
+        {
+          "MinWaterLevel": 2,
+          "MaxWaterLevel": 103,
+          "Time": 13,
+          "TimeLabel": "13"
+        },
+        {
+          "MinWaterLevel": 3,
+          "MaxWaterLevel": 94,
+          "Time": 14,
+          "TimeLabel": "14"
+        },
+        {
+          "MinWaterLevel": 16,
+          "MaxWaterLevel": 74,
+          "Time": 15,
+          "TimeLabel": "15"
+        },
+        {
+          "MinWaterLevel": 18,
+          "MaxWaterLevel": 84,
+          "Time": 16,
+          "TimeLabel": "16"
+        },
+        {
+          "MinWaterLevel": 14,
+          "MaxWaterLevel": 82,
+          "Time": 17,
+          "TimeLabel": "17"
+        },
+        {
+          "MinWaterLevel": 14,
+          "MaxWaterLevel": 98,
+          "Time": 18,
+          "TimeLabel": "18"
+        },
+        {
+          "MinWaterLevel": 12,
+          "MaxWaterLevel": 98,
+          "Time": 19,
+          "TimeLabel": "19"
+        },
+        {
+          "MinWaterLevel": 15,
+          "MaxWaterLevel": 86,
+          "Time": 20,
+          "TimeLabel": "20"
+        },
+        {
+          "MinWaterLevel": 8,
+          "MaxWaterLevel": 78,
+          "Time": 21,
+          "TimeLabel": "21"
+        },
+        {
+          "MinWaterLevel": 7,
+          "MaxWaterLevel": 83,
+          "Time": 22,
+          "TimeLabel": "22"
+        },
+        {
+          "MinWaterLevel": 15,
+          "MaxWaterLevel": 76,
+          "Time": 23,
+          "TimeLabel": "23"
+        },
+        {
+          "MinWaterLevel": 18,
+          "MaxWaterLevel": 101,
+          "Time": 24,
+          "TimeLabel": "24"
+        },
+        {
+          "MinWaterLevel": 19,
+          "MaxWaterLevel": 95,
+          "Time": 25,
+          "TimeLabel": "25"
+        },
+        {
+          "MinWaterLevel": 16,
+          "MaxWaterLevel": 92,
+          "Time": 26,
+          "TimeLabel": "26"
+        },
+        {
+          "MinWaterLevel": 9,
+          "MaxWaterLevel": 90,
+          "Time": 27,
+          "TimeLabel": "27"
+        },
+        {
+          "MinWaterLevel": 13,
+          "MaxWaterLevel": 91,
+          "Time": 28,
+          "TimeLabel": "28"
+        },
+        {
+          "MinWaterLevel": 12,
+          "MaxWaterLevel": 89,
+          "Time": 29,
+          "TimeLabel": "29"
+        },
+        {
+          "MinWaterLevel": 20,
+          "MaxWaterLevel": 69,
+          "Time": 30,
+          "TimeLabel": "30"
+        },
+        {
+          "MinWaterLevel": 22,
+          "MaxWaterLevel": 64,
+          "Time": 31,
+          "TimeLabel": "31"
+        }
+      ],
+      "_id": "68ad517b6456a63c73e8b873",
+      "IDAWD": "C1215P1M006N008",
+      "GateWayCode": "C1215P1M006N008",
+      "_idGateWay": "68ad47886ce3ef3c9d430525",
+      "AWDType": 0,
+      "CalibType": 0,
+      "Status": 1,
+      "DateSetup": "2025-08-25T17:00:00.000Z",
+      "ShortNameEN": "",
+      "ShortName": "",
+      "Description": "KCVH - HL - Cái Lớn"
+    }
+  ],
+  "dataAKL": "null"
+}

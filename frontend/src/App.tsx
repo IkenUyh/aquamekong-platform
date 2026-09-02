@@ -22,12 +22,12 @@ function AppContent() {
   const [selectedStationId, setSelectedStationId] = useState<number | null>(null);
 
   // Fetch data
-  const { data: geoJson, isLoading: isLoadingGeo } = useStations();
+  const { data: geoJson } = useStations();
   const { data: stationsList, isLoading: isLoadingList } = useStationsList();
 
   // SSE telemetry
   const { isConnected } = useTelemetrySSE({
-    onTelemetry: useCallback((_data) => {
+    onTelemetry: useCallback((_data: any) => {
       // Invalidate queries to refresh data when new telemetry arrives
       queryClient.invalidateQueries({ queryKey: ['stations'] });
       queryClient.invalidateQueries({ queryKey: ['metrics'] });

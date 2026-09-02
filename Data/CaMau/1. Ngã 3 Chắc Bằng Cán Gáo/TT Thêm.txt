@@ -1,0 +1,77 @@
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "6a979dd43d47a83ec359eeb2",
+      "SensorNodeCode": "C1215P1M004N008",
+      "Longitude": 105.088305,
+      "Latitude": 9.344192,
+      "WarningSalinity": 5,
+      "ListSettingsWarning": {},
+      "LongitudeSetup": 105.088305,
+      "LatitudeSetup": 9.344192,
+      "IndexShow": 0,
+      "ListImage": [
+        "Images/MeKong_AvatarStaff/C1215P1M004N008/C1215P1M004N008/yenthanh.nguyen_773248_qw84EFBGNA.jpg",
+        "Images/MeKong_AvatarStaff/C1215P1M004N008/C1215P1M004N008/yenthanh.nguyen_683929_h22IuzbKkS.jpg"
+      ],
+      "NameLine_2": "Ngã 3 Chắc Băng Cán Gáo",
+      "NameLine_1": "GSMT",
+      "DeviceCalib": {
+        "SubscribeTime": null,
+        "SampleTime": 15,
+        "Calibrate": 0
+      },
+      "IsShowPublic": 1,
+      "IsUserAdd": 1,
+      "PolyPath": [],
+      "GateWayCode": "C1215P1M004N008",
+      "SensorType": 1,
+      "ListSettingsAlert": {},
+      "SettingCalib": {
+        "TemperatureCalib": null,
+        "PHCalib": null,
+        "SalinityCalib": null
+      },
+      "ProvinceName": "Xã Thới Bình",
+      "ProvinceCode": "32065",
+      "ListParamSetting": {
+        "WATERLEVEL": 1,
+        "TEMPERATURE": 0,
+        "PH": 0,
+        "SALINITY": 1
+      },
+      "Status": 1,
+      "DeleteBy": "",
+      "DeleteDate": null,
+      "SNActiveDate": "2025-12-27T17:00:00.000Z",
+      "SNCreateDate": "2025-12-24T08:41:22.092Z",
+      "SNExpireDate": "2026-12-27T17:00:00.000Z",
+      "AreaMK": "4c31982d-3233-42d7-b34b-fd9c6a274639",
+      "TopicPublish": "W/JSON/WQS/V1/C1215P1M004N008",
+      "Topic": "R/JSON/WQS/V1/C1215P1M004N008",
+      "SimNumber": "8984048000933384467",
+      "SNShortName": "GSMT - Ngã 3 Chắc Băng Cán Gáo",
+      "SNDescription": "GSMT - Ngã 3 Chắc Băng Cán Gáo",
+      "SNShortNameEN": "GSMT - Chac Bang Can Gao River Confluence",
+      "SNDescriptionEN": "GSMT - Chac Bang Can Gao River Confluence",
+      "SerialNumber": "C1215P1M004N008",
+      "ProvinceCodeOld": "32077",
+      "ProvinceNameOld": "Xã Thới Bình",
+      "Temperature": 0,
+      "AirTemperature": 30.87,
+      "Conductivity": null,
+      "Salinity": 3.71,
+      "PH": 0,
+      "DateTimeAdr": "2026-09-02T03:55:00.000Z",
+      "WaterLevelInfo": {
+        "_id": "6a979dd43d47a83ec359eeab",
+        "IDAWD": "C1215P1M004N008",
+        "WaterLevel": 37,
+        "SendDate": "2026-09-02T03:55:00.000Z",
+        "CalibValue": 164,
+        "AdrWaterLevel": 126.52
+      }
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "6a97b7e6c67d719dbc3e91c1",
+      "SensorNodeCode": "I0159R1M001N001",
+      "Longitude": 106.13980865478,
+      "Latitude": 9.7620716094971,
+      "WarningSalinity": 5,
+      "ListSettingsWarning": {},
+      "LongitudeSetup": 106.13980865478,
+      "LatitudeSetup": 9.7620716094971,
+      "IndexShow": 84.23,
+      "DeviceCalib": {
+        "SubscribeTime": null,
+        "SampleTime": 5,
+        "Calibrate": 0
+      },
+      "IsShowPublic": 1,
+      "IsUserAdd": 1,
+      "PolyPath": [],
+      "GateWayCode": "I0159R1M001N001",
+      "SensorType": 1,
+      "ListSettingsAlert": {},
+      "SettingCalib": {
+        "TemperatureCalib": 0,
+        "PHCalib": 0,
+        "SalinityCalib": 0
+      },
+      "ProvinceName": "Xã Hùng Hòa",
+      "ProvinceCode": "29362",
+      "ListParamSetting": {
+        "WATERLEVEL": 1,
+        "TEMPERATURE": 0,
+        "PH": 0,
+        "SALINITY": 1
+      },
+      "Status": 1,
+      "DeleteBy": "",
+      "DeleteDate": null,
+      "SNActiveDate": "2018-03-02T17:00:00.000Z",
+      "SNCreateDate": "2019-09-07T03:15:45.757Z",
+      "SNExpireDate": "2019-09-06T17:00:00.000Z",
+      "AreaMK": "4034228d-430a-4891-8d52-2d163291a07a",
+      "TopicPublish": "W/JSON/WQS/V1/I0159R1M001N001",
+      "Topic": "R/JSON/WQS/V1/I0159R1M001N001",
+      "SimNumber": "8984048000339034020",
+      "SNShortName": "Ngoài Cống Cần Chông - TC - TV",
+      "SNDescription": "Ngoài Cống Cần Chông - TC - TV",
+      "SNShortNameEN": "Can Chong Outer Sluice Gate - TC - TV",
+      "SNDescriptionEN": "Can Chong Outer Sluice Gate - TC - TV",
+      "SerialNumber": "I0159R1M001N001",
+      "OldProvince": "105501",
+      "SNActiveDate_Old": "2019-08-31T17:00:00.000Z",
+      "SettingViewMap": {
+        "Zoom": "9.5",
+        "longne": "106.29270324707031",
+        "latne": "9.814764976501465"
+      },
+      "ListSettingChart": {
+        "RoundNumberSalinity": 2
+      },
+      "NameLine_1": "Ngoài Cống",
+      "NameLine_2": "Cần Chông",
+      "ListImage": [
+        "Images/MeKong_AvatarStaff/I0159R1M001N001/I0159R1M001N001/nguyen.tranhoang_504158_4rXkclu4Al.jpg",
+        "Images/MeKong_AvatarStaff/I0159R1M001N001/I0159R1M001N001/nguyen.tranhoang_1980621_wjkIFNXlxY.jpg"
+      ],
+      "ProvinceCodeOld": "29362",
+      "ProvinceNameOld": "Xã Tân Hùng",
+      "Temperature": 0,
+      "AirTemperature": 32.05,
+      "Conductivity": null,
+      "Salinity": 0.09,
+      "PH": 0,
+      "DateTimeAdr": "2026-09-02T05:45:00.000Z",
+      "WaterLevelInfo": {
+        "_id": "6a97b7e6c67d719dbc3e91ba",
+        "IDAWD": "WLS7401031",
+        "WaterLevel": -34,
+        "SendDate": "2026-09-02T05:45:00.000Z",
+        "CalibValue": 274,
+        "AdrWaterLevel": 308.28
+      }
+    }
+  ]
+}

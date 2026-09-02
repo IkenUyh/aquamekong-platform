@@ -1,0 +1,77 @@
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "6a97a9f12df77aee47d8c59d",
+      "SensorNodeCode": "K2254P2M001N001",
+      "Longitude": 105.5428209,
+      "Latitude": 10.3088446,
+      "WarningSalinity": 5,
+      "ListSettingsWarning": {},
+      "LongitudeSetup": 105.5428209,
+      "LatitudeSetup": 10.3088446,
+      "IndexShow": null,
+      "ListImage": [
+        "Images/MeKong_AvatarStaff/K2254P2M001N001/K2254P2M001N001/yen.pham_287354_RN0wsD2jvv.jpg"
+      ],
+      "NameLine_2": "Lấp Vò - Đồng Tháp",
+      "NameLine_1": "Định Yên",
+      "DeviceCalib": {
+        "Calibrate": 0,
+        "SampleTime": 15,
+        "SubscribeTime": null
+      },
+      "IsShowPublic": 1,
+      "IsUserAdd": 1,
+      "PolyPath": [],
+      "GateWayCode": "K2254P2M001N001",
+      "SensorType": 1,
+      "ListSettingsAlert": {},
+      "SettingCalib": {
+        "TemperatureCalib": null,
+        "PHCalib": null,
+        "SalinityCalib": null
+      },
+      "ProvinceName": "Xã Lai Vung",
+      "ProvinceCode": "30226",
+      "ListParamSetting": {
+        "WATERLEVEL": 1,
+        "TEMPERATURE": 1,
+        "PH": 1,
+        "SALINITY": 1,
+        "DO": 1
+      },
+      "Status": 1,
+      "DeleteBy": "",
+      "DeleteDate": null,
+      "SNActiveDate": "2024-11-17T17:00:00.000Z",
+      "SNCreateDate": "2024-12-04T06:33:30.439Z",
+      "SNExpireDate": "2025-11-17T17:00:00.000Z",
+      "AreaMK": "67d6bdb5-be89-4572-a886-c945146949c4",
+      "TopicPublish": "W/JSON/WQS/V1/K2254P2M001N001",
+      "Topic": "R/JSON/WQS/V1/K2254P2M001N001",
+      "SimNumber": "8984048000933339890",
+      "SNShortName": "Định Yên - LV - ĐT",
+      "SNDescription": "Định Yên - LV - ĐT",
+      "SNShortNameEN": "Dinh Yen - LV - DT",
+      "SNDescriptionEN": "Dinh Yen - LV - DT",
+      "SerialNumber": "K2254P2M001N001",
+      "ProvinceCodeOld": "30199",
+      "ProvinceNameOld": "Xã Định Yên",
+      "Temperature": 29.41,
+      "AirTemperature": 29.65,
+      "Conductivity": null,
+      "Salinity": 0.09,
+      "PH": 7.4,
+      "DateTimeAdr": "2026-09-02T04:45:00.000Z",
+      "WaterLevelInfo": {
+        "_id": "6a97a9f12df77aee47d8c596",
+        "IDAWD": "K2254P2M001N001",
+        "WaterLevel": 133,
+        "SendDate": "2026-09-02T04:45:00.000Z",
+        "CalibValue": 241,
+        "AdrWaterLevel": 108.48
+      }
+    }
+  ]
+}

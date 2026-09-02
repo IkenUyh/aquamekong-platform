@@ -1,0 +1,402 @@
+{
+  "success": true,
+  "data": [
+    {
+      "data": [
+        {
+          "MinWaterLevel": -133,
+          "MaxWaterLevel": 136,
+          "Time": 1,
+          "TimeLabel": "1"
+        },
+        {
+          "MinWaterLevel": -119,
+          "MaxWaterLevel": 138,
+          "Time": 2,
+          "TimeLabel": "2"
+        },
+        {
+          "MinWaterLevel": -110,
+          "MaxWaterLevel": 143,
+          "Time": 3,
+          "TimeLabel": "3"
+        },
+        {
+          "MinWaterLevel": -95,
+          "MaxWaterLevel": 141,
+          "Time": 4,
+          "TimeLabel": "4"
+        },
+        {
+          "MinWaterLevel": -79,
+          "MaxWaterLevel": 138,
+          "Time": 5,
+          "TimeLabel": "5"
+        },
+        {
+          "MinWaterLevel": -93,
+          "MaxWaterLevel": 135,
+          "Time": 6,
+          "TimeLabel": "6"
+        },
+        {
+          "MinWaterLevel": -115,
+          "MaxWaterLevel": 123,
+          "Time": 7,
+          "TimeLabel": "7"
+        },
+        {
+          "MinWaterLevel": -134,
+          "MaxWaterLevel": 106,
+          "Time": 8,
+          "TimeLabel": "8"
+        },
+        {
+          "MinWaterLevel": -152,
+          "MaxWaterLevel": 109,
+          "Time": 9,
+          "TimeLabel": "9"
+        },
+        {
+          "MinWaterLevel": -160,
+          "MaxWaterLevel": 121,
+          "Time": 10,
+          "TimeLabel": "10"
+        },
+        {
+          "MinWaterLevel": -157,
+          "MaxWaterLevel": 134,
+          "Time": 11,
+          "TimeLabel": "11"
+        },
+        {
+          "MinWaterLevel": -156,
+          "MaxWaterLevel": 143,
+          "Time": 12,
+          "TimeLabel": "12"
+        },
+        {
+          "MinWaterLevel": -146,
+          "MaxWaterLevel": 144,
+          "Time": 13,
+          "TimeLabel": "13"
+        },
+        {
+          "MinWaterLevel": -137,
+          "MaxWaterLevel": 148,
+          "Time": 14,
+          "TimeLabel": "14"
+        },
+        {
+          "MinWaterLevel": -133,
+          "MaxWaterLevel": 151,
+          "Time": 15,
+          "TimeLabel": "15"
+        },
+        {
+          "MinWaterLevel": -112,
+          "MaxWaterLevel": 149,
+          "Time": 16,
+          "TimeLabel": "16"
+        },
+        {
+          "MinWaterLevel": -91,
+          "MaxWaterLevel": 153,
+          "Time": 17,
+          "TimeLabel": "17"
+        },
+        {
+          "MinWaterLevel": -69,
+          "MaxWaterLevel": 142,
+          "Time": 18,
+          "TimeLabel": "18"
+        },
+        {
+          "MinWaterLevel": -80,
+          "MaxWaterLevel": 115,
+          "Time": 19,
+          "TimeLabel": "19"
+        },
+        {
+          "MinWaterLevel": -84,
+          "MaxWaterLevel": 106,
+          "Time": 20,
+          "TimeLabel": "20"
+        },
+        {
+          "MinWaterLevel": -95,
+          "MaxWaterLevel": 83,
+          "Time": 21,
+          "TimeLabel": "21"
+        },
+        {
+          "MinWaterLevel": -105,
+          "MaxWaterLevel": 82,
+          "Time": 22,
+          "TimeLabel": "22"
+        },
+        {
+          "MinWaterLevel": -117,
+          "MaxWaterLevel": 98,
+          "Time": 23,
+          "TimeLabel": "23"
+        },
+        {
+          "MinWaterLevel": -135,
+          "MaxWaterLevel": 113,
+          "Time": 24,
+          "TimeLabel": "24"
+        },
+        {
+          "MinWaterLevel": -135,
+          "MaxWaterLevel": 119,
+          "Time": 25,
+          "TimeLabel": "25"
+        },
+        {
+          "MinWaterLevel": -129,
+          "MaxWaterLevel": 127,
+          "Time": 26,
+          "TimeLabel": "26"
+        },
+        {
+          "MinWaterLevel": -126,
+          "MaxWaterLevel": 135,
+          "Time": 27,
+          "TimeLabel": "27"
+        },
+        {
+          "MinWaterLevel": -118,
+          "MaxWaterLevel": 137,
+          "Time": 28,
+          "TimeLabel": "28"
+        },
+        {
+          "MinWaterLevel": -109,
+          "MaxWaterLevel": 137,
+          "Time": 29,
+          "TimeLabel": "29"
+        },
+        {
+          "MinWaterLevel": -99,
+          "MaxWaterLevel": 138,
+          "Time": 30,
+          "TimeLabel": "30"
+        },
+        {
+          "MinWaterLevel": -92,
+          "MaxWaterLevel": 145,
+          "Time": 31,
+          "TimeLabel": "31"
+        }
+      ],
+      "_id": "668f9a1ddd19055df1ff0c40",
+      "IDAWD": "L2177R1M001F001",
+      "GateWayCode": "L2177R1M001F001",
+      "_idGateWay": "60b739f0beec117822416faa",
+      "AWDType": 0,
+      "CalibType": 0,
+      "Status": 1,
+      "DateSetup": "2017-07-01T17:00:00.000Z",
+      "ShortNameEN": "Tra Vinh Port ",
+      "ShortName": "Mực nước Vàm Trà Vinh",
+      "Description": "Vàm Trà Vinh "
+    }
+  ],
+  "dataAKL": {
+    "data": [
+      {
+        "MinAlkalinity": 57.701,
+        "MaxAlkalinity": 57.701,
+        "Time": 1,
+        "TimeLabel": "1"
+      },
+      {
+        "MinAlkalinity": 56.267,
+        "MaxAlkalinity": 60.344,
+        "Time": 2,
+        "TimeLabel": "2"
+      },
+      {
+        "MinAlkalinity": 60.703,
+        "MaxAlkalinity": 61.106,
+        "Time": 3,
+        "TimeLabel": "3"
+      },
+      {
+        "MinAlkalinity": 57.746,
+        "MaxAlkalinity": 60.389,
+        "Time": 4,
+        "TimeLabel": "4"
+      },
+      {
+        "MinAlkalinity": 61.509,
+        "MaxAlkalinity": 64.331,
+        "Time": 5,
+        "TimeLabel": "5"
+      },
+      {
+        "MinAlkalinity": 56.267,
+        "MaxAlkalinity": 56.267,
+        "Time": 6,
+        "TimeLabel": "6"
+      },
+      {
+        "MinAlkalinity": 55.595,
+        "MaxAlkalinity": 55.595,
+        "Time": 7,
+        "TimeLabel": "7"
+      },
+      {
+        "MinAlkalinity": 54.476,
+        "MaxAlkalinity": 60.568,
+        "Time": 8,
+        "TimeLabel": "8"
+      },
+      {
+        "MinAlkalinity": 54.52,
+        "MaxAlkalinity": 60.031,
+        "Time": 9,
+        "TimeLabel": "9"
+      },
+      {
+        "MinAlkalinity": 52.325,
+        "MaxAlkalinity": 56.805,
+        "Time": 10,
+        "TimeLabel": "10"
+      },
+      {
+        "MinAlkalinity": 49.279,
+        "MaxAlkalinity": 55.909,
+        "Time": 11,
+        "TimeLabel": "11"
+      },
+      {
+        "MinAlkalinity": 51.788,
+        "MaxAlkalinity": 58.911,
+        "Time": 12,
+        "TimeLabel": "12"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 13,
+        "TimeLabel": "13"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 14,
+        "TimeLabel": "14"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 15,
+        "TimeLabel": "15"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 16,
+        "TimeLabel": "16"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 17,
+        "TimeLabel": "17"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 18,
+        "TimeLabel": "18"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 19,
+        "TimeLabel": "19"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 20,
+        "TimeLabel": "20"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 21,
+        "TimeLabel": "21"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 22,
+        "TimeLabel": "22"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 23,
+        "TimeLabel": "23"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 24,
+        "TimeLabel": "24"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 25,
+        "TimeLabel": "25"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 26,
+        "TimeLabel": "26"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 27,
+        "TimeLabel": "27"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 28,
+        "TimeLabel": "28"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 29,
+        "TimeLabel": "29"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 30,
+        "TimeLabel": "30"
+      },
+      {
+        "MinAlkalinity": null,
+        "MaxAlkalinity": null,
+        "Time": 31,
+        "TimeLabel": "31"
+      }
+    ],
+    "_id": "5e0ffdd4da79515460e2cf62",
+    "ShortName": "Độ Kiềm",
+    "GateWayCode": "L0159R1M001N001",
+    "SerialNumber": "L0159R1M001N001",
+    "Description": "Vàm Trà Vinh",
+    "ShortNameEN": "Akalinity"
+  }
+}

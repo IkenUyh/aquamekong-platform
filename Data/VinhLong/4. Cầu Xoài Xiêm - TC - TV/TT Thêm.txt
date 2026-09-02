@@ -1,0 +1,86 @@
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "6a97b802997858ddc1f4f659",
+      "SensorNodeCode": "J0129R1M001N001",
+      "Longitude": 106.26921844482,
+      "Latitude": 9.7050333023071,
+      "WarningSalinity": 5,
+      "ListSettingsWarning": {},
+      "LongitudeSetup": 106.26921844482,
+      "LatitudeSetup": 9.7050333023071,
+      "IndexShow": 84.51,
+      "DeviceCalib": {
+        "SubscribeTime": null,
+        "SampleTime": 15,
+        "Calibrate": 0
+      },
+      "IsShowPublic": 1,
+      "IsUserAdd": 1,
+      "PolyPath": [],
+      "GateWayCode": "J0129R1M001N001",
+      "SensorType": 1,
+      "ListSettingsAlert": {},
+      "SettingCalib": {
+        "TemperatureCalib": 0,
+        "PHCalib": 0,
+        "SalinityCalib": 0
+      },
+      "ProvinceName": "Xã Trà Cú",
+      "ProvinceCode": "29461",
+      "ListParamSetting": {
+        "WATERLEVEL": 1,
+        "TEMPERATURE": 0,
+        "PH": 1,
+        "SALINITY": 1
+      },
+      "Status": 1,
+      "DeleteBy": "",
+      "DeleteDate": null,
+      "SNActiveDate": "2019-10-23T17:00:00.000Z",
+      "SNCreateDate": "2019-10-04T10:27:42.755Z",
+      "SNExpireDate": "2020-10-03T17:00:00.000Z",
+      "AreaMK": "00eee95d-3e08-4d27-8dca-8c417cebb531",
+      "TopicPublish": "W/JSON/WQS/V1/J0129R1M001N001",
+      "Topic": "R/JSON/WQS/V1/J0129R1M001N001",
+      "SimNumber": "8984048000933340846",
+      "SNShortName": "Cầu Xoài Xiêm - TC - TV",
+      "SNDescription": "Cầu Xoài Xiêm - TC - TV",
+      "SNShortNameEN": "Xoai Xiem Brige - TC - TV",
+      "SNDescriptionEN": "Xoai Xiem Brige - TC - TV",
+      "SerialNumber": "J0129R1M001N001",
+      "SNActiveDate_Old": "2019-10-21T17:00:00.000Z",
+      "SettingViewMap": {
+        "Zoom": "9.5",
+        "longne": "106.29270324707031",
+        "latne": "9.814764976501465"
+      },
+      "ListSettingChart": {
+        "RoundNumberSalinity": 2
+      },
+      "NameLine_1": "Cầu",
+      "NameLine_2": "Xoài Xiêm",
+      "ListImage": [
+        "Images/MeKong_AvatarStaff/J0129R1M001N001/J0129R1M001N001/nguyen.tranhoang_527341_54vpcD8Fvr.jpg",
+        "Images/MeKong_AvatarStaff/J0129R1M001N001/J0129R1M001N001/nguyen.tranhoang_1479202_5MMCdiVSSt.jpg"
+      ],
+      "ProvinceCodeOld": "29479",
+      "ProvinceNameOld": "Xã Ngãi Xuyên",
+      "Temperature": 0,
+      "AirTemperature": 32.31,
+      "Conductivity": null,
+      "Salinity": 0.38,
+      "PH": 6.87,
+      "DateTimeAdr": "2026-09-02T05:45:00.000Z",
+      "WaterLevelInfo": {
+        "_id": "6a97b802997858ddc1f4f652",
+        "IDAWD": "WLS7401032",
+        "WaterLevel": 22,
+        "SendDate": "2026-09-02T05:45:00.000Z",
+        "CalibValue": 234,
+        "AdrWaterLevel": 211.84
+      }
+    }
+  ]
+}

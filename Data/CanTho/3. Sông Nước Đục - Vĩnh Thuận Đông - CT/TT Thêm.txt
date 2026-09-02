@@ -1,0 +1,79 @@
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "6a97af55c67d719dbc3e8864",
+      "SensorNodeCode": "D2215P1M001N001",
+      "Longitude": 105.456246,
+      "Latitude": 9.705892,
+      "WarningSalinity": 5,
+      "ListSettingsWarning": {},
+      "LongitudeSetup": 105.456246,
+      "LatitudeSetup": 9.705892,
+      "IndexShow": null,
+      "ListImage": [
+        "Images/MeKong_AvatarStaff/D2215P1M001N001/D2215P1M001N001/yen.pham_380768_RSiZzMQCr8.jpg",
+        "Images/MeKong_AvatarStaff/D2215P1M001N001/D2215P1M001N001/yen.pham_487856_Mv8nHIwsnE.jpg",
+        "Images/MeKong_AvatarStaff/D2215P1M001N001/D2215P1M001N001/yen.pham_413317_7KYYj2VvlQ.jpg"
+      ],
+      "NameLine_2": "Vĩnh Thuận Đông - CT",
+      "NameLine_1": "Sông Nước Đục",
+      "DeviceCalib": {
+        "SubscribeTime": null,
+        "SampleTime": 5,
+        "Calibrate": 0
+      },
+      "IsShowPublic": 1,
+      "IsUserAdd": 1,
+      "PolyPath": [],
+      "GateWayCode": "D2215P1M001N001",
+      "SensorType": 1,
+      "ListSettingsAlert": {},
+      "SettingCalib": {
+        "TemperatureCalib": null,
+        "PHCalib": null,
+        "SalinityCalib": null
+      },
+      "ProvinceName": "Xã Vĩnh Thuận Đông",
+      "ProvinceCode": "31453",
+      "ListParamSetting": {
+        "WATERLEVEL": 1,
+        "TEMPERATURE": 1,
+        "PH": 1,
+        "SALINITY": 1,
+        "DO": 1
+      },
+      "Status": 1,
+      "DeleteBy": "",
+      "DeleteDate": null,
+      "SNActiveDate": "2025-06-03T17:00:00.000Z",
+      "SNCreateDate": "2025-06-04T08:03:10.602Z",
+      "SNExpireDate": "2026-06-03T17:00:00.000Z",
+      "AreaMK": "3d9cb51e-38e4-40a5-aca0-a096dd28693c",
+      "TopicPublish": "W/JSON/WQS/V1/D2215P1M001N001",
+      "Topic": "R/JSON/WQS/V1/D2215P1M001N001",
+      "SimNumber": "01687741334",
+      "SNShortName": "Sông Nước Đục - Vĩnh Thuận Đông - CT",
+      "SNDescription": "Sông Nước Đục - Vĩnh Thuận Đông - CT",
+      "SNShortNameEN": "Song Nuoc Duc - Vinh Thuan Dong - CT",
+      "SNDescriptionEN": "Song Nuoc Duc - Vinh Thuan Dong - CT",
+      "SerialNumber": "D2215P1M001N001",
+      "ProvinceCodeOld": "31453",
+      "ProvinceNameOld": "Xã Vĩnh Thuận Tây",
+      "Temperature": 28.97,
+      "AirTemperature": 30.18,
+      "Conductivity": null,
+      "Salinity": 0.12,
+      "PH": 6.47,
+      "DateTimeAdr": "2026-09-02T05:10:00.000Z",
+      "WaterLevelInfo": {
+        "_id": "6a97af55c67d719dbc3e885d",
+        "IDAWD": "D2215P1M001N001",
+        "WaterLevel": 79,
+        "SendDate": "2026-09-02T05:10:00.000Z",
+        "CalibValue": 152,
+        "AdrWaterLevel": 73.34
+      }
+    }
+  ]
+}

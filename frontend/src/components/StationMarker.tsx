@@ -1,5 +1,5 @@
 import { CircleMarker, Popup } from 'react-leaflet';
-import { Droplets, Waves, Wind } from 'lucide-react';
+
 import type { GeoJsonFeature, SalinityLevel } from '../types';
 
 interface StationMarkerProps {

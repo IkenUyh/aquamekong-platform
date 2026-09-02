@@ -1,0 +1,207 @@
+{
+  "success": true,
+  "data": [
+    {
+      "data": [
+        {
+          "MinWaterLevel": -24,
+          "MaxWaterLevel": 135,
+          "Time": 1,
+          "TimeLabel": "1"
+        },
+        {
+          "MinWaterLevel": 10,
+          "MaxWaterLevel": 137,
+          "Time": 2,
+          "TimeLabel": "2"
+        },
+        {
+          "MinWaterLevel": -8,
+          "MaxWaterLevel": 132,
+          "Time": 3,
+          "TimeLabel": "3"
+        },
+        {
+          "MinWaterLevel": -19,
+          "MaxWaterLevel": 111,
+          "Time": 4,
+          "TimeLabel": "4"
+        },
+        {
+          "MinWaterLevel": -20,
+          "MaxWaterLevel": 108,
+          "Time": 5,
+          "TimeLabel": "5"
+        },
+        {
+          "MinWaterLevel": -22,
+          "MaxWaterLevel": 107,
+          "Time": 6,
+          "TimeLabel": "6"
+        },
+        {
+          "MinWaterLevel": -41,
+          "MaxWaterLevel": 105,
+          "Time": 7,
+          "TimeLabel": "7"
+        },
+        {
+          "MinWaterLevel": -52,
+          "MaxWaterLevel": 101,
+          "Time": 8,
+          "TimeLabel": "8"
+        },
+        {
+          "MinWaterLevel": -57,
+          "MaxWaterLevel": 101,
+          "Time": 9,
+          "TimeLabel": "9"
+        },
+        {
+          "MinWaterLevel": -64,
+          "MaxWaterLevel": 98,
+          "Time": 10,
+          "TimeLabel": "10"
+        },
+        {
+          "MinWaterLevel": -43,
+          "MaxWaterLevel": 112,
+          "Time": 11,
+          "TimeLabel": "11"
+        },
+        {
+          "MinWaterLevel": -47,
+          "MaxWaterLevel": 113,
+          "Time": 12,
+          "TimeLabel": "12"
+        },
+        {
+          "MinWaterLevel": -49,
+          "MaxWaterLevel": 118,
+          "Time": 13,
+          "TimeLabel": "13"
+        },
+        {
+          "MinWaterLevel": -39,
+          "MaxWaterLevel": 120,
+          "Time": 14,
+          "TimeLabel": "14"
+        },
+        {
+          "MinWaterLevel": -32,
+          "MaxWaterLevel": 122,
+          "Time": 15,
+          "TimeLabel": "15"
+        },
+        {
+          "MinWaterLevel": -26,
+          "MaxWaterLevel": 112,
+          "Time": 16,
+          "TimeLabel": "16"
+        },
+        {
+          "MinWaterLevel": -25,
+          "MaxWaterLevel": 114,
+          "Time": 17,
+          "TimeLabel": "17"
+        },
+        {
+          "MinWaterLevel": -11,
+          "MaxWaterLevel": 110,
+          "Time": 18,
+          "TimeLabel": "18"
+        },
+        {
+          "MinWaterLevel": -15,
+          "MaxWaterLevel": 101,
+          "Time": 19,
+          "TimeLabel": "19"
+        },
+        {
+          "MinWaterLevel": -26,
+          "MaxWaterLevel": 98,
+          "Time": 20,
+          "TimeLabel": "20"
+        },
+        {
+          "MinWaterLevel": -36,
+          "MaxWaterLevel": 88,
+          "Time": 21,
+          "TimeLabel": "21"
+        },
+        {
+          "MinWaterLevel": -45,
+          "MaxWaterLevel": 89,
+          "Time": 22,
+          "TimeLabel": "22"
+        },
+        {
+          "MinWaterLevel": -40,
+          "MaxWaterLevel": 87,
+          "Time": 23,
+          "TimeLabel": "23"
+        },
+        {
+          "MinWaterLevel": -50,
+          "MaxWaterLevel": 95,
+          "Time": 24,
+          "TimeLabel": "24"
+        },
+        {
+          "MinWaterLevel": -68,
+          "MaxWaterLevel": 93,
+          "Time": 25,
+          "TimeLabel": "25"
+        },
+        {
+          "MinWaterLevel": -56,
+          "MaxWaterLevel": 90,
+          "Time": 26,
+          "TimeLabel": "26"
+        },
+        {
+          "MinWaterLevel": -56,
+          "MaxWaterLevel": 107,
+          "Time": 27,
+          "TimeLabel": "27"
+        },
+        {
+          "MinWaterLevel": -40,
+          "MaxWaterLevel": 108,
+          "Time": 28,
+          "TimeLabel": "28"
+        },
+        {
+          "MinWaterLevel": -36,
+          "MaxWaterLevel": 108,
+          "Time": 29,
+          "TimeLabel": "29"
+        },
+        {
+          "MinWaterLevel": -19,
+          "MaxWaterLevel": 112,
+          "Time": 30,
+          "TimeLabel": "30"
+        },
+        {
+          "MinWaterLevel": -5,
+          "MaxWaterLevel": 113,
+          "Time": 31,
+          "TimeLabel": "31"
+        }
+      ],
+      "_id": "5b7aa4d6671d7804171bcafe",
+      "IDAWD": "WLS7401007",
+      "GateWayCode": "H1168R4M001N001",
+      "_idGateWay": "641d26ba08e6667e45d0842c",
+      "AWDType": 0,
+      "CalibType": 0,
+      "Status": 1,
+      "DateSetup": "2018-04-08T17:00:00.000Z",
+      "ShortNameEN": "Phong Phu Bridge",
+      "ShortName": "Cầu Phong Phú",
+      "Description": "Cầu Phong Phú"
+    }
+  ],
+  "dataAKL": "null"
+}

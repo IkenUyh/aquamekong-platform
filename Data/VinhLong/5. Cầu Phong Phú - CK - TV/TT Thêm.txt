@@ -1,0 +1,75 @@
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "6a97bb86997858ddc1f4fa7c",
+      "SensorNodeCode": "H1168R4M001N001",
+      "SerialNumber": "H1168R4M001N001",
+      "SimNumber": "DANG_CAP_NHAT",
+      "Topic": "R/JSON/WQS/V1/H1168R4M001N001",
+      "TopicPublish": "W/JSON/WQS/V1/H1168R4M001N001",
+      "Longitude": 106.09244537354,
+      "Latitude": 9.8497333526611,
+      "SNDescription": "Cầu Phong Phú - CK - TV",
+      "SNShortName": "Cầu Phong Phú - CK - TV",
+      "AreaMK": "f80ff7af-71bf-47aa-9f71-b629bc20dac5",
+      "SNExpireDate": "2018-08-27T17:00:00.000Z",
+      "SNCreateDate": "2018-07-27T01:55:30.620Z",
+      "Status": 1,
+      "WarningSalinity": 20,
+      "ProvinceCode": "29329",
+      "ProvinceName": "Xã Phong Thạnh",
+      "ListSettingsAlert": {},
+      "ListSettingsWarning": {},
+      "LongitudeSetup": 106.09244537354,
+      "LatitudeSetup": 9.8497333526611,
+      "IsShowPublic": 1,
+      "IsUserAdd": 1,
+      "PolyPath": [],
+      "GateWayCode": "H1168R4M001N001",
+      "SensorType": 1,
+      "SettingCalib": {
+        "TemperatureCalib": 0,
+        "PHCalib": 0,
+        "SalinityCalib": 0
+      },
+      "ListParamSetting": {
+        "WATERLEVEL": 1,
+        "TEMPERATURE": 0,
+        "PH": 0,
+        "SALINITY": 1
+      },
+      "IndexShow": 84.32,
+      "DeviceCalib": {
+        "Calibrate": 0,
+        "SampleTime": 15,
+        "SubscribeTime": 0
+      },
+      "SNShortNameEN": "Phong Phu Bridge - CK - TV",
+      "SNDescriptionEN": "Phong Phu Bridge - CK - TV",
+      "SNActiveDate": "2018-09-03T17:00:00.000Z",
+      "SNActiveDate_Old": "2018-04-08T17:00:00.000Z",
+      "SettingViewMap": {
+        "Zoom": "9.5",
+        "longne": "106.29270324707031",
+        "latne": "9.814764976501465"
+      },
+      "ListSettingChart": {
+        "RoundNumberSalinity": 2
+      },
+      "NameLine_1": "Cầu",
+      "NameLine_2": "Phong Phú",
+      "ListImage": [
+        "Images/MeKong_AvatarStaff/H1168R4M001N001/H1168R4M001N001/nguyen.tranhoang_455418_8yrhtY7p80.jpg"
+      ],
+      "ProvinceCodeOld": "29326",
+      "ProvinceNameOld": "Xã Phong Phú",
+      "Temperature": 0,
+      "AirTemperature": 31.9,
+      "Conductivity": null,
+      "Salinity": 0.08,
+      "PH": 0,
+      "DateTimeAdr": "2026-09-02T06:00:00.000Z"
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "6a97a030c67d719dbc3e7734",
+      "SensorNodeCode": "L0255P1M004N007",
+      "Longitude": 104.967723,
+      "Latitude": 9.410464,
+      "WarningSalinity": 5,
+      "ListSettingsWarning": {},
+      "LongitudeSetup": 104.967723,
+      "LatitudeSetup": 9.410464,
+      "IndexShow": 0,
+      "ListImage": [
+        "Images/MeKong_AvatarStaff/L0255P1M004N007/L0255P1M004N007/yenthanh.nguyen_816585_cvNfOVEbfW.jpg",
+        "Images/MeKong_AvatarStaff/L0255P1M004N007/L0255P1M004N007/yenthanh.nguyen_779559_vfaeW8g4Mm.jpg"
+      ],
+      "NameLine_2": "Tiểu Dừa",
+      "NameLine_1": "GSMT",
+      "DeviceCalib": {
+        "SubscribeTime": null,
+        "SampleTime": 5,
+        "Calibrate": 0
+      },
+      "IsShowPublic": 1,
+      "IsUserAdd": 1,
+      "PolyPath": [],
+      "GateWayCode": "L0255P1M004N007",
+      "SensorType": 1,
+      "ListSettingsAlert": {},
+      "SettingCalib": {
+        "TemperatureCalib": null,
+        "PHCalib": null,
+        "SalinityCalib": null
+      },
+      "ProvinceName": "Xã Nguyễn Phích",
+      "ProvinceCode": "32044",
+      "ListParamSetting": {
+        "WATERLEVEL": 1,
+        "TEMPERATURE": 0,
+        "PH": 0,
+        "SALINITY": 1
+      },
+      "Status": 1,
+      "DeleteBy": "",
+      "DeleteDate": null,
+      "SNActiveDate": "2025-12-27T17:00:00.000Z",
+      "SNCreateDate": "2025-12-24T02:33:21.974Z",
+      "SNExpireDate": "2026-12-27T17:00:00.000Z",
+      "AreaMK": "4c31982d-3233-42d7-b34b-fd9c6a274639",
+      "TopicPublish": "W/JSON/WQS/V1/L0255P1M004N007",
+      "Topic": "R/JSON/WQS/V1/L0255P1M004N007",
+      "SimNumber": "8984048000951497597",
+      "SNShortName": "GSMT - Tiểu Dừa",
+      "SNDescription": "GSMT - Tiểu Dừa",
+      "SNShortNameEN": "GSMT - Tieu Dua",
+      "SNDescriptionEN": "GSMT - Tieu Dua",
+      "SerialNumber": "L0255P1M004N007",
+      "ProvinceCodeOld": "32044",
+      "ProvinceNameOld": "Thị Trấn U Minh",
+      "Temperature": 0,
+      "AirTemperature": 29.91,
+      "Conductivity": null,
+      "Salinity": 4.16,
+      "PH": 0,
+      "DateTimeAdr": "2026-09-02T04:05:00.000Z",
+      "WaterLevelInfo": {
+        "_id": "6a97a030c67d719dbc3e772d",
+        "IDAWD": "L0255P1M004N007",
+        "WaterLevel": 52,
+        "SendDate": "2026-09-02T04:05:00.000Z",
+        "CalibValue": 191,
+        "AdrWaterLevel": 139.16
+      }
+    }
+  ]
+}

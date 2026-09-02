@@ -1,0 +1,76 @@
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "6a97a671a119d84237b3bece",
+      "SensorNodeCode": "K2240R1M004N005",
+      "Longitude": 106.160827,
+      "Latitude": 10.295279,
+      "WarningSalinity": 5,
+      "ListSettingsWarning": {},
+      "LongitudeSetup": 106.160827,
+      "LatitudeSetup": 10.295279,
+      "IndexShow": 63.21,
+      "DeviceCalib": {
+        "SubscribeTime": null,
+        "SampleTime": 15,
+        "Calibrate": 0
+      },
+      "IsShowPublic": 1,
+      "IsUserAdd": 1,
+      "PolyPath": [],
+      "GateWayCode": "K2240R1M004N005",
+      "SensorType": 1,
+      "ListSettingsAlert": {},
+      "SettingCalib": {
+        "TemperatureCalib": 0,
+        "PHCalib": 0,
+        "SalinityCalib": 0
+      },
+      "ProvinceName": "Xã Ngũ Hiệp",
+      "ProvinceCode": "28516",
+      "ListParamSetting": {
+        "WATERLEVEL": 1,
+        "TEMPERATURE": 0,
+        "PH": 0,
+        "SALINITY": 1
+      },
+      "Status": 1,
+      "DeleteBy": "",
+      "DeleteDate": null,
+      "SNActiveDate": "2022-01-20T17:00:00.000Z",
+      "SNCreateDate": "2021-02-01T02:46:02.584Z",
+      "SNExpireDate": "2027-01-20T17:00:00.000Z",
+      "AreaMK": "ada2f016-8823-4fbf-b4cc-bb73b0fcccd7",
+      "TopicPublish": "W/WMS/K2240R1M004N005",
+      "Topic": "R/WMS/K2240R1M004N005",
+      "SimNumber": "8984048000339034041",
+      "SNShortName": "Cầu Cả Dứa - Bình Điền",
+      "SNDescription": "Cầu Cả Dứa - Bình Điền",
+      "SNShortNameEN": "Ca Dua Bridge - Binh Dien",
+      "SNDescriptionEN": "Ca Dua Bridge - Binh Dien",
+      "SerialNumber": "K2240R1M004N005",
+      "NameLine_1": "Cầu Cả Dứa -",
+      "NameLine_2": "Bình Điền",
+      "ListImage": [
+        "Images/MeKong_AvatarStaff/K2240R1M004N005/K2240R1M004N005/nguyen.tranhoang_531081_wJYKhgGKVQ.jpg"
+      ],
+      "ProvinceCodeOld": "28516",
+      "ProvinceNameOld": "Xã Ngũ Hiệp",
+      "DateTimeAdr": "2026-09-02T04:30:11.000Z",
+      "Temperature": 0,
+      "AirTemperature": 24.03,
+      "Conductivity": 0,
+      "Salinity": 0.128,
+      "PH": 0,
+      "WaterLevelInfo": {
+        "_id": "6a97a67080c02f1b931d9fbd",
+        "IDAWD": "WLS7401053",
+        "WaterLevel": 5,
+        "SendDate": "2026-09-02T04:30:11.000Z",
+        "AdrWaterLevel": 533,
+        "CalibValue": 528
+      }
+    }
+  ]
+}

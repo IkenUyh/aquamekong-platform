@@ -1,0 +1,77 @@
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "6a9719932df77aee47d81eef",
+      "SensorNodeCode": "C1215P1M008N008",
+      "Longitude": 105.10898495308,
+      "Latitude": 9.8584876419925,
+      "WarningSalinity": 5,
+      "ListSettingsWarning": {},
+      "LongitudeSetup": 105.10898495308,
+      "LatitudeSetup": 9.8584876419925,
+      "IndexShow": null,
+      "ListImage": [
+        "Images/MeKong_AvatarStaff/C1215P1M008N008/C1215P1M008N008/yenthanh.nguyen_1408940_UJ029YOjw7.jpg",
+        "Images/MeKong_AvatarStaff/C1215P1M008N008/C1215P1M008N008/yenthanh.nguyen_1349248_YpdaYQsWXE.jpg"
+      ],
+      "NameLine_2": "HL - Xẻo Rô",
+      "NameLine_1": "Âu Thuyền",
+      "DeviceCalib": {
+        "SubscribeTime": null,
+        "SampleTime": 5,
+        "Calibrate": 0
+      },
+      "IsShowPublic": 1,
+      "IsUserAdd": 1,
+      "PolyPath": [],
+      "GateWayCode": "C1215P1M008N008",
+      "SensorType": 1,
+      "ListSettingsAlert": {},
+      "SettingCalib": {
+        "TemperatureCalib": 0,
+        "PHCalib": 0,
+        "SalinityCalib": 0
+      },
+      "ProvinceName": "Xã Bình An",
+      "ProvinceCode": "30898",
+      "ListParamSetting": {
+        "WATERLEVEL": 1,
+        "TEMPERATURE": 0,
+        "PH": 0,
+        "SALINITY": 1
+      },
+      "Status": 1,
+      "DeleteBy": "",
+      "DeleteDate": null,
+      "SNActiveDate": "2025-08-26T17:00:00.000Z",
+      "SNCreateDate": "2025-08-27T03:31:01.975Z",
+      "SNExpireDate": "2026-08-26T17:00:00.000Z",
+      "AreaMK": "4c31982d-3233-42d7-b34b-fd9c6a274639",
+      "TopicPublish": "W/JSON/WQS/V1/C1215P1M008N008",
+      "Topic": "R/JSON/WQS/V1/C1215P1M008N008",
+      "SimNumber": "8984048000933384469",
+      "SNShortName": "Âu Thuyền - HL - Xẻo Rô",
+      "SNDescription": "Âu Thuyền - HL - Xẻo Rô",
+      "SNShortNameEN": "Ship Lock - HL - Xeo Ro",
+      "SNDescriptionEN": "Ship Lock - HL - Xeo Ro",
+      "SerialNumber": "C1215P1M008N008",
+      "ProvinceCodeOld": "30898",
+      "ProvinceNameOld": "Xã Bình An",
+      "Temperature": 0,
+      "AirTemperature": 27.21,
+      "Conductivity": null,
+      "Salinity": 2.26,
+      "PH": 0,
+      "DateTimeAdr": "2026-09-01T18:30:00.000Z",
+      "WaterLevelInfo": {
+        "_id": "6a9719932df77aee47d81ee8",
+        "IDAWD": "C1215P1M008N008",
+        "WaterLevel": 15,
+        "SendDate": "2026-09-01T18:30:00.000Z",
+        "CalibValue": 295,
+        "AdrWaterLevel": 280.5
+      }
+    }
+  ]
+}

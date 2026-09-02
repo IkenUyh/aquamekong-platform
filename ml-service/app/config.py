@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     # ML Service
     ml_service_port: int = 8000
     model_dir: str = "/app/trained_models"
+    raw_data_dir: str = "../Data"
 
     # Model defaults
     default_lookback_days: int = 90

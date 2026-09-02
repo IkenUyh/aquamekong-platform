@@ -1,0 +1,207 @@
+{
+  "success": true,
+  "data": [
+    {
+      "data": [
+        {
+          "MinWaterLevel": 20,
+          "MaxWaterLevel": 122,
+          "Time": 1,
+          "TimeLabel": "1"
+        },
+        {
+          "MinWaterLevel": 23,
+          "MaxWaterLevel": 127,
+          "Time": 2,
+          "TimeLabel": "2"
+        },
+        {
+          "MinWaterLevel": 25,
+          "MaxWaterLevel": 121,
+          "Time": 3,
+          "TimeLabel": "3"
+        },
+        {
+          "MinWaterLevel": 26,
+          "MaxWaterLevel": 139,
+          "Time": 4,
+          "TimeLabel": "4"
+        },
+        {
+          "MinWaterLevel": 23,
+          "MaxWaterLevel": 118,
+          "Time": 5,
+          "TimeLabel": "5"
+        },
+        {
+          "MinWaterLevel": 24,
+          "MaxWaterLevel": 117,
+          "Time": 6,
+          "TimeLabel": "6"
+        },
+        {
+          "MinWaterLevel": 22,
+          "MaxWaterLevel": 118,
+          "Time": 7,
+          "TimeLabel": "7"
+        },
+        {
+          "MinWaterLevel": 14,
+          "MaxWaterLevel": 110,
+          "Time": 8,
+          "TimeLabel": "8"
+        },
+        {
+          "MinWaterLevel": 15,
+          "MaxWaterLevel": 107,
+          "Time": 9,
+          "TimeLabel": "9"
+        },
+        {
+          "MinWaterLevel": 17,
+          "MaxWaterLevel": 108,
+          "Time": 10,
+          "TimeLabel": "10"
+        },
+        {
+          "MinWaterLevel": 14,
+          "MaxWaterLevel": 128,
+          "Time": 11,
+          "TimeLabel": "11"
+        },
+        {
+          "MinWaterLevel": 13,
+          "MaxWaterLevel": 135,
+          "Time": 12,
+          "TimeLabel": "12"
+        },
+        {
+          "MinWaterLevel": 10,
+          "MaxWaterLevel": 146,
+          "Time": 13,
+          "TimeLabel": "13"
+        },
+        {
+          "MinWaterLevel": 14,
+          "MaxWaterLevel": 154,
+          "Time": 14,
+          "TimeLabel": "14"
+        },
+        {
+          "MinWaterLevel": 17,
+          "MaxWaterLevel": 153,
+          "Time": 15,
+          "TimeLabel": "15"
+        },
+        {
+          "MinWaterLevel": 23,
+          "MaxWaterLevel": 156,
+          "Time": 16,
+          "TimeLabel": "16"
+        },
+        {
+          "MinWaterLevel": 24,
+          "MaxWaterLevel": 163,
+          "Time": 17,
+          "TimeLabel": "17"
+        },
+        {
+          "MinWaterLevel": 26,
+          "MaxWaterLevel": 147,
+          "Time": 18,
+          "TimeLabel": "18"
+        },
+        {
+          "MinWaterLevel": 30,
+          "MaxWaterLevel": 122,
+          "Time": 19,
+          "TimeLabel": "19"
+        },
+        {
+          "MinWaterLevel": 22,
+          "MaxWaterLevel": 114,
+          "Time": 20,
+          "TimeLabel": "20"
+        },
+        {
+          "MinWaterLevel": 19,
+          "MaxWaterLevel": 100,
+          "Time": 21,
+          "TimeLabel": "21"
+        },
+        {
+          "MinWaterLevel": 13,
+          "MaxWaterLevel": 106,
+          "Time": 22,
+          "TimeLabel": "22"
+        },
+        {
+          "MinWaterLevel": 12,
+          "MaxWaterLevel": 96,
+          "Time": 23,
+          "TimeLabel": "23"
+        },
+        {
+          "MinWaterLevel": 14,
+          "MaxWaterLevel": 110,
+          "Time": 24,
+          "TimeLabel": "24"
+        },
+        {
+          "MinWaterLevel": 13,
+          "MaxWaterLevel": 111,
+          "Time": 25,
+          "TimeLabel": "25"
+        },
+        {
+          "MinWaterLevel": 11,
+          "MaxWaterLevel": 119,
+          "Time": 26,
+          "TimeLabel": "26"
+        },
+        {
+          "MinWaterLevel": 12,
+          "MaxWaterLevel": 123,
+          "Time": 27,
+          "TimeLabel": "27"
+        },
+        {
+          "MinWaterLevel": 14,
+          "MaxWaterLevel": 131,
+          "Time": 28,
+          "TimeLabel": "28"
+        },
+        {
+          "MinWaterLevel": 17,
+          "MaxWaterLevel": 138,
+          "Time": 29,
+          "TimeLabel": "29"
+        },
+        {
+          "MinWaterLevel": 21,
+          "MaxWaterLevel": 139,
+          "Time": 30,
+          "TimeLabel": "30"
+        },
+        {
+          "MinWaterLevel": 24,
+          "MaxWaterLevel": 144,
+          "Time": 31,
+          "TimeLabel": "31"
+        }
+      ],
+      "_id": "5fa11e32d6634f0e8e7f2238",
+      "IDAWD": "WLS7401046",
+      "GateWayCode": "K0220R1M001N001",
+      "_idGateWay": "5fa119676a34b70e84b0a71f",
+      "AWDType": 0,
+      "CalibType": 0,
+      "Status": 1,
+      "DateSetup": "2020-11-02T17:00:00.000Z",
+      "ShortNameEN": "",
+      "ShortName": "",
+      "Description": "An Hiệp - Bình Điền"
+    }
+  ],
+  "dataAKL": "null"
+}

@@ -1,0 +1,76 @@
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "6a97bdd3997858ddc1f4fcdf",
+      "SensorNodeCode": "J2251P3M001N001",
+      "Longitude": 106.23672,
+      "Latitude": 10.262908,
+      "WarningSalinity": 5,
+      "ListSettingsWarning": {},
+      "LongitudeSetup": 106.23672,
+      "LatitudeSetup": 10.262908,
+      "IndexShow": 71.14,
+      "ListImage": [
+        "Images/MeKong_AvatarStaff/J2251P3M001N001/J2251P3M001N001/nguyen.tranhoang_787946_5Py1gT0qMC.jpg"
+      ],
+      "NameLine_2": "Tiên Thủy",
+      "NameLine_1": "Cống Tre Bông",
+      "DeviceCalib": {
+        "Calibrate": 0,
+        "SampleTime": 15,
+        "SubscribeTime": null
+      },
+      "IsShowPublic": 1,
+      "IsUserAdd": 1,
+      "PolyPath": [],
+      "GateWayCode": "J2251P3M001N001",
+      "SensorType": 1,
+      "ListSettingsAlert": {},
+      "SettingCalib": {
+        "TemperatureCalib": 0,
+        "PHCalib": 0,
+        "SalinityCalib": 0
+      },
+      "ProvinceName": "Xã Tiên Thủy",
+      "ProvinceCode": "28861",
+      "ListParamSetting": {
+        "WATERLEVEL": 1,
+        "TEMPERATURE": 0,
+        "PH": 0,
+        "SALINITY": 1
+      },
+      "Status": 1,
+      "DeleteBy": "",
+      "DeleteDate": null,
+      "SNActiveDate": "2021-12-17T17:00:00.000Z",
+      "SNCreateDate": "2021-12-10T04:06:03.674Z",
+      "SNExpireDate": "2022-12-17T17:00:00.000Z",
+      "AreaMK": "9a630df3-c641-4e87-bad7-b586bfe7370a",
+      "TopicPublish": "W/JSON/WQS/V1/J2251P3M001N001",
+      "Topic": "R/JSON/WQS/V1/J2251P3M001N001",
+      "SimNumber": "8984048000339034814",
+      "SNShortName": "Cống Tre Bông - CT - BT",
+      "SNDescription": "Cống Tre Bông - CT - BT",
+      "SNShortNameEN": "Tre Bong Sluice Gate - CT - BT",
+      "SNDescriptionEN": "Tre Bong Sluice Gate - CT - BT",
+      "SerialNumber": "J2251P3M001N001",
+      "ProvinceCodeOld": "28861",
+      "ProvinceNameOld": "Xã Tiên Thủy",
+      "Temperature": 0,
+      "AirTemperature": 32.15,
+      "Conductivity": null,
+      "Salinity": 0.05,
+      "PH": 0,
+      "DateTimeAdr": "2026-09-02T06:30:00.000Z",
+      "WaterLevelInfo": {
+        "_id": "6a97bdd3997858ddc1f4fcd8",
+        "IDAWD": "WLS7401071",
+        "WaterLevel": -70,
+        "SendDate": "2026-09-02T06:30:00.000Z",
+        "CalibValue": 282,
+        "AdrWaterLevel": 352.19
+      }
+    }
+  ]
+}

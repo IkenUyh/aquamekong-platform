@@ -1,0 +1,85 @@
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "6a971648997858ddc1f43af6",
+      "SensorNodeCode": "F0139R1M002N008",
+      "Longitude": 105.148434,
+      "Latitude": 9.781452,
+      "WarningSalinity": 50,
+      "ListSettingsWarning": {},
+      "LongitudeSetup": 105.148434,
+      "LatitudeSetup": 9.781452,
+      "DeviceCalib": {
+        "SubscribeTime": null,
+        "SampleTime": 15,
+        "Calibrate": 0
+      },
+      "IsShowPublic": 1,
+      "IsUserAdd": 0,
+      "PolyPath": [],
+      "GateWayCode": "F0139R1M002N008",
+      "SensorType": 1,
+      "ListSettingsAlert": {},
+      "SettingCalib": {
+        "TemperatureCalib": 0,
+        "PHCalib": 0,
+        "SalinityCalib": 0
+      },
+      "ProvinceName": "Xã Định Hòa",
+      "ProvinceCode": "30958",
+      "ListParamSetting": {
+        "TEMPERATURE": 0,
+        "PH": 1,
+        "SALINITY": 1,
+        "WATERLEVEL": 1
+      },
+      "Status": 1,
+      "DeleteBy": "",
+      "DeleteDate": null,
+      "SNActiveDate": "2019-07-09T17:00:00.000Z",
+      "SNCreateDate": "2019-06-06T08:00:29.945Z",
+      "SNExpireDate": "2019-08-06T17:00:00.000Z",
+      "AreaMK": "bc886b73-5cfc-4119-85c9-fe238275a432",
+      "TopicPublish": "W/JSON/WQS/V1/F0139R1M002N008",
+      "Topic": "R/JSON/WQS/V1/F0139R1M002N008",
+      "SimNumber": "0387918571",
+      "SNShortName": "Cầu Cả Mới Lớn - GQ - KG",
+      "SNDescription": "Cầu Cả Mới Lớn - GQ - KG",
+      "SNShortNameEN": "Ca Moi Lon Bridge - GQ - KG",
+      "SNDescriptionEN": "Ca Moi Lon Bridge - GQ - KG",
+      "SerialNumber": "F0139R1M002N008",
+      "IndexShow": 68.13,
+      "SettingViewMap": {
+        "Zoom": "13",
+        "longne": "105.16639709472656",
+        "latne": "9.801976203918457"
+      },
+      "ListSettingChart": {
+        "RoundNumberSalinity": 2
+      },
+      "NameLine_2": "Cả Mới Lớn",
+      "NameLine_1": "Cầu",
+      "ListImage": [
+        "Images/MeKong_AvatarStaff/F0139R1M002N008/F0139R1M002N008/nguyen.tranhoang_288198_DxdproLxIy.jpg",
+        "Images/MeKong_AvatarStaff/F0139R1M002N008/F0139R1M002N008/nguyen.tranhoang_277071_06Ce6F3VLI.jpg"
+      ],
+      "ProvinceCodeOld": "30961",
+      "ProvinceNameOld": "Xã Thới Quản",
+      "Temperature": 0,
+      "AirTemperature": 26.89,
+      "Conductivity": null,
+      "Salinity": 0.27,
+      "PH": 6.44,
+      "DateTimeAdr": "2026-09-01T18:15:00.000Z",
+      "WaterLevelInfo": {
+        "_id": "6a971648997858ddc1f43aef",
+        "IDAWD": "WLS7401012",
+        "WaterLevel": 24,
+        "SendDate": "2026-09-01T18:15:00.000Z",
+        "CalibValue": 111,
+        "AdrWaterLevel": 86.9
+      }
+    }
+  ]
+}

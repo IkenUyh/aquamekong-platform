@@ -1,0 +1,94 @@
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "6a97bb87997858ddc1f4fac7",
+      "SensorNodeCode": "L1119R2M001N001",
+      "Longitude": 106.28536987305,
+      "Latitude": 10.041999816894,
+      "WarningSalinity": 5,
+      "ListSettingsWarning": {},
+      "LongitudeSetup": 106.28536987305,
+      "LatitudeSetup": 10.041999816894,
+      "IndexShow": 71.11,
+      "DeviceCalib": {
+        "Calibrate": 0,
+        "SampleTime": 15,
+        "SubscribeTime": 0
+      },
+      "IsShowPublic": 1,
+      "IsUserAdd": 1,
+      "PolyPath": [],
+      "GateWayCode": "L1119R2M001N001",
+      "SensorType": 1,
+      "ListSettingsAlert": {},
+      "SettingCalib": {
+        "SalinityCalib": 0,
+        "PHCalib": 0,
+        "TemperatureCalib": 0
+      },
+      "ProvinceName": "Xã Thành Thới",
+      "ProvinceCode": "28969",
+      "ListParamSetting": {
+        "SALINITY": 1,
+        "PH": 0,
+        "TEMPERATURE": 0,
+        "WATERLEVEL": 1,
+        "DO": 0
+      },
+      "Status": 1,
+      "DeleteBy": "",
+      "DeleteDate": null,
+      "SNActiveDate": "2020-04-06T17:00:00.000Z",
+      "SNCreateDate": "2019-12-12T02:47:50.737Z",
+      "SNExpireDate": "2020-12-11T17:00:00.000Z",
+      "AreaMK": "cf202151-dda4-4efb-8387-132702490845",
+      "TopicPublish": "W/JSON/WQS/V1/L1119R2M001N001",
+      "Topic": "R/JSON/WQS/V1/L1119R2M001N001",
+      "SimNumber": "8984048000933340850",
+      "SNShortName": "Phà Cổ Chiên - MCN - BT",
+      "SNDescription": "Phà Cổ Chiên - MCN - BT",
+      "SNShortNameEN": "Co Chien Ferry - MCN - BT",
+      "SNDescriptionEN": "Co Chien Bridge - MCN - BT",
+      "SerialNumber": "L1119R2M001N001",
+      "SettingViewMap": {},
+      "DistanceToSea": 40,
+      "ListSettingChart": {
+        "RoundNumberSalinity": 2
+      },
+      "NameLine_1": "Phà",
+      "NameLine_2": "Cổ Chiên",
+      "ListImage": [
+        "Images/MeKong_AvatarStaff/L1119R2M001N001/L1119R2M001N001/nguyen.tranhoang_328860_MuJ7kTOcHx.jpg",
+        "Images/MeKong_AvatarStaff/L1119R2M001N001/L1119R2M001N001/nguyen.tranhoang_554594_GqUPGgl4Go.jpg"
+      ],
+      "ProvinceCodeOld": "28960",
+      "ProvinceNameOld": "Xã Thành Thới B",
+      "Temperature": 0,
+      "AirTemperature": 32.22,
+      "Conductivity": null,
+      "Salinity": 0.05,
+      "PH": 0,
+      "DateTimeAdr": "2026-09-02T06:00:00.000Z",
+      "AKLSensorInfo": {
+        "Description": "",
+        "SerialNumber": "L0159R1M001N001",
+        "SensorCode": "L0159R1M001N001",
+        "DateTimeAdr": "2026-08-12T10:58:30.000Z",
+        "PHBefore": 6.903,
+        "PHAfter": 4.106,
+        "Alkalinity": 58.911,
+        "ProcessTime": 2344,
+        "RSSI": "75"
+      },
+      "WaterLevelInfo": {
+        "_id": "6a97bb87997858ddc1f4fac0",
+        "IDAWD": "WLS7401038",
+        "WaterLevel": -66,
+        "SendDate": "2026-09-02T06:00:00.000Z",
+        "CalibValue": 332,
+        "AdrWaterLevel": 397.82
+      }
+    }
+  ]
+}

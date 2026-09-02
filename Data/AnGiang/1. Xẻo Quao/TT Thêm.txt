@@ -1,0 +1,78 @@
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "6a9713a5997858ddc1f4385e",
+      "SensorNodeCode": "A1245R1M003N004",
+      "WarningSalinity": 5,
+      "ListSettingsWarning": {},
+      "IndexShow": 0,
+      "ListImage": [
+        "Images/MeKong_AvatarStaff/A1245R1M003N004/A1245R1M003N004/yenthanh.nguyen_983338_hyjKluRgin.jpg",
+        "Images/MeKong_AvatarStaff/A1245R1M003N004/A1245R1M003N004/yenthanh.nguyen_814718_XJ77ZE6WUQ.jpg",
+        "Images/MeKong_AvatarStaff/A1245R1M003N004/A1245R1M003N004/yenthanh.nguyen_872765_UK13uehCBr.jpg"
+      ],
+      "NameLine_2": "An Biên - Kiên Giang",
+      "NameLine_1": "KCVH - Xẻo Quao",
+      "DeviceCalib": {
+        "Calibrate": 0,
+        "SampleTime": 15,
+        "SubscribeTime": null
+      },
+      "IsShowPublic": 1,
+      "IsUserAdd": 1,
+      "PolyPath": [],
+      "GateWayCode": "A1245R1M003N004",
+      "SensorType": 1,
+      "ListSettingsAlert": {},
+      "SettingCalib": {
+        "TemperatureCalib": null,
+        "PHCalib": null,
+        "SalinityCalib": null
+      },
+      "ProvinceName": "Xã Đông Thái",
+      "ProvinceCode": "31006",
+      "ListParamSetting": {
+        "WATERLEVEL": 1,
+        "TEMPERATURE": 0,
+        "PH": 0,
+        "SALINITY": 1
+      },
+      "Status": 1,
+      "DeleteBy": "",
+      "DeleteDate": null,
+      "SNActiveDate": "2025-01-19T17:00:00.000Z",
+      "SNCreateDate": "2025-01-17T02:27:08.564Z",
+      "SNExpireDate": "2025-01-19T17:00:00.000Z",
+      "AreaMK": "c767e513-903c-4a76-9da7-de58510f54f8",
+      "TopicPublish": "W/JSON/WQS/V1/A1245R1M003N004",
+      "Topic": "R/JSON/WQS/V1/A1245R1M003N004",
+      "SimNumber": "933384424",
+      "SNShortName": "KCVH - Xẻo Quao",
+      "SNDescription": "KCVH - Xẻo Quao",
+      "SNShortNameEN": "KCVH - Xeo Quao",
+      "SNDescriptionEN": "KCVH - Xeo Quao",
+      "SerialNumber": "A1245R1M003N004",
+      "Latitude": 9.7604547,
+      "Longitude": 105.0037609,
+      "LatitudeSetup": 9.7604547,
+      "LongitudeSetup": 105.0037609,
+      "ProvinceCodeOld": "31006",
+      "ProvinceNameOld": "Xã Đông Thái",
+      "Temperature": 0,
+      "AirTemperature": 27.19,
+      "Conductivity": null,
+      "Salinity": 3.55,
+      "PH": 0,
+      "DateTimeAdr": "2026-09-01T18:05:00.000Z",
+      "WaterLevelInfo": {
+        "_id": "6a9713a5997858ddc1f43857",
+        "IDAWD": "A1245R1M003N004",
+        "WaterLevel": 34,
+        "SendDate": "2026-09-01T18:05:00.000Z",
+        "CalibValue": 227,
+        "AdrWaterLevel": 192.78
+      }
+    }
+  ]
+}

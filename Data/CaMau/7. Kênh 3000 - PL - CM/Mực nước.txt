@@ -1,0 +1,207 @@
+{
+  "success": true,
+  "data": [
+    {
+      "data": [
+        {
+          "MinWaterLevel": 63,
+          "MaxWaterLevel": 74,
+          "Time": 1,
+          "TimeLabel": "1"
+        },
+        {
+          "MinWaterLevel": 60,
+          "MaxWaterLevel": 72,
+          "Time": 2,
+          "TimeLabel": "2"
+        },
+        {
+          "MinWaterLevel": 59,
+          "MaxWaterLevel": 71,
+          "Time": 3,
+          "TimeLabel": "3"
+        },
+        {
+          "MinWaterLevel": 58,
+          "MaxWaterLevel": 69,
+          "Time": 4,
+          "TimeLabel": "4"
+        },
+        {
+          "MinWaterLevel": 54,
+          "MaxWaterLevel": 63,
+          "Time": 5,
+          "TimeLabel": "5"
+        },
+        {
+          "MinWaterLevel": 50,
+          "MaxWaterLevel": 62,
+          "Time": 6,
+          "TimeLabel": "6"
+        },
+        {
+          "MinWaterLevel": 50,
+          "MaxWaterLevel": 62,
+          "Time": 7,
+          "TimeLabel": "7"
+        },
+        {
+          "MinWaterLevel": 49,
+          "MaxWaterLevel": 60,
+          "Time": 8,
+          "TimeLabel": "8"
+        },
+        {
+          "MinWaterLevel": 48,
+          "MaxWaterLevel": 61,
+          "Time": 9,
+          "TimeLabel": "9"
+        },
+        {
+          "MinWaterLevel": 47,
+          "MaxWaterLevel": 60,
+          "Time": 10,
+          "TimeLabel": "10"
+        },
+        {
+          "MinWaterLevel": 48,
+          "MaxWaterLevel": 60,
+          "Time": 11,
+          "TimeLabel": "11"
+        },
+        {
+          "MinWaterLevel": 47,
+          "MaxWaterLevel": 60,
+          "Time": 12,
+          "TimeLabel": "12"
+        },
+        {
+          "MinWaterLevel": 46,
+          "MaxWaterLevel": 58,
+          "Time": 13,
+          "TimeLabel": "13"
+        },
+        {
+          "MinWaterLevel": 49,
+          "MaxWaterLevel": 59,
+          "Time": 14,
+          "TimeLabel": "14"
+        },
+        {
+          "MinWaterLevel": 47,
+          "MaxWaterLevel": 62,
+          "Time": 15,
+          "TimeLabel": "15"
+        },
+        {
+          "MinWaterLevel": 53,
+          "MaxWaterLevel": 63,
+          "Time": 16,
+          "TimeLabel": "16"
+        },
+        {
+          "MinWaterLevel": 53,
+          "MaxWaterLevel": 62,
+          "Time": 17,
+          "TimeLabel": "17"
+        },
+        {
+          "MinWaterLevel": 51,
+          "MaxWaterLevel": 64,
+          "Time": 18,
+          "TimeLabel": "18"
+        },
+        {
+          "MinWaterLevel": 57,
+          "MaxWaterLevel": 66,
+          "Time": 19,
+          "TimeLabel": "19"
+        },
+        {
+          "MinWaterLevel": 55,
+          "MaxWaterLevel": 64,
+          "Time": 20,
+          "TimeLabel": "20"
+        },
+        {
+          "MinWaterLevel": 54,
+          "MaxWaterLevel": 62,
+          "Time": 21,
+          "TimeLabel": "21"
+        },
+        {
+          "MinWaterLevel": 54,
+          "MaxWaterLevel": 62,
+          "Time": 22,
+          "TimeLabel": "22"
+        },
+        {
+          "MinWaterLevel": 52,
+          "MaxWaterLevel": 60,
+          "Time": 23,
+          "TimeLabel": "23"
+        },
+        {
+          "MinWaterLevel": 50,
+          "MaxWaterLevel": 61,
+          "Time": 24,
+          "TimeLabel": "24"
+        },
+        {
+          "MinWaterLevel": 55,
+          "MaxWaterLevel": 62,
+          "Time": 25,
+          "TimeLabel": "25"
+        },
+        {
+          "MinWaterLevel": 50,
+          "MaxWaterLevel": 61,
+          "Time": 26,
+          "TimeLabel": "26"
+        },
+        {
+          "MinWaterLevel": 47,
+          "MaxWaterLevel": 59,
+          "Time": 27,
+          "TimeLabel": "27"
+        },
+        {
+          "MinWaterLevel": 48,
+          "MaxWaterLevel": 59,
+          "Time": 28,
+          "TimeLabel": "28"
+        },
+        {
+          "MinWaterLevel": 49,
+          "MaxWaterLevel": 61,
+          "Time": 29,
+          "TimeLabel": "29"
+        },
+        {
+          "MinWaterLevel": 56,
+          "MaxWaterLevel": 61,
+          "Time": 30,
+          "TimeLabel": "30"
+        },
+        {
+          "MinWaterLevel": 52,
+          "MaxWaterLevel": 60,
+          "Time": 31,
+          "TimeLabel": "31"
+        }
+      ],
+      "_id": "691b01a10b90733e02147193",
+      "IDAWD": "I3205P1M002N003",
+      "GateWayCode": "I3205P1M002N003",
+      "_idGateWay": "691b01187982803e10b3ce97",
+      "AWDType": 0,
+      "CalibType": 0,
+      "Status": 1,
+      "DateSetup": "2025-11-16T17:00:00.000Z",
+      "ShortNameEN": "",
+      "ShortName": "",
+      "Description": "Kinh 3000 - PL - CM"
+    }
+  ],
+  "dataAKL": "null"
+}

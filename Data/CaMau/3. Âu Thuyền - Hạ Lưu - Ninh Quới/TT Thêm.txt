@@ -1,0 +1,76 @@
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "6a97a0732df77aee47d8baed",
+      "SensorNodeCode": "C1215P1M003N008",
+      "Longitude": 105.519156,
+      "Latitude": 9.4921,
+      "WarningSalinity": 5,
+      "ListSettingsWarning": {},
+      "LongitudeSetup": 105.519156,
+      "LatitudeSetup": 9.4921,
+      "IndexShow": 0,
+      "ListImage": [
+        "Images/MeKong_AvatarStaff/C1215P1M003N008/C1215P1M003N008/yenthanh.nguyen_338699_vgtKOjhFvS.jpg"
+      ],
+      "NameLine_2": "HL - Ninh Quới",
+      "NameLine_1": "Âu Thuyền",
+      "DeviceCalib": {
+        "SubscribeTime": null,
+        "SampleTime": 5,
+        "Calibrate": 0
+      },
+      "IsShowPublic": 1,
+      "IsUserAdd": 1,
+      "PolyPath": [],
+      "GateWayCode": "C1215P1M003N008",
+      "SensorType": 1,
+      "ListSettingsAlert": {},
+      "SettingCalib": {
+        "TemperatureCalib": null,
+        "PHCalib": null,
+        "SalinityCalib": null
+      },
+      "ProvinceName": "Xã Ninh Quới",
+      "ProvinceCode": "31849",
+      "ListParamSetting": {
+        "WATERLEVEL": 1,
+        "TEMPERATURE": 0,
+        "PH": 0,
+        "SALINITY": 1
+      },
+      "Status": 1,
+      "DeleteBy": "",
+      "DeleteDate": null,
+      "SNActiveDate": "2025-12-27T17:00:00.000Z",
+      "SNCreateDate": "2025-12-24T08:41:18.868Z",
+      "SNExpireDate": "2026-12-27T17:00:00.000Z",
+      "AreaMK": "4c31982d-3233-42d7-b34b-fd9c6a274639",
+      "TopicPublish": "W/JSON/WQS/V1/C1215P1M003N008",
+      "Topic": "R/JSON/WQS/V1/C1215P1M003N008",
+      "SimNumber": "8984048000933384466",
+      "SNShortName": "Âu Thuyền - HL - Ninh Quới",
+      "SNDescription": "Âu Thuyền - HL - Ninh Quới",
+      "SNShortNameEN": "Ship Lock - HL - Ninh Quoi",
+      "SNDescriptionEN": "Ship Lock - HL - Ninh Quoi",
+      "SerialNumber": "C1215P1M003N008",
+      "ProvinceCodeOld": "31846",
+      "ProvinceNameOld": "Xã Ninh Quới",
+      "Temperature": 0,
+      "AirTemperature": 30.08,
+      "Conductivity": null,
+      "Salinity": 0.35,
+      "PH": 0,
+      "DateTimeAdr": "2026-09-02T04:05:00.000Z",
+      "WaterLevelInfo": {
+        "_id": "6a97a0732df77aee47d8bae6",
+        "IDAWD": "C1215P1M003N008",
+        "WaterLevel": 50,
+        "SendDate": "2026-09-02T04:05:00.000Z",
+        "CalibValue": 147.7,
+        "AdrWaterLevel": 98.2
+      }
+    }
+  ]
+}
