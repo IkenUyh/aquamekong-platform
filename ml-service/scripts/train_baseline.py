@@ -26,7 +26,7 @@ def train_baseline():
     criterion = nn.MSELoss()
     optimizer = Adam(model.parameters(), lr=0.001)
     
-    epochs = 50
+    epochs = 100
     
     print(f"Starting Training for {epochs} epochs...")
     for epoch in range(epochs):
