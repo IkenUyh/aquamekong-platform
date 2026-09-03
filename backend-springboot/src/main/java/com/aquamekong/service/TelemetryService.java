@@ -95,8 +95,9 @@ public class TelemetryService {
     /**
      * Scheduled broadcast: every 10 seconds, simulate new telemetry data.
      * In production, this would be triggered by real IoT sensor data.
+     * DISABLED: Now using real data from the Python Data Pipeline.
      */
-    @Scheduled(fixedDelayString = "${app.telemetry.broadcast-interval-ms:10000}")
+    // @Scheduled(fixedDelayString = "${app.telemetry.broadcast-interval-ms:10000}")
     public void simulateTelemetry() {
         if (emitters.isEmpty()) return;
 
