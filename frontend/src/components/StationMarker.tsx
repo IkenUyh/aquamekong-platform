@@ -77,20 +77,20 @@ export function StationMarker({ feature, isSelected, onClick }: StationMarkerPro
               <MetricRow
                 icon="💧"
                 label="Độ mặn"
-                value={properties.latestSalinity}
+                value={properties.latestSalinity ?? null}
                 unit="‰"
                 level={level}
               />
               <MetricRow
                 icon="🌊"
                 label="Mực nước"
-                value={properties.latestWaterLevel}
+                value={properties.latestWaterLevel ?? null}
                 unit="m"
               />
               <MetricRow
                 icon="💨"
                 label="Lưu lượng"
-                value={properties.latestFlowRate}
+                value={properties.latestFlowRate ?? null}
                 unit="m³/s"
               />
             </div>
