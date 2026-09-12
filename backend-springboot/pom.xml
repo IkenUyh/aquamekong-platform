@@ -20,7 +20,7 @@
     <properties>
         <java.version>21</java.version>
         <hibernate-spatial.version>6.6.3.Final</hibernate-spatial.version>
-        <springdoc.version>2.7.0</springdoc.version>
+        <springdoc.version>2.6.0</springdoc.version>
     </properties>
 
     <dependencies>
