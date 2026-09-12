@@ -100,7 +100,7 @@ export function StationPanel({ station, onClose }: StationPanelProps) {
             Lịch sử gần đây
           </h3>
           <div className="space-y-1">
-            {metrics.slice(0, 5).map((m) => (
+            {metrics.slice(0, 5).map((m: any) => (
               <div key={m.id} className="flex items-center justify-between text-xs py-1.5 px-2 rounded 
                                          hover:bg-dark-card/30 transition-colors">
                 <span className="text-slate-500 font-mono">
@@ -112,8 +112,7 @@ export function StationPanel({ station, onClose }: StationPanelProps) {
                   })}
                 </span>
                 <div className="flex items-center gap-3">
-                  <span className="text-cyan-400 font-mono">{m.salinity}‰</span>
-                  <span className="text-blue-400 font-mono">{m.waterLevel}m</span>
+                  <span className="text-cyan-400 font-mono">{m.value ?? m.salinity} {m.unit ?? '‰'}</span>
                 </div>
               </div>
             ))}
