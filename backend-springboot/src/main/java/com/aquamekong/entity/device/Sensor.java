@@ -3,6 +3,8 @@ package com.aquamekong.entity.device;
 import com.aquamekong.entity.enums.SensorStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.time.OffsetDateTime;
 
@@ -39,7 +41,8 @@ public class Sensor {
     private OffsetDateTime calibrationDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    @Column(nullable = false)
     @Builder.Default
     private SensorStatus status = SensorStatus.ACTIVE;
 

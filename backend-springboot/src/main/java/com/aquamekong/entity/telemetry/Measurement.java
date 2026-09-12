@@ -5,6 +5,8 @@ import com.aquamekong.entity.enums.QualityStatus;
 import com.aquamekong.entity.station.Station;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.time.OffsetDateTime;
 
@@ -42,7 +44,8 @@ public class Measurement {
     private OffsetDateTime recordedAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "quality_status", nullable = false, length = 20)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    @Column(name = "quality_status", nullable = false)
     @Builder.Default
     private QualityStatus qualityStatus = QualityStatus.VALID;
 

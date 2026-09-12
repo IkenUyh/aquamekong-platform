@@ -3,6 +3,8 @@ package com.aquamekong.entity.forecast;
 import com.aquamekong.entity.enums.ForecastRunStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.time.OffsetDateTime;
 
@@ -32,7 +34,8 @@ public class ForecastRun {
     private OffsetDateTime inputTo;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    @Column(nullable = false)
     @Builder.Default
     private ForecastRunStatus status = ForecastRunStatus.RUNNING;
 

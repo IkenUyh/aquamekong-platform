@@ -39,6 +39,7 @@ END $$;
 DROP TABLE IF EXISTS salinity_forecasts CASCADE;
 DROP TABLE IF EXISTS water_metrics CASCADE;
 DROP TABLE IF EXISTS stations CASCADE;
+DROP TABLE IF EXISTS rivers CASCADE;
 
 -- ------------------------------------------------------------
 -- 2. RIVERS

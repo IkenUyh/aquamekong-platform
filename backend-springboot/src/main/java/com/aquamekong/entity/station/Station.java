@@ -3,6 +3,8 @@ package com.aquamekong.entity.station;
 import com.aquamekong.entity.enums.StationStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 import org.locationtech.jts.geom.Point;
 
 import java.time.OffsetDateTime;
@@ -37,7 +39,8 @@ public class Station {
     private String province;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    @Column(nullable = false)
     @Builder.Default
     private StationStatus status = StationStatus.ACTIVE;
 

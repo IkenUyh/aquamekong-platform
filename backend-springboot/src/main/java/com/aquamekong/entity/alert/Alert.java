@@ -5,6 +5,8 @@ import com.aquamekong.entity.enums.AlertStatus;
 import com.aquamekong.entity.station.Station;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.time.OffsetDateTime;
 
@@ -39,11 +41,13 @@ public class Alert {
     private Double threshold;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    @Column(nullable = false)
     private AlertSeverity severity;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    @Column(nullable = false)
     @Builder.Default
     private AlertStatus status = AlertStatus.ACTIVE;
 
