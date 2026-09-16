@@ -1,3 +1,5 @@
+@import './styles/theme.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,15 +7,6 @@
 /* ===================================
    AquaMekong — Global Styles
    =================================== */
-
-:root {
-  --color-aqua-500: #06b6d4;
-  --color-aqua-600: #0891b2;
-  --color-aqua-700: #0e7490;
-  --color-dark-bg: #0f172a;
-  --color-dark-surface: #1e293b;
-  --color-dark-card: #334155;
-}
 
 * {
   margin: 0;
@@ -23,8 +16,8 @@
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background-color: var(--color-dark-bg);
-  color: #e2e8f0;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
   overflow: hidden;
 }
 
@@ -34,25 +27,25 @@ body {
 }
 
 /* ===================================
-   Leaflet Map Overrides
+   Leaflet Map Overrides (Light Theme)
    =================================== */
 .leaflet-container {
   width: 100%;
   height: 100%;
-  background-color: #1a2332;
+  background-color: #f1f5f9;
 }
 
 .leaflet-popup-content-wrapper {
-  background: #1e293b;
-  color: #e2e8f0;
+  background: var(--color-bg-white);
+  color: var(--color-text-primary);
   border-radius: 12px;
-  border: 1px solid #334155;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
 .leaflet-popup-tip {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border);
 }
 
 .leaflet-popup-content {
@@ -63,23 +56,23 @@ body {
 }
 
 .leaflet-control-zoom a {
-  background-color: #1e293b !important;
-  color: #e2e8f0 !important;
-  border-color: #334155 !important;
+  background-color: var(--color-bg-white) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border) !important;
 }
 
 .leaflet-control-zoom a:hover {
-  background-color: #334155 !important;
+  background-color: var(--color-bg) !important;
 }
 
 .leaflet-control-attribution {
-  background-color: rgba(15, 23, 42, 0.8) !important;
-  color: #94a3b8 !important;
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  color: var(--color-text-secondary) !important;
   font-size: 10px !important;
 }
 
 .leaflet-control-attribution a {
-  color: #06b6d4 !important;
+  color: var(--color-primary) !important;
 }
 
 /* ===================================
@@ -90,16 +83,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: #cbd5e1;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: #94a3b8;
 }
 
 /* ===================================
@@ -126,15 +119,11 @@ body {
 }
 
 /* ===================================
-   Glassmorphism utilities
+   Light Theme UI utilities
    =================================== */
 @layer components {
-  .glass-card {
-    @apply bg-dark-surface/80 backdrop-blur-xl border border-dark-border/50 rounded-xl;
-  }
-
-  .glass-panel {
-    @apply bg-dark-surface/90 backdrop-blur-2xl border-r border-dark-border/30;
+  .card {
+    @apply bg-white border border-gray-200 rounded-xl shadow-sm;
   }
 
   .metric-badge {
@@ -142,14 +131,14 @@ body {
   }
 
   .metric-badge-low {
-    @apply metric-badge bg-green-500/20 text-green-400 border border-green-500/30;
+    @apply metric-badge bg-green-50 text-green-600 border border-green-200;
   }
 
   .metric-badge-medium {
-    @apply metric-badge bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
+    @apply metric-badge bg-yellow-50 text-yellow-600 border border-yellow-200;
   }
 
   .metric-badge-high {
-    @apply metric-badge bg-red-500/20 text-red-400 border border-red-500/30;
+    @apply metric-badge bg-red-50 text-red-600 border border-red-200;
   }
 }

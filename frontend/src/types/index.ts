@@ -191,6 +191,7 @@ export interface TelemetryEvent {
   salinity?: number;
   waterLevel?: number;
   flowRate?: number;
+  rainfall?: number;
   recordedAt: string;
   salinityLevel?: SalinityLevel;
 }
