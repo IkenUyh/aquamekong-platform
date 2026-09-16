@@ -8,6 +8,11 @@ export default {
     extend: {
       colors: {
         // AquaMekong brand colors
+        primary: {
+          DEFAULT: '#4A90D9',
+          dark: '#3A7BC8',
+          light: '#6BA5E7',
+        },
         aqua: {
           50:  '#ecfeff',
           100: '#cffafe',
