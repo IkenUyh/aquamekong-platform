@@ -35,6 +35,10 @@ public class WaterMetric {
     @Column(name = "flow_rate")
     private Double flowRate;
 
+    /** Lượng mưa (mm) */
+    @Column(name = "rainfall")
+    private Double rainfall;
+
     /** Thời điểm đo */
     @Column(name = "recorded_at", nullable = false)
     private OffsetDateTime recordedAt;

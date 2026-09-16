@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Area, AreaChart
@@ -21,39 +22,40 @@ export function ForecastChart({ forecasts }: ForecastChartProps) {
   }));
 
   return (
-    <div className="glass-card p-3">
-      <ResponsiveContainer width="100%" height={180}>
+    <div className="h-[180px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
           <defs>
             <linearGradient id="salinityGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+              <stop offset="5%" stopColor="#4A90D9" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#4A90D9" stopOpacity={0} />
             </linearGradient>
             <linearGradient id="confidenceGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#64748b" stopOpacity={0.15} />
-              <stop offset="95%" stopColor="#64748b" stopOpacity={0} />
+              <stop offset="5%" stopColor="#E2E8F0" stopOpacity={0.5} />
+              <stop offset="95%" stopColor="#E2E8F0" stopOpacity={0.1} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
           <XAxis
             dataKey="date"
-            tick={{ fill: '#94a3b8', fontSize: 10 }}
-            axisLine={{ stroke: '#334155' }}
+            tick={{ fill: '#64748b', fontSize: 10 }}
+            axisLine={{ stroke: '#E2E8F0' }}
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: '#94a3b8', fontSize: 10 }}
-            axisLine={{ stroke: '#334155' }}
+            tick={{ fill: '#64748b', fontSize: 10 }}
+            axisLine={{ stroke: '#E2E8F0' }}
             tickLine={false}
-            label={{ value: '‰', position: 'insideTopLeft', fill: '#64748b', fontSize: 10 }}
+            label={{ value: '‰', position: 'insideTopLeft', fill: '#94a3b8', fontSize: 10 }}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: '#1e293b',
-              border: '1px solid #334155',
+              backgroundColor: '#ffffff',
+              border: '1px solid #E2E8F0',
               borderRadius: '8px',
               fontSize: '11px',
-              color: '#e2e8f0',
+              color: '#1e293b',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
             }}
             formatter={(value: number, name: string) => {
               const labels: Record<string, string> = {
@@ -81,11 +83,11 @@ export function ForecastChart({ forecasts }: ForecastChartProps) {
           <Area
             type="monotone"
             dataKey="salinity"
-            stroke="#06b6d4"
+            stroke="#4A90D9"
             strokeWidth={2}
             fill="url(#salinityGradient)"
-            dot={{ fill: '#06b6d4', r: 3, strokeWidth: 0 }}
-            activeDot={{ r: 5, fill: '#22d3ee', stroke: '#06b6d4', strokeWidth: 2 }}
+            dot={{ fill: '#4A90D9', r: 3, strokeWidth: 0 }}
+            activeDot={{ r: 5, fill: '#22d3ee', stroke: '#4A90D9', strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>

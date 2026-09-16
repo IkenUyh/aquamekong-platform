@@ -16,6 +16,7 @@ public class WaterMetricDto {
     private Double salinity;
     private Double waterLevel;
     private Double flowRate;
+    private Double rainfall;
     private OffsetDateTime recordedAt;
     private String salinityLevel; // "LOW", "MEDIUM", "HIGH"
 }

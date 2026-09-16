@@ -24,14 +24,16 @@ public class TelemetryService {
 
     private final List<SseEmitter> emitters = new CopyOnWriteArrayList<>();
     private final WaterMetricService waterMetricService;
+    private final AlertService alertService;
 
     // Station codes for simulated data
     private static final String[] STATION_CODES = {"CT-001", "MT-001", "BT-001", "TV-001", "ST-001", "CM-001"};
     private static final String[] STATION_NAMES = {"Trạm Cần Thơ", "Trạm Mỹ Tho", "Trạm Bến Tre",
             "Trạm Trà Vinh", "Trạm Sóc Trăng", "Trạm Cà Mau"};
 
-    public TelemetryService(WaterMetricService waterMetricService) {
+    public TelemetryService(WaterMetricService waterMetricService, AlertService alertService) {
         this.waterMetricService = waterMetricService;
+        this.alertService = alertService;
     }
 
     /**
@@ -101,33 +103,36 @@ public class TelemetryService {
         if (emitters.isEmpty()) return;
 
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        int stationIndex = random.nextInt(STATION_CODES.length);
+        
+        for (int stationIndex = 0; stationIndex < STATION_CODES.length; stationIndex++) {
+            // Generate realistic-looking data per station
+            double baseSalinity = switch (stationIndex) {
+                case 0 -> 0.3;   // Cần Thơ — low
+                case 1 -> 2.5;   // Mỹ Tho — medium
+                case 2 -> 5.5;   // Bến Tre — high
+                case 3 -> 3.8;   // Trà Vinh — medium-high
+                case 4 -> 5.0;   // Sóc Trăng — high
+                case 5 -> 9.0;   // Cà Mau — very high
+                default -> 1.0;
+            };
 
-        // Generate realistic-looking data per station
-        double baseSalinity = switch (stationIndex) {
-            case 0 -> 0.3;   // Cần Thơ — low
-            case 1 -> 2.5;   // Mỹ Tho — medium
-            case 2 -> 5.5;   // Bến Tre — high
-            case 3 -> 3.8;   // Trà Vinh — medium-high
-            case 4 -> 5.0;   // Sóc Trăng — high
-            case 5 -> 9.0;   // Cà Mau — very high
-            default -> 1.0;
-        };
+            WaterMetricDto simulatedData = WaterMetricDto.builder()
+                    .stationId((long) (stationIndex + 1))
+                    .stationCode(STATION_CODES[stationIndex])
+                    .stationName(STATION_NAMES[stationIndex])
+                    .salinity(Math.round((baseSalinity + random.nextDouble(-0.5, 0.5)) * 100.0) / 100.0)
+                    .waterLevel(Math.round((1.0 + random.nextDouble(-0.3, 0.3)) * 100.0) / 100.0)
+                    .flowRate(Math.round((3000 + random.nextDouble(-500, 500)) * 10.0) / 10.0)
+                    .rainfall(Math.round(random.nextDouble(0, 30) * 10.0) / 10.0)
+                    .recordedAt(OffsetDateTime.now())
+                    .build();
 
-        WaterMetricDto simulatedData = WaterMetricDto.builder()
-                .stationId((long) (stationIndex + 1))
-                .stationCode(STATION_CODES[stationIndex])
-                .stationName(STATION_NAMES[stationIndex])
-                .salinity(Math.round((baseSalinity + random.nextDouble(-0.5, 0.5)) * 100.0) / 100.0)
-                .waterLevel(Math.round((1.0 + random.nextDouble(-0.3, 0.3)) * 100.0) / 100.0)
-                .flowRate(Math.round((3000 + random.nextDouble(-500, 500)) * 10.0) / 10.0)
-                .recordedAt(OffsetDateTime.now())
-                .build();
+            simulatedData.setSalinityLevel(StationService.classifySalinity(simulatedData.getSalinity()));
 
-        simulatedData.setSalinityLevel(StationService.classifySalinity(simulatedData.getSalinity()));
-
-        broadcast(simulatedData);
-        log.debug("Broadcast telemetry: {} salinity={}‰", simulatedData.getStationCode(), simulatedData.getSalinity());
+            broadcast(simulatedData);
+            alertService.checkAndCreateAlert(simulatedData.getStationId(), simulatedData.getSalinity());
+            log.debug("Broadcast telemetry: {} salinity={}‰", simulatedData.getStationCode(), simulatedData.getSalinity());
+        }
     }
 
     public int getActiveConnectionCount() {
