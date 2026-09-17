@@ -8,6 +8,8 @@ import type { AlertDto } from '../types/alert';
 import { HistoryChart } from '../components/HistoryChart';
 import { useQuery } from '@tanstack/react-query';
 import { alertApi } from '../api/alertApi';
+import { metricApi } from '../api/client';
+import apiClient from '../api/client';
 
 export function AlertsPage() {
   const { data: alerts = [], isLoading } = useQuery({
@@ -26,11 +28,29 @@ export function AlertsPage() {
     }
   }, [alerts, selectedAlert]);
 
+  const { data: counts = { CRITICAL: 0, WARNING: 0, INFO: 0 } } = useQuery({
+    queryKey: ['alerts', 'counts'],
+    queryFn: alertApi.getCountBySeverity,
+    refetchInterval: 30000,
+  });
+
+  const { data: recommendations = [] } = useQuery({
+    queryKey: ['recommendations'],
+    queryFn: () => apiClient.get('/recommendations').then(r => r.data),
+    enabled: !!selectedAlert,
+  });
+
+  const { data: metrics = [] } = useQuery({
+    queryKey: ['metrics', selectedAlert?.stationId],
+    queryFn: () => metricApi.getByStation(selectedAlert!.stationId),
+    enabled: !!selectedAlert,
+  });
+
   const columns: Column<AlertDto>[] = [
-    { key: 'severity', header: 'Mức độ', render: (a) => <StatusBadge level={a.alertLevel as StatusLevel || 'INFO'} /> },
+    { key: 'severity', header: 'Mức độ', render: (a) => <StatusBadge level={a.severity as StatusLevel || 'INFO'} /> },
     { key: 'station', header: 'Trạm', render: (a) => <span className="font-semibold text-gray-800">{a.stationName?.split(' ')[0] || `Trạm ${a.stationId}`}</span> },
-    { key: 'province', header: 'Tỉnh/Thành', render: () => 'Tiền Giang' },
-    { key: 'salinity', header: 'Độ mặn (‰)', render: (a) => <span className="font-bold" style={{ color: a.alertLevel === 'CRITICAL' ? '#ef4444' : a.alertLevel === 'WARNING' ? '#eab308' : '#22c55e' }}>{'>'} {a.measuredValue?.toFixed(1) || 0}</span> },
+    { key: 'province', header: 'Tỉnh/Thành', render: (a) => a.province || '—' },
+    { key: 'salinity', header: 'Độ mặn (‰)', render: (a) => <span className="font-bold" style={{ color: a.severity === 'CRITICAL' ? '#ef4444' : a.severity === 'WARNING' ? '#eab308' : '#22c55e' }}>{'>'} {a.actualValue?.toFixed(1) || 0}</span> },
     { key: 'time', header: 'Thời gian', render: (a) => new Date(a.createdAt).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) + ' ' + new Date(a.createdAt).toLocaleDateString('vi-VN') },
     { key: 'status', header: 'Trạng thái', render: (a) => a.message },
   ];
@@ -93,9 +113,9 @@ export function AlertsPage() {
           </div>
           
           <div className="grid grid-cols-3 gap-4 mb-2">
-            <SummaryCounter count={3} label="Trạm nguy hiểm" colorClass="text-red-500" icon={<AlertCircle className="w-5 h-5" />} />
-            <SummaryCounter count={5} label="Trạm cảnh báo" colorClass="text-yellow-500" icon={<AlertTriangle className="w-5 h-5" />} />
-            <SummaryCounter count={7} label="Trạm theo dõi" colorClass="text-blue-500" icon={<Info className="w-5 h-5" />} />
+            <SummaryCounter count={counts.CRITICAL || 0} label="Trạm nguy hiểm" colorClass="text-red-500" icon={<AlertCircle className="w-5 h-5" />} />
+            <SummaryCounter count={counts.WARNING || 0} label="Trạm cảnh báo" colorClass="text-yellow-500" icon={<AlertTriangle className="w-5 h-5" />} />
+            <SummaryCounter count={counts.INFO || 0} label="Trạm theo dõi" colorClass="text-blue-500" icon={<Info className="w-5 h-5" />} />
           </div>
           
           <div className="flex-1 overflow-hidden mt-2">
@@ -118,10 +138,10 @@ export function AlertsPage() {
           <div className="h-full flex flex-col space-y-4">
             <h2 className="font-bold text-lg text-gray-800 mb-2">Chi tiết cảnh báo</h2>
             
-            <div className={`p-4 rounded-xl border ${selectedAlert.alertLevel === 'CRITICAL' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-yellow-50 border-yellow-200 text-yellow-700'}`}>
+            <div className={`p-4 rounded-xl border ${selectedAlert.severity === 'CRITICAL' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-yellow-50 border-yellow-200 text-yellow-700'}`}>
               <div className="flex items-center gap-2 mb-1 font-bold">
-                {selectedAlert.alertLevel === 'CRITICAL' ? <AlertCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
-                {selectedAlert.alertLevel === 'CRITICAL' ? 'Nguy hiểm' : 'Cảnh báo'}
+                {selectedAlert.severity === 'CRITICAL' ? <AlertCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                {selectedAlert.severity === 'CRITICAL' ? 'Nguy hiểm' : 'Cảnh báo'}
               </div>
               <p className="text-sm opacity-80">{selectedAlert.stationName}</p>
             </div>
@@ -130,34 +150,26 @@ export function AlertsPage() {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Độ mặn hiện tại</p>
-                  <p className="text-3xl font-bold text-red-600">{selectedAlert.measuredValue?.toFixed(1) || 0}‰</p>
+                  <p className="text-3xl font-bold text-red-600">{selectedAlert.actualValue?.toFixed(1) || 0}‰</p>
                 </div>
                 <div className="text-right">
-                  <div className="inline-flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold mb-1">
-                    <TrendingUp className="w-3 h-3" /> 1.8% so với hôm qua
-                  </div>
-                  <p className="text-[10px] text-gray-400">09:00 17/05/2025</p>
+                  {/* delta removed as it requires historic metric querying for the specific alert time */}
+                  <p className="text-[10px] text-gray-400">{new Date(selectedAlert.createdAt).toLocaleString('vi-VN')}</p>
                 </div>
               </div>
               
               <div className="h-[200px] -mx-4">
-                {/* Mock chart for detail panel */}
                 <HistoryChart 
-                  metrics={[
-                    { id: 1, stationId: 1, stationCode: '', stationName: '', salinity: 3.5, waterLevel: 0, flowRate: 0, recordedAt: '2025-05-17T00:00:00Z', salinityLevel: 'MEDIUM' },
-                    { id: 1, stationId: 1, stationCode: '', stationName: '', salinity: 4.1, waterLevel: 0, flowRate: 0, recordedAt: '2025-05-17T04:00:00Z', salinityLevel: 'MEDIUM' },
-                    { id: 1, stationId: 1, stationCode: '', stationName: '', salinity: 5.2, waterLevel: 0, flowRate: 0, recordedAt: '2025-05-17T06:00:00Z', salinityLevel: 'HIGH' },
-                    { id: 1, stationId: 1, stationCode: '', stationName: '', salinity: 6.1, waterLevel: 0, flowRate: 0, recordedAt: '2025-05-17T09:00:00Z', salinityLevel: 'HIGH' },
-                  ]}
-                  stationName=""
-                  threshold={4.0}
+                  metrics={metrics}
+                  stationName={selectedAlert.stationName}
+                  threshold={selectedAlert.thresholdValue}
                 />
               </div>
 
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <h4 className="font-bold text-sm text-gray-800 mb-2">Nguy cơ</h4>
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  Vượt ngưỡng 4‰. Có nguy cơ ảnh hưởng đến sản xuất nông nghiệp và cấp nước sinh hoạt.
+                  Vượt ngưỡng {selectedAlert.thresholdValue}‰. {selectedAlert.severity === 'CRITICAL' ? 'Có nguy cơ ảnh hưởng nghiêm trọng đến sản xuất nông nghiệp và cấp nước sinh hoạt.' : 'Cần theo dõi sát diễn biến độ mặn.'}
                 </p>
               </div>
             </div>
@@ -168,18 +180,14 @@ export function AlertsPage() {
                 Khuyến nghị
               </div>
               <ul className="space-y-2 text-sm text-gray-700">
-                <li className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                  Đóng cống lấy ngọt khi độ mặn {'>'} 4‰.
-                </li>
-                <li className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                  Tăng cường trữ nước nội đồng.
-                </li>
-                <li className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                  Ưu tiên cấp nước sinh hoạt.
-                </li>
+                {recommendations.length > 0 ? recommendations.map((rec: any, idx: number) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                    {rec.message}
+                  </li>
+                )) : (
+                  <li className="flex items-start gap-2 text-gray-500 italic">Đang tải khuyến nghị...</li>
+                )}
               </ul>
             </div>
           </div>

@@ -9,5 +9,6 @@ export interface AlertDto {
   thresholdValue: number;
   actualValue: number;
   isResolved: boolean;
+  province: string;
   createdAt: string;
 }

@@ -15,5 +15,6 @@ public class AlertDto {
     private Double thresholdValue;
     private Double actualValue;
     private Boolean isResolved;
+    private String province;
     private OffsetDateTime createdAt;
 }

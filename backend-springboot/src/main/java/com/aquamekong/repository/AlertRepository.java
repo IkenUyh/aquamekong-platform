@@ -12,4 +12,5 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     List<Alert> findByStationIdOrderByCreatedAtDesc(Long stationId);
     List<Alert> findByIsResolvedFalseOrderByCreatedAtDesc();
     long countByIsResolvedFalse();
+    long countBySeverityAndIsResolvedFalse(String severity);
 }

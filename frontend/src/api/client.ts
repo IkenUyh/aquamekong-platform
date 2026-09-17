@@ -51,24 +51,15 @@ export const stationApi = {
         properties: s
       }))
     };
-    // Since backend returns List<StationDto>, we need to map it if backend endpoint is /stations/geojson or just map frontend
-    // Assuming backend /stations returns list, we map it to FeatureCollection here
     return withFallback(
-      apiClient.get<Station[]>('/stations').then((r) => ({
-        type: "FeatureCollection",
-        features: r.data.map(s => ({
-          type: "Feature",
-          geometry: { type: "Point", coordinates: [s.longitude, s.latitude] },
-          properties: s
-        }))
-      }) as any), 
+      apiClient.get<GeoJsonFeatureCollection>('/stations').then((r) => r.data), 
       fallback
     );
   },
 
   getAllList: () => 
     withFallback(
-      apiClient.get<Station[]>('/stations').then((r) => r.data),
+      apiClient.get<Station[]>('/stations/list').then((r) => r.data),
       MOCK_STATIONS_LIST
     ),
 

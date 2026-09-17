@@ -38,4 +38,10 @@ public class AlertController {
     public ResponseEntity<Map<String, Long>> getUnresolvedCount() {
         return ResponseEntity.ok(Map.of("count", alertService.getUnresolvedCount()));
     }
+
+    @GetMapping("/count-by-severity")
+    @Operation(summary = "Đếm cảnh báo theo mức độ")
+    public ResponseEntity<Map<String, Long>> getAlertCountsBySeverity() {
+        return ResponseEntity.ok(alertService.getAlertCountsBySeverity());
+    }
 }

@@ -19,11 +19,17 @@ interface MetricSummaryDto {
 export function SummaryMetricCards() {
   const { data: summary } = useQuery({
     queryKey: ['metrics', 'summary'],
-    queryFn: () => Promise.resolve({
-      rainfall: 12.5, rainfallDeltaPercent: 5.2, rainfallPeriod: "24 giờ qua",
-      flowRate: 2450.0, flowRateDeltaPercent: -2.1, flowRateStation: "Vàm Cỏ",
-      waterLevel: 1.45, waterLevelDelta: 0.12, waterLevelStation: "Vàm Cỏ"
-    } as MetricSummaryDto),
+    queryFn: () => {
+      const fallback = {
+        rainfall: 12.5, rainfallDeltaPercent: 5.2, rainfallPeriod: "24 giờ qua",
+        flowRate: 2450.0, flowRateDeltaPercent: -2.1, flowRateStation: "Vàm Cỏ",
+        waterLevel: 1.45, waterLevelDelta: 0.12, waterLevelStation: "Vàm Cỏ"
+      } as MetricSummaryDto;
+      
+      return apiClient.get<MetricSummaryDto>('/metrics/summary')
+        .then(r => r.data)
+        .catch(() => fallback); // Or use withFallback if imported
+    },
     refetchInterval: 30000,
   });
 

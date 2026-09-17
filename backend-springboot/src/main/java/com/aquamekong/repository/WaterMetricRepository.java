@@ -44,4 +44,6 @@ public interface WaterMetricRepository extends JpaRepository<WaterMetric, Long> 
         LIMIT 1
         """, nativeQuery = true)
     WaterMetric findLatestByStationId(@Param("stationId") Long stationId);
+
+    List<WaterMetric> findByRecordedAtAfterOrderByRecordedAtAsc(OffsetDateTime after);
 }

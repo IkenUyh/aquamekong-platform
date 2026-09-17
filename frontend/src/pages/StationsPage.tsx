@@ -15,6 +15,9 @@ export function StationsPage() {
   const totalPages = Math.ceil(stationsList.length / itemsPerPage);
   const currentData = stationsList.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
+  const provinces = [...new Set(stationsList.map(s => s.province).filter(Boolean))];
+  const rivers = [...new Set(stationsList.map(s => s.riverName).filter(Boolean))];
+
   const columns: Column<Station>[] = [
     { key: 'name', header: 'Tên trạm', render: (s) => <span className="font-semibold text-gray-800">{s.name}</span> },
     { key: 'river', header: 'Sông', render: (s) => s.riverName },
@@ -59,8 +62,7 @@ export function StationsPage() {
               <label className="text-xs font-semibold text-gray-500 mb-1 block">Tỉnh/Thành phố</label>
               <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500">
                 <option>Tất cả tỉnh thành</option>
-                <option>Tiền Giang</option>
-                <option>Bến Tre</option>
+                {provinces.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
             
@@ -68,8 +70,7 @@ export function StationsPage() {
               <label className="text-xs font-semibold text-gray-500 mb-1 block">Sông</label>
               <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500">
                 <option>Tất cả sông</option>
-                <option>Sông Tiền</option>
-                <option>Sông Hậu</option>
+                {rivers.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
 

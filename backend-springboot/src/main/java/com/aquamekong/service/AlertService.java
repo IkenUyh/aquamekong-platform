@@ -78,6 +78,14 @@ public class AlertService {
         return alertRepository.countByIsResolvedFalse();
     }
 
+    public java.util.Map<String, Long> getAlertCountsBySeverity() {
+        return java.util.Map.of(
+            "CRITICAL", alertRepository.countBySeverityAndIsResolvedFalse("CRITICAL"),
+            "WARNING", alertRepository.countBySeverityAndIsResolvedFalse("WARNING"),
+            "INFO", alertRepository.countBySeverityAndIsResolvedFalse("INFO")
+        );
+    }
+
     private AlertDto toDto(Alert alert) {
         return AlertDto.builder()
             .id(alert.getId())
@@ -90,6 +98,7 @@ public class AlertService {
             .thresholdValue(alert.getThresholdValue())
             .actualValue(alert.getActualValue())
             .isResolved(alert.getIsResolved())
+            .province(alert.getStation().getProvince())
             .createdAt(alert.getCreatedAt())
             .build();
     }

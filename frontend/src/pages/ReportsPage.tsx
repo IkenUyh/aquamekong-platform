@@ -7,6 +7,9 @@ import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tool
 import { FileText, Droplets, AlertTriangle, CloudRain, Waves } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { reportApi } from '../api/reportApi';
+import { stationApi } from '../api/client';
+import apiClient from '../api/client';
+import { useMemo } from 'react';
 
 export function ReportsPage() {
   const { data: trendData = [] } = useQuery({
@@ -18,6 +21,45 @@ export function ReportsPage() {
     queryKey: ['reports', 'topStations'],
     queryFn: reportApi.getTopStations,
   });
+
+  const { data: stations = [] } = useQuery({
+    queryKey: ['stations', 'list'],
+    queryFn: stationApi.getAllList,
+  });
+
+  const { data: summary } = useQuery({
+    queryKey: ['metrics', 'summary'],
+    queryFn: () => apiClient.get('/metrics/summary').then(r => r.data),
+  });
+
+  const avgSalinity = useMemo(() => {
+    if (!stations.length) return 0;
+    const sum = stations.reduce((acc, s) => acc + (s.latestSalinity || 0), 0);
+    return (sum / stations.length).toFixed(1);
+  }, [stations]);
+
+  const stationsOverThreshold = useMemo(() => {
+    return stations.filter(s => (s.latestSalinity || 0) > 4).length;
+  }, [stations]);
+
+  const stationsByLevel = useMemo(() => {
+    const critical = stations.filter(s => s.salinityLevel === 'HIGH').length;
+    const warning = stations.filter(s => s.salinityLevel === 'MEDIUM').length;
+    const safe = stations.filter(s => s.salinityLevel === 'LOW').length;
+    
+    // For Donut chart percentages, just use percentages or raw counts? 
+    // The previous hardcode had 17, 25, 28, 30. Let's calculate percentage.
+    const total = stations.length || 1; // prevent div by zero
+    
+    return {
+      critical, warning, safe, total,
+      criticalPct: Math.round((critical / total) * 100),
+      warningPct: Math.round((warning / total) * 100),
+      safePct: Math.round((safe / total) * 100),
+    };
+  }, [stations]);
+
+
   return (
     <div className="flex flex-col h-screen w-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]">
       <Navbar />
@@ -51,17 +93,17 @@ export function ReportsPage() {
 
         {/* Row 1: Metrics */}
         <div className="grid grid-cols-4 gap-4 mb-6">
-          <MetricCard title="Trung bình độ mặn toàn vùng" value="2.8" unit="‰" icon="💧"
+          <MetricCard title="Trung bình độ mặn toàn vùng" value={avgSalinity.toString()} unit="‰" icon="💧"
             trend={{ value: 12, isPositive: false }}
             highlightColor="text-blue-600" />
-          <MetricCard title="Trạm vượt ngưỡng 4‰" value="3/25" unit="" icon="⚠️"
+          <MetricCard title="Trạm vượt ngưỡng 4‰" value={`${stationsOverThreshold}/${stations.length}`} unit="" icon="⚠️"
             trend={{ value: 1, isPositive: true }} // 1 trạm mới
             highlightColor="text-red-500" />
-          <MetricCard title="Lượng mưa trung bình" value="18.2" unit="mm" icon="🌧️"
-            trend={{ value: 12, isPositive: false }}
+          <MetricCard title="Lượng mưa trung bình" value={summary?.rainfall?.toFixed(1) || '—'} unit="mm" icon="🌧️"
+            trend={{ value: summary?.rainfallDeltaPercent || 0, isPositive: (summary?.rainfallDeltaPercent || 0) >= 0 }}
             highlightColor="text-blue-400" />
-          <MetricCard title="Lưu lượng trung bình" value="2,350" unit="m³/s" icon="🌊"
-            trend={{ value: 8, isPositive: true }}
+          <MetricCard title="Lưu lượng trung bình" value={summary?.flowRate?.toLocaleString() || '—'} unit="m³/s" icon="🌊"
+            trend={{ value: summary?.flowRateDeltaPercent || 0, isPositive: (summary?.flowRateDeltaPercent || 0) >= 0 }}
             highlightColor="text-teal-500" />
         </div>
 
@@ -96,20 +138,18 @@ export function ReportsPage() {
             <div className="flex-1">
               <DonutChart 
                 data={[
-                  { name: 'Nguy hiểm', value: 17, color: '#ef4444' },
-                  { name: 'Cảnh báo', value: 25, color: '#eab308' },
-                  { name: 'Theo dõi', value: 28, color: '#3b82f6' },
-                  { name: 'Bình thường', value: 30, color: '#22c55e' },
+                  { name: 'Nguy hiểm', value: stationsByLevel.critical, color: '#ef4444' },
+                  { name: 'Cảnh báo', value: stationsByLevel.warning, color: '#eab308' },
+                  { name: 'Bình thường', value: stationsByLevel.safe, color: '#22c55e' },
                 ]}
                 totalLabel="Trạm"
-                totalValue={25}
+                totalValue={stationsByLevel.total}
               />
             </div>
             <div className="grid grid-cols-2 gap-y-3 mt-6 text-sm">
-              <div className="flex items-center justify-between"><span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500" /> Nguy hiểm</span> <span className="font-bold text-gray-700">17%</span></div>
-              <div className="flex items-center justify-between"><span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400" /> Cảnh báo</span> <span className="font-bold text-gray-700">25%</span></div>
-              <div className="flex items-center justify-between"><span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500" /> Theo dõi</span> <span className="font-bold text-gray-700">28%</span></div>
-              <div className="flex items-center justify-between"><span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500" /> Bình thường</span> <span className="font-bold text-gray-700">30%</span></div>
+              <div className="flex items-center justify-between"><span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500" /> Nguy hiểm</span> <span className="font-bold text-gray-700">{stationsByLevel.criticalPct}%</span></div>
+              <div className="flex items-center justify-between"><span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400" /> Cảnh báo</span> <span className="font-bold text-gray-700">{stationsByLevel.warningPct}%</span></div>
+              <div className="flex items-center justify-between"><span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500" /> Bình thường</span> <span className="font-bold text-gray-700">{stationsByLevel.safePct}%</span></div>
             </div>
           </div>
         </div>

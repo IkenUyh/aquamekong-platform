@@ -8,7 +8,7 @@ import { Search, Info } from 'lucide-react';
 import type { SalinityForecast, Station } from '../types';
 import { useQuery } from '@tanstack/react-query';
 import { stationApi } from '../api/client';
-import { generateMockForecasts } from '../data/mockData';
+import { StationForecastCard } from '../components/StationForecastCard';
 
 export function ForecastPage() {
   const { data: stations = [] } = useQuery({
@@ -18,7 +18,26 @@ export function ForecastPage() {
 
   const [selectedStations, setSelectedStations] = useState<number[]>([1, 2, 3, 5, 6]);
 
+  const DAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+  const today = new Date();
+  const next5Days = Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(today); 
+    d.setDate(d.getDate() + i + 1); // next 5 days
+    return { 
+      label: DAY_LABELS[d.getDay()], 
+      date: `${d.getDate()}/${d.getMonth()+1}` 
+    };
+  });
 
+  const mapMarkers = stations.filter(s => selectedStations.includes(s.id)).map(s => ({
+    id: s.id, 
+    lat: s.latitude, 
+    lng: s.longitude,
+    color: s.latestSalinity && s.latestSalinity >= 4 ? '#ef4444' : '#3b82f6',
+    label: `${s.name}: ${s.latestSalinity || 0}‰`
+  }));
+
+  const provinces = [...new Set(stations.map(s => s.province).filter(Boolean))];
 
   return (
     <DashboardLayout
@@ -39,6 +58,7 @@ export function ForecastPage() {
               <label className="text-xs font-semibold text-gray-500 mb-1 block">Tỉnh/Thành phố</label>
               <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500">
                 <option>Tất cả</option>
+                {provinces.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
 
@@ -103,56 +123,30 @@ export function ForecastPage() {
 
             {/* Date timeline */}
             <div className="flex gap-2 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
-              {['T2', 'T3', 'T4', 'T5', 'T6'].map((day, i) => (
-                <div key={day} className={`flex-1 text-center py-2 rounded-lg ${i===0 ? 'bg-blue-50 border border-blue-200' : ''}`}>
-                  <p className={`text-xs font-bold ${i===0 ? 'text-blue-600' : 'text-gray-500'}`}>{day}</p>
-                  <p className={`text-[10px] ${i===0 ? 'text-blue-400' : 'text-gray-400'}`}>19/05</p>
+              {next5Days.map((day, i) => (
+                <div key={day.date} className={`flex-1 text-center py-2 rounded-lg ${i===0 ? 'bg-blue-50 border border-blue-200' : ''}`}>
+                  <p className={`text-xs font-bold ${i===0 ? 'text-blue-600' : 'text-gray-500'}`}>{day.label}</p>
+                  <p className={`text-[10px] ${i===0 ? 'text-blue-400' : 'text-gray-400'}`}>{day.date}</p>
                 </div>
               ))}
             </div>
 
             {/* Grid of charts */}
             <div className="grid grid-cols-2 gap-4">
-              {stations.filter(s => selectedStations.includes(s.id)).map(s => {
-                const currentSalinity = s.latestSalinity || 0;
-                const isHigh = currentSalinity >= 4;
-                const trend = s.salinityLevel === 'CRITICAL' ? 'high' : s.salinityLevel === 'WARNING' ? 'rising' : 'stable';
-                
-                return (
-                  <div key={s.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h4 className="font-bold text-gray-800 flex items-center gap-1">
-                          <div className={`w-2 h-2 rounded-full ${isHigh ? 'bg-red-500' : 'bg-blue-500'}`} />
-                          {s.name}
-                        </h4>
-                        <p className="text-xs text-gray-500">{s.riverName || 'N/A'}</p>
-                        <p className="text-lg font-bold mt-1 text-gray-800">
-                          {currentSalinity}‰ <span className="text-xs font-normal text-gray-400">hiện tại</span>
-                        </p>
-                      </div>
-                      <StatusBadge level={isHigh ? 'CRITICAL' : trend === 'rising' ? 'WARNING' : trend === 'low' ? 'SAFE' : 'INFO'} />
-                    </div>
-                    <div className="h-[120px] -mx-2">
-                      <ForecastChart forecasts={generateMockForecasts(currentSalinity)} />
-                    </div>
-                  </div>
-                )
-              })}
+              {stations.filter(s => selectedStations.includes(s.id)).map(s => (
+                <StationForecastCard key={s.id} station={s} />
+              ))}
             </div>
           </div>
 
           {/* Map Section (50%) */}
           <div className="flex-1 bg-white border-l border-gray-200 flex flex-col">
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="font-bold text-gray-800">Bản đồ dự báo độ mặn (ngày 21/05)</h3>
+              <h3 className="font-bold text-gray-800">Bản đồ dự báo độ mặn (ngày {next5Days[0]?.date})</h3>
             </div>
             <div className="flex-1 relative">
                <MiniMap 
-                 markers={[
-                   { id: 1, lat: 10.0, lng: 105.7, color: '#3b82f6', label: 'Cần Thơ: 2.1‰' },
-                   { id: 2, lat: 10.25, lng: 106.4, color: '#ef4444', label: 'Gò Công: 6.1‰' }
-                 ]} 
+                 markers={mapMarkers} 
                  height="100%" 
                />
                

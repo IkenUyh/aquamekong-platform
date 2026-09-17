@@ -34,55 +34,61 @@ export const MOCK_ALERTS: AlertDto[] = [
     id: 1,
     stationId: 1,
     stationName: "Trạm Vàm Cỏ",
-    metricType: "SALINITY",
-    alertLevel: "CRITICAL",
+    stationCode: "ST01",
+    alertType: "SALINITY_THRESHOLD",
+    severity: "CRITICAL",
     message: "Độ mặn vượt mức 4.5‰, nguy cơ xâm nhập mặn nghiêm trọng.",
-    measuredValue: 4.8,
+    actualValue: 4.8,
     thresholdValue: 4.0,
-    isActive: true,
+    isResolved: false,
+    province: "Tiền Giang",
     createdAt: new Date().toISOString()
   },
   {
     id: 2,
     stationId: 5,
     stationName: "Trạm Ba Lai",
-    metricType: "WATER_LEVEL",
-    alertLevel: "WARNING",
+    stationCode: "ST05",
+    alertType: "WATER_LEVEL",
+    severity: "WARNING",
     message: "Mực nước thấp hơn trung bình 15%, cần theo dõi lưu lượng.",
-    measuredValue: 1.2,
+    actualValue: 1.2,
     thresholdValue: 1.5,
-    isActive: true,
+    isResolved: false,
+    province: "Bến Tre",
     createdAt: new Date(Date.now() - 3600000).toISOString()
   },
   {
     id: 3,
     stationId: 12,
     stationName: "Trạm Trần Đề",
-    metricType: "SALINITY",
-    alertLevel: "WARNING",
+    stationCode: "ST12",
+    alertType: "SALINITY_FORECAST",
+    severity: "WARNING",
     message: "Dự báo xâm nhập mặn có xu hướng tăng trong 3 ngày tới.",
-    measuredValue: 3.1,
+    actualValue: 3.1,
     thresholdValue: 3.5,
-    isActive: false,
+    isResolved: true,
+    province: "Sóc Trăng",
     createdAt: new Date(Date.now() - 86400000).toISOString()
   }
 ];
 
 export const MOCK_TREND_DATA = [
-  { month: 'T1', salinity: 1.2, waterLevel: 2.1 },
-  { month: 'T2', salinity: 2.5, waterLevel: 1.8 },
-  { month: 'T3', salinity: 3.8, waterLevel: 1.5 },
-  { month: 'T4', salinity: 4.5, waterLevel: 1.2 },
-  { month: 'T5', salinity: 2.1, waterLevel: 1.9 },
-  { month: 'T6', salinity: 0.8, waterLevel: 2.5 },
+  { date: 'T1', current: 1.2, prev: 2.1 },
+  { date: 'T2', current: 2.5, prev: 1.8 },
+  { date: 'T3', current: 3.8, prev: 1.5 },
+  { date: 'T4', current: 4.5, prev: 1.2 },
+  { date: 'T5', current: 2.1, prev: 1.9 },
+  { date: 'T6', current: 0.8, prev: 2.5 },
 ];
 
 export const MOCK_TOP_STATIONS = [
-  { name: 'Trạm Vàm Cỏ Đông', value: 4.8 },
-  { name: 'Trạm Ba Lai', value: 4.2 },
-  { name: 'Trạm Trần Đề', value: 3.9 },
-  { name: 'Trạm Cổ Chiên', value: 3.5 },
-  { name: 'Trạm Hàm Luông', value: 3.1 },
+  { rank: 1, name: 'Trạm Vàm Cỏ Đông', province: 'Tiền Giang', salinity: 4.8, diff: '+1.2%' },
+  { rank: 2, name: 'Trạm Ba Lai', province: 'Bến Tre', salinity: 4.2, diff: '+0.5%' },
+  { rank: 3, name: 'Trạm Trần Đề', province: 'Sóc Trăng', salinity: 3.9, diff: '+0.2%' },
+  { rank: 4, name: 'Trạm Cổ Chiên', province: 'Trà Vinh', salinity: 3.5, diff: '-0.1%' },
+  { rank: 5, name: 'Trạm Hàm Luông', province: 'Bến Tre', salinity: 3.1, diff: '-0.3%' },
 ];
 
 export const generateMockForecasts = (stationId: number): SalinityForecast[] => {
@@ -90,14 +96,16 @@ export const generateMockForecasts = (stationId: number): SalinityForecast[] => 
   return Array.from({length: 7}).map((_, i) => {
     const d = new Date(today);
     d.setDate(d.getDate() + i);
+    const predicted = Math.round((3.5 + Math.random() * 2) * 10) / 10;
     return {
       id: i,
       stationId,
       forecastDate: d.toISOString(),
-      predictedSalinity: Math.round((3.5 + Math.random() * 2) * 10) / 10,
-      confidenceScore: 85 - i * 2,
-      modelName: "AI_LSTM_V1",
-      createdAt: today.toISOString()
+      predictedSalinity: predicted,
+      confidenceLevel: 85 - i * 2,
+      lowerBound: predicted - 0.5,
+      upperBound: predicted + 0.5,
+      modelVersion: "AI_LSTM_V1"
     };
   });
 };
