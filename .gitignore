@@ -10,6 +10,7 @@ ml-service/trained_models/
 # Documents
 *.md
 *.txt
+!requirements.txt
 *.docx
 
 # Python
