@@ -73,21 +73,35 @@ export const stationApi = {
       }))
     };
     return withFallback(
-      apiClient.get<Station[]>('/stations').then((r) => ({
-        type: "FeatureCollection",
-        features: r.data.map(s => ({
-          type: "Feature",
-          geometry: { type: "Point", coordinates: [s.longitude, s.latitude] },
-          properties: s
-        }))
-      }) as any), 
+      apiClient.get('/stations').then((r: any) => {
+        if (r.data && r.data.type === "FeatureCollection") {
+          return r.data;
+        }
+        if (Array.isArray(r.data)) {
+          return {
+            type: "FeatureCollection",
+            features: r.data.map((s: any) => ({
+              type: "Feature",
+              geometry: { type: "Point", coordinates: [s.longitude || 105.5, s.latitude || 10.0] },
+              properties: s
+            }))
+          };
+        }
+        return fallback;
+      }), 
       fallback
     );
   },
 
   getAllList: () => 
     withFallback(
-      apiClient.get<Station[]>('/stations').then((r) => r.data),
+      apiClient.get('/stations/list').then((r: any) => {
+        if (Array.isArray(r.data) && r.data.length > 0) return r.data;
+        if (r.data && Array.isArray(r.data.features)) {
+          return r.data.features.map((f: any) => f.properties);
+        }
+        return MOCK_STATIONS_LIST;
+      }),
       MOCK_STATIONS_LIST
     ),
 
@@ -189,4 +203,8 @@ export const alertApi = {
 export const userApi = {
   getAll: () => apiClient.get<User[]>('/users').then((r) => r.data),
   getById: (id: number) => apiClient.get<User>(`/users/${id}`).then((r) => r.data),
+};
+
+export const recommendationApi = {
+  getAll: () => apiClient.get<any[]>('/recommendations').then((r) => r.data),
 };

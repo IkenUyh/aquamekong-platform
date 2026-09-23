@@ -36,7 +36,7 @@ function MapPageContent() {
               <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
             </div>
             <div className="space-y-2">
-              {stationsList?.map(station => (
+              {stationsList?.map((station: any) => (
                 <div 
                   key={station.id} 
                   className={`p-3 rounded-lg border cursor-pointer ${selectedStationId === station.id ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200 hover:border-blue-300'}`}

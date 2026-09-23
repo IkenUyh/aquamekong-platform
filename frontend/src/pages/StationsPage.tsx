@@ -34,7 +34,7 @@ export function StationsPage() {
     { key: 'status', header: 'Trạng thái', render: (s) => <span className="text-green-600 text-xs font-medium bg-green-50 px-2 py-1 rounded">Hoạt động</span> },
   ];
 
-  const mapMarkers = stationsList.map(s => {
+  const mapMarkers = stationsList.map((s: any) => {
     let color = '#22c55e';
     if (s.latestSalinity && s.latestSalinity >= 4) color = '#ef4444';
     else if (s.latestSalinity && s.latestSalinity >= 1) color = '#eab308';
