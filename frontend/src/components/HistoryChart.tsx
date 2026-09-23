@@ -11,8 +11,8 @@ interface HistoryChartProps {
 export function HistoryChart({ metrics, stationName, threshold = 4 }: HistoryChartProps) {
   const data = metrics.map(m => ({
     time: new Date(m.recordedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-    salinity: m.salinity,
-    waterLevel: m.waterLevel,
+    salinity: m.salinity ?? m.value ?? 0,
+    waterLevel: m.waterLevel ?? 0,
   })).reverse(); // chronological order
 
   return (

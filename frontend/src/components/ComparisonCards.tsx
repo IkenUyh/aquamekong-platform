@@ -17,7 +17,7 @@ export function ComparisonCards({ currentSalinity, metrics, threshold = 4 }: Com
     return diff >= 23 * 3600000 && diff <= 25 * 3600000;
   });
   
-  const delta24h = metric24hAgo ? currentSalinity - metric24hAgo.salinity : null;
+  const delta24h = metric24hAgo ? currentSalinity - (metric24hAgo.salinity ?? metric24hAgo.value ?? 0) : null;
   const deltaThreshold = currentSalinity - threshold;
 
   return (
