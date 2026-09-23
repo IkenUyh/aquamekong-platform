@@ -27,7 +27,8 @@ export function AlertPanel() {
 
       <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
         {alerts.slice(0, 3).map((alert: AlertDto) => {
-          const style = SEVERITY_STYLES[alert.severity] || SEVERITY_STYLES.INFO;
+          const severityKey = alert.severity || alert.alertLevel || 'INFO';
+          const style = SEVERITY_STYLES[severityKey] || SEVERITY_STYLES.INFO;
           return (
             <div key={alert.id}
                  className={`${style.bg} ${style.border} border rounded-lg p-3 transition-all hover:shadow-md`}>

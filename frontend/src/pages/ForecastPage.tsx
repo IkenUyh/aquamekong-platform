@@ -131,7 +131,7 @@ export function ForecastPage() {
                           {currentSalinity}‰ <span className="text-xs font-normal text-gray-400">hiện tại</span>
                         </p>
                       </div>
-                      <StatusBadge level={isHigh ? 'CRITICAL' : trend === 'rising' ? 'WARNING' : trend === 'low' ? 'SAFE' : 'INFO'} />
+                      <StatusBadge level={isHigh ? 'CRITICAL' : currentSalinity >= 2 ? 'WARNING' : 'SAFE'} />
                     </div>
                     <div className="h-[120px] -mx-2">
                       <ForecastChart forecasts={generateMockForecasts(currentSalinity)} />

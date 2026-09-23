@@ -10,17 +10,23 @@ interface StationMarkerProps {
 }
 
 const SALINITY_COLORS: Record<SalinityLevel, string> = {
-  LOW:     '#22c55e',
-  MEDIUM:  '#eab308',
-  HIGH:    '#ef4444',
-  UNKNOWN: '#94a3b8',
+  LOW:      '#22c55e',
+  SAFE:     '#22c55e',
+  MEDIUM:   '#eab308',
+  WARNING:  '#eab308',
+  HIGH:     '#ef4444',
+  CRITICAL: '#ef4444',
+  UNKNOWN:  '#94a3b8',
 };
 
 const SALINITY_LABELS: Record<SalinityLevel, string> = {
-  LOW:     'An toàn',
-  MEDIUM:  'Cảnh báo',
-  HIGH:    'Nguy hiểm',
-  UNKNOWN: 'Không rõ',
+  LOW:      'An toàn',
+  SAFE:     'An toàn',
+  MEDIUM:   'Cảnh báo',
+  WARNING:  'Cảnh báo',
+  HIGH:     'Nguy hiểm',
+  CRITICAL: 'Nguy hiểm',
+  UNKNOWN:  'Không rõ',
 };
 
 function createLabelIcon(name: string, salinity: number | null, level: SalinityLevel, isSelected: boolean): L.DivIcon {

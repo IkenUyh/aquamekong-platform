@@ -12,7 +12,20 @@ export type AlertSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type AlertStatus = 'ACTIVE' | 'ACKNOWLEDGED' | 'RESOLVED';
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
-export type SalinityLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'UNKNOWN';
+export type SalinityLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'WARNING' | 'SAFE' | 'UNKNOWN';
+
+export interface WaterMetric {
+  id?: number;
+  stationId?: number;
+  stationCode?: string;
+  stationName?: string;
+  salinity?: number;
+  value?: number;
+  waterLevel?: number;
+  flowRate?: number;
+  recordedAt: string;
+  salinityLevel?: SalinityLevel;
+}
 
 // --- Domain: Station & River ---
 export interface River {
@@ -154,6 +167,24 @@ export interface Alert {
   triggeredAt: string;
   resolvedAt?: string;
   createdAt?: string;
+}
+
+export interface AlertDto {
+  id: number;
+  stationId: number;
+  stationName?: string;
+  stationCode?: string;
+  metricType?: string;
+  alertType?: string;
+  severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'WARNING' | 'INFO';
+  alertLevel?: 'CRITICAL' | 'WARNING' | 'SAFE' | 'INFO';
+  message?: string;
+  thresholdValue?: number;
+  measuredValue?: number;
+  actualValue?: number;
+  isActive?: boolean;
+  isResolved?: boolean;
+  createdAt: string;
 }
 
 // --- Domain: User ---
