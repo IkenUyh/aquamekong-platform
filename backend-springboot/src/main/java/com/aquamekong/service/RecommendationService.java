@@ -1,8 +1,8 @@
 package com.aquamekong.service;
 
 import com.aquamekong.dto.RecommendationDto;
-import com.aquamekong.entity.WaterMetric;
-import com.aquamekong.repository.WaterMetricRepository;
+import com.aquamekong.entity.telemetry.Measurement;
+import com.aquamekong.repository.telemetry.MeasurementRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,20 +13,21 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RecommendationService {
 
-    private final WaterMetricRepository metricRepository;
+    private final MeasurementRepository measurementRepository;
 
     public List<RecommendationDto> getRecommendations() {
         List<RecommendationDto> recommendations = new ArrayList<>();
 
         // Rule 1: Nếu có trạm salinity > 4‰ → khuyến nghị hạn chế tưới tiêu
-        List<WaterMetric> latestMetrics = metricRepository.findLatestMetricPerStation();
-        for (WaterMetric m : latestMetrics) {
-            if (m.getSalinity() != null && m.getSalinity() > 4.0) {
+        List<Measurement> latestMetrics = measurementRepository.findLatestMeasurementPerStation();
+        for (Measurement m : latestMetrics) {
+            if ("SALINITY".equalsIgnoreCase(m.getMetricType()) && m.getValue() != null && m.getValue() > 4.0) {
+                String stationName = m.getStation() != null ? m.getStation().getName() : ("Trạm " + (m.getStation() != null ? m.getStation().getId() : ""));
                 recommendations.add(RecommendationDto.builder()
                     .type("IRRIGATION")
                     .priority("HIGH")
                     .message(String.format("Hạn chế lấy nước tưới tại khu vực %s (%.1f‰)",
-                        m.getStation().getName(), m.getSalinity()))
+                        stationName, m.getValue()))
                     .icon("🚫")
                     .build());
             }
