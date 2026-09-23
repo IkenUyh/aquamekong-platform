@@ -9,6 +9,7 @@ ml-service/trained_models/
 
 # Documents
 *.md
+!README.md
 *.txt
 !requirements.txt
 *.docx
