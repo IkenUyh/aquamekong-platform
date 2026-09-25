@@ -3,6 +3,7 @@ import { StationMarker } from './StationMarker';
 import { MapLegend } from './MapLegend';
 import { MapFlyToStation } from '../hooks/useMapFlyTo';
 import type { GeoJsonFeature } from '../types';
+import { SalinityHeatmap } from './map/SalinityHeatmap';
 import provincesGeoJson from '../data/mekong-provinces.json';
 import riversGeoJson from '../data/mekong-rivers.json';
 
@@ -17,11 +18,9 @@ interface MapViewProps {
 const MEKONG_CENTER: [number, number] = [10.0, 105.8];
 const DEFAULT_ZOOM = 9;
 
-// Light-themed map tiles
-const TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>';
-
-import { SalinityHeatmap } from './map/SalinityHeatmap';
+// OpenStreetMap map tiles
+const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 export function MapView({ features, selectedStationId, onSelectStation, activeLayers }: MapViewProps) {
   const selectedFeature = features.find(f => f.properties.id === selectedStationId);
