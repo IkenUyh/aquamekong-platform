@@ -41,6 +41,7 @@ services:
     build:
       context: ./backend-springboot
       dockerfile: Dockerfile
+    image: aquamekong-backend:latest
     container_name: aquamekong-backend
     restart: unless-stopped
     environment:
@@ -66,6 +67,7 @@ services:
     build:
       context: ./ml-service
       dockerfile: Dockerfile
+    image: aquamekong-ml-service:latest
     container_name: aquamekong-ml-service
     restart: unless-stopped
     environment:
@@ -89,6 +91,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    image: aquamekong-frontend:latest
     container_name: aquamekong-frontend
     restart: unless-stopped
     ports:
