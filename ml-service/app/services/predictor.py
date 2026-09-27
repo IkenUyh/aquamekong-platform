@@ -8,7 +8,7 @@ from datetime import date, timedelta
 from typing import List
 from app.schemas.forecast import PredictionItem
 from app.services.data_loader import load_station_metrics, load_station_info
-from app.models.salinity_model import SalinityModel
+from app.models.hybrid_salinity_model import HybridSalinityModel
 
 logger = logging.getLogger(__name__)
 
@@ -17,25 +17,19 @@ class Predictor:
     """Prediction pipeline for salinity forecasting."""
 
     def __init__(self):
-        self.model = SalinityModel()
+        self.model = HybridSalinityModel()
 
-    def predict(self, station_id: int, days_ahead: int = 7) -> List[PredictionItem]:
+    def predict(self, station_id, days_ahead: int = 7) -> List[PredictionItem]:
         """
         Generate salinity predictions for a station.
-
-        If a trained model exists, use it for prediction.
-        Otherwise, fall back to a simple statistical estimation
-        based on recent data.
-
-        Args:
-            station_id: Station to predict for.
-            days_ahead: Number of days to forecast.
-
-        Returns:
-            List of PredictionItem with predicted salinity values.
         """
         try:
-            # Try to load historical data
+            # Try trained model first (Bypass PostgreSQL if model is ready)
+            if self.model.has_trained_model(station_id):
+                logger.info(f"Using trained model for station {station_id}")
+                return self.model.predict(station_id, days_ahead)
+
+            # Try to load historical data for statistical fallback
             df = load_station_metrics(station_id, lookback_days=90)
             station_info = load_station_info(station_id)
 
@@ -44,11 +38,6 @@ class Predictor:
                     f"Insufficient data for station {station_id}, using simulation"
                 )
                 return self._simulate_predictions(station_id, days_ahead)
-
-            # Try trained model first
-            if self.model.has_trained_model(station_id):
-                logger.info(f"Using trained model for station {station_id}")
-                return self.model.predict(station_id, days_ahead)
 
             # Fallback: statistical estimation based on recent trends
             logger.info(

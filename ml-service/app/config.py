@@ -5,12 +5,14 @@ from functools import lru_cache
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
-    # Database
+    # Database & Cache
     database_url: str = "postgresql://aquamekong:aquamekong_secret@localhost:5432/aquamekong"
+    redis_url: str = "redis://localhost:6379/0"
 
     # ML Service
     ml_service_port: int = 8000
     model_dir: str = "/app/trained_models"
+    raw_data_dir: str = "../Data"
 
     # Model defaults
     default_lookback_days: int = 90
