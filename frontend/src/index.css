@@ -1,0 +1,155 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===================================
+   AquaMekong — Global Styles
+   =================================== */
+
+:root {
+  --color-aqua-500: #06b6d4;
+  --color-aqua-600: #0891b2;
+  --color-aqua-700: #0e7490;
+  --color-dark-bg: #0f172a;
+  --color-dark-surface: #1e293b;
+  --color-dark-card: #334155;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--color-dark-bg);
+  color: #e2e8f0;
+  overflow: hidden;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+}
+
+/* ===================================
+   Leaflet Map Overrides
+   =================================== */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  background-color: #1a2332;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-radius: 12px;
+  border: 1px solid #334155;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.leaflet-popup-tip {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+.leaflet-popup-content {
+  margin: 12px 16px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.leaflet-control-zoom a {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: #334155 !important;
+}
+
+.leaflet-control-attribution {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  color: #94a3b8 !important;
+  font-size: 10px !important;
+}
+
+.leaflet-control-attribution a {
+  color: #06b6d4 !important;
+}
+
+/* ===================================
+   Custom Scrollbar
+   =================================== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* ===================================
+   Animations
+   =================================== */
+@keyframes ripple {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.marker-pulse::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  animation: ripple 2s ease-out infinite;
+}
+
+/* ===================================
+   Glassmorphism utilities
+   =================================== */
+@layer components {
+  .glass-card {
+    @apply bg-dark-surface/80 backdrop-blur-xl border border-dark-border/50 rounded-xl;
+  }
+
+  .glass-panel {
+    @apply bg-dark-surface/90 backdrop-blur-2xl border-r border-dark-border/30;
+  }
+
+  .metric-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .metric-badge-low {
+    @apply metric-badge bg-green-500/20 text-green-400 border border-green-500/30;
+  }
+
+  .metric-badge-medium {
+    @apply metric-badge bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
+  }
+
+  .metric-badge-high {
+    @apply metric-badge bg-red-500/20 text-red-400 border border-red-500/30;
+  }
+}
