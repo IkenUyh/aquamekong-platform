@@ -1,7 +1,20 @@
 import axios from 'axios';
 import { store } from '../store';
 import { setOfflineMode } from '../store/networkSlice';
-import type { GeoJsonFeatureCollection, Station, WaterMetric, SalinityForecast } from '../types';
+import type {
+  GeoJsonFeatureCollection,
+  Station,
+  River,
+  Device,
+  Sensor,
+  Measurement,
+  TelemetryIngest,
+  ForecastRun,
+  SalinityForecast,
+  AlertRule,
+  Alert,
+  User,
+} from '../types';
 import { MOCK_STATIONS_LIST, generateMockForecasts } from '../data/mockData';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
@@ -39,7 +52,15 @@ export async function withFallback<T>(promise: Promise<T>, fallbackData: T): Pro
 
 export default apiClient;
 
-// ===== API Functions =====
+// ===== API Services =====
+
+export const riverApi = {
+  getAll: () => apiClient.get<River[]>('/rivers').then((r) => r.data),
+  getById: (id: number) => apiClient.get<River>(`/rivers/${id}`).then((r) => r.data),
+  create: (data: Partial<River>) => apiClient.post<River>('/rivers', data).then((r) => r.data),
+  update: (id: number, data: Partial<River>) => apiClient.put<River>(`/rivers/${id}`, data).then((r) => r.data),
+  delete: (id: number) => apiClient.delete(`/rivers/${id}`),
+};
 
 export const stationApi = {
   getAll: () => {
@@ -51,24 +72,36 @@ export const stationApi = {
         properties: s
       }))
     };
-    // Since backend returns List<StationDto>, we need to map it if backend endpoint is /stations/geojson or just map frontend
-    // Assuming backend /stations returns list, we map it to FeatureCollection here
     return withFallback(
-      apiClient.get<Station[]>('/stations').then((r) => ({
-        type: "FeatureCollection",
-        features: r.data.map(s => ({
-          type: "Feature",
-          geometry: { type: "Point", coordinates: [s.longitude, s.latitude] },
-          properties: s
-        }))
-      }) as any), 
+      apiClient.get('/stations').then((r: any) => {
+        if (r.data && r.data.type === "FeatureCollection") {
+          return r.data;
+        }
+        if (Array.isArray(r.data)) {
+          return {
+            type: "FeatureCollection",
+            features: r.data.map((s: any) => ({
+              type: "Feature",
+              geometry: { type: "Point", coordinates: [s.longitude || 105.5, s.latitude || 10.0] },
+              properties: s
+            }))
+          };
+        }
+        return fallback;
+      }), 
       fallback
     );
   },
 
   getAllList: () => 
     withFallback(
-      apiClient.get<Station[]>('/stations').then((r) => r.data),
+      apiClient.get('/stations/list').then((r: any) => {
+        if (Array.isArray(r.data) && r.data.length > 0) return r.data;
+        if (r.data && Array.isArray(r.data.features)) {
+          return r.data.features.map((f: any) => f.properties);
+        }
+        return MOCK_STATIONS_LIST;
+      }),
       MOCK_STATIONS_LIST
     ),
 
@@ -96,24 +129,48 @@ export const stationApi = {
     ),
 };
 
+export const deviceApi = {
+  getAll: () => apiClient.get<Device[]>('/devices').then((r) => r.data),
+  getById: (id: number) => apiClient.get<Device>(`/devices/${id}`).then((r) => r.data),
+  getByStation: (stationId: number) => apiClient.get<Device[]>(`/devices/station/${stationId}`).then((r) => r.data),
+  create: (data: Partial<Device>) => apiClient.post<Device>('/devices', data).then((r) => r.data),
+  update: (id: number, data: Partial<Device>) => apiClient.put<Device>(`/devices/${id}`, data).then((r) => r.data),
+  delete: (id: number) => apiClient.delete(`/devices/${id}`),
+};
+
+export const sensorApi = {
+  getAll: () => apiClient.get<Sensor[]>('/sensors').then((r) => r.data),
+  getById: (id: number) => apiClient.get<Sensor>(`/sensors/${id}`).then((r) => r.data),
+  getByDevice: (deviceId: number) => apiClient.get<Sensor[]>(`/sensors/device/${deviceId}`).then((r) => r.data),
+  create: (data: Partial<Sensor>) => apiClient.post<Sensor>('/sensors', data).then((r) => r.data),
+  update: (id: number, data: Partial<Sensor>) => apiClient.put<Sensor>(`/sensors/${id}`, data).then((r) => r.data),
+  delete: (id: number) => apiClient.delete(`/sensors/${id}`),
+};
+
+export const measurementApi = {
+  getLatestPerStation: () => apiClient.get<Measurement[]>('/measurements/latest').then((r) => r.data),
+  getByStation: (stationId: number) => apiClient.get<Measurement[]>(`/measurements/station/${stationId}`).then((r) => r.data),
+  getByStationAndRange: (stationId: number, from: string, to: string) =>
+    apiClient.get<Measurement[]>(`/measurements/station/${stationId}/range`, { params: { from, to } }).then((r) => r.data),
+  ingest: (data: TelemetryIngest) => apiClient.post<Measurement>('/measurements/ingest', data).then((r) => r.data),
+};
+
 export const metricApi = {
   getLatest: () =>
     withFallback(
-      apiClient.get<WaterMetric[]>('/metrics/latest').then((r) => r.data),
-      [] // Add proper mock data if needed
+      apiClient.get<Measurement[]>('/measurements/latest').then((r) => r.data),
+      []
     ),
 
   getByStation: (stationId: number) =>
     withFallback(
-      apiClient.get<WaterMetric[]>(`/metrics/station/${stationId}`).then((r) => r.data),
-      [
-        { id: 1, stationId, salinity: 4.5, waterLevel: 1.2, recordedAt: new Date().toISOString() } as WaterMetric
-      ]
+      apiClient.get<Measurement[]>(`/measurements/station/${stationId}`).then((r) => r.data),
+      []
     ),
 
   getByStationWithDateRange: (stationId: number, from: string, to: string) =>
     withFallback(
-      apiClient.get<WaterMetric[]>(`/metrics/station/${stationId}`, {
+      apiClient.get<Measurement[]>(`/measurements/station/${stationId}/range`, {
         params: { from, to },
       }).then((r) => r.data),
       []
@@ -121,6 +178,8 @@ export const metricApi = {
 };
 
 export const forecastApi = {
+  getRuns: () => apiClient.get<ForecastRun[]>('/forecasts/runs').then((r) => r.data),
+
   predict: (stationId: number, daysAhead: number = 7) =>
     apiClient.post<SalinityForecast[]>('/forecasts/predict', { stationId, daysAhead }).then((r) => r.data),
 
@@ -128,6 +187,24 @@ export const forecastApi = {
     withFallback(
       apiClient.get<SalinityForecast[]>(`/forecasts/station/${stationId}`).then((r) => r.data),
       generateMockForecasts(stationId)
-    )
+    ),
+
+  getByRunId: (runId: number) => apiClient.get<SalinityForecast[]>(`/forecasts/run/${runId}`).then((r) => r.data),
 };
 
+export const alertApi = {
+  getAll: () => apiClient.get<Alert[]>('/alerts').then((r) => r.data),
+  getByStation: (stationId: number) => apiClient.get<Alert[]>(`/alerts/station/${stationId}`).then((r) => r.data),
+  getRules: () => apiClient.get<AlertRule[]>('/alerts/rules').then((r) => r.data),
+  saveRule: (rule: Partial<AlertRule>) => apiClient.post<AlertRule>('/alerts/rules', rule).then((r) => r.data),
+  deleteRule: (id: number) => apiClient.delete(`/alerts/rules/${id}`),
+};
+
+export const userApi = {
+  getAll: () => apiClient.get<User[]>('/users').then((r) => r.data),
+  getById: (id: number) => apiClient.get<User>(`/users/${id}`).then((r) => r.data),
+};
+
+export const recommendationApi = {
+  getAll: () => apiClient.get<any[]>('/recommendations').then((r) => r.data),
+};

@@ -10,7 +10,7 @@ export function HistorySection({ stationId }: { stationId: number }) {
   const { data: metrics, isLoading: isLoadingMetrics } = useFilteredMetrics(stationId, startDate, endDate);
   const { data: stationsList } = useStationsList();
   
-  const station = stationsList?.find(s => s.id === stationId);
+  const station = stationsList?.find((s: any) => s.id === stationId);
 
   if (isLoadingMetrics || !metrics || !station) {
     return (

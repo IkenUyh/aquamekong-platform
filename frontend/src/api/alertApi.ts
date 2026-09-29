@@ -6,13 +6,19 @@ import type { AxiosResponse } from 'axios';
 export const alertApi = {
   getRecent: () =>
     withFallback(
-      apiClient.get<AlertDto[]>('/alerts').then((r: AxiosResponse<AlertDto[]>) => r.data),
+      apiClient.get<AlertDto[]>('/alerts').then((r: AxiosResponse<AlertDto[]>) => {
+        if (Array.isArray(r.data) && r.data.length > 0) return r.data;
+        return MOCK_ALERTS;
+      }),
       MOCK_ALERTS
     ),
 
   getUnresolved: () =>
     withFallback(
-      apiClient.get<AlertDto[]>('/alerts/unresolved').then((r: AxiosResponse<AlertDto[]>) => r.data),
+      apiClient.get<AlertDto[]>('/alerts/unresolved').then((r: AxiosResponse<AlertDto[]>) => {
+        if (Array.isArray(r.data) && r.data.length > 0) return r.data;
+        return MOCK_ALERTS.filter(a => a.isActive);
+      }),
       MOCK_ALERTS.filter(a => a.isActive)
     ),
 
@@ -22,4 +28,3 @@ export const alertApi = {
       { count: MOCK_ALERTS.filter(a => a.isActive).length }
     ),
 };
-

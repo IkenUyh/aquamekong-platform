@@ -1,5 +1,6 @@
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
+
 import type { GeoJsonFeature, SalinityLevel } from '../types';
 
 interface StationMarkerProps {
@@ -9,17 +10,23 @@ interface StationMarkerProps {
 }
 
 const SALINITY_COLORS: Record<SalinityLevel, string> = {
-  LOW:     '#22c55e',
-  MEDIUM:  '#eab308',
-  HIGH:    '#ef4444',
-  UNKNOWN: '#94a3b8',
+  LOW:      '#22c55e',
+  SAFE:     '#22c55e',
+  MEDIUM:   '#eab308',
+  WARNING:  '#eab308',
+  HIGH:     '#ef4444',
+  CRITICAL: '#ef4444',
+  UNKNOWN:  '#94a3b8',
 };
 
 const SALINITY_LABELS: Record<SalinityLevel, string> = {
-  LOW:     'An toàn',
-  MEDIUM:  'Cảnh báo',
-  HIGH:    'Nguy hiểm',
-  UNKNOWN: 'Không rõ',
+  LOW:      'An toàn',
+  SAFE:     'An toàn',
+  MEDIUM:   'Cảnh báo',
+  WARNING:  'Cảnh báo',
+  HIGH:     'Nguy hiểm',
+  CRITICAL: 'Nguy hiểm',
+  UNKNOWN:  'Không rõ',
 };
 
 function createLabelIcon(name: string, salinity: number | null, level: SalinityLevel, isSelected: boolean): L.DivIcon {
@@ -65,7 +72,7 @@ export function StationMarker({ feature, isSelected, onClick }: StationMarkerPro
   return (
     <Marker
       position={[lat, lng]}
-      icon={createLabelIcon(properties.name, properties.latestSalinity, level, isSelected)}
+      icon={createLabelIcon(properties.name, properties.latestSalinity ?? null, level, isSelected)}
       eventHandlers={{ click: onClick }}
     >
       <Popup>
@@ -90,20 +97,20 @@ export function StationMarker({ feature, isSelected, onClick }: StationMarkerPro
             <MetricRow
               icon="💧"
               label="Độ mặn"
-              value={properties.latestSalinity}
+              value={properties.latestSalinity ?? null}
               unit="‰"
               level={level}
             />
             <MetricRow
               icon="🌊"
               label="Mực nước"
-              value={properties.latestWaterLevel}
+              value={properties.latestWaterLevel ?? null}
               unit="m"
             />
             <MetricRow
               icon="💨"
               label="Lưu lượng"
-              value={properties.latestFlowRate}
+              value={properties.latestFlowRate ?? null}
               unit="m³/s"
             />
           </div>

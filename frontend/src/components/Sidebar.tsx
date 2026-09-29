@@ -24,7 +24,7 @@ export function Sidebar({ stations, selectedStationId, onSelectStation, isLoadin
     (s) =>
       s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.province.toLowerCase().includes(searchQuery.toLowerCase())
+      (s.province || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Summary metrics
