@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Dummy Province" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [105.0, 9.5],
+            [106.5, 9.5],
+            [106.5, 10.5],
+            [105.0, 10.5],
+            [105.0, 9.5]
+          ]
+        ]
+      }
+    }
+  ]
+}

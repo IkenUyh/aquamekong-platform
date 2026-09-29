@@ -1,0 +1,16 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Dummy River" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [105.2, 10.2],
+          [106.2, 9.8]
+        ]
+      }
+    }
+  ]
+}
