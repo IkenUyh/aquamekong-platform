@@ -1,0 +1,25 @@
+:root {
+  /* Primary blue (header) */
+  --color-primary: #4A90D9;
+  --color-primary-dark: #3A7BC8;
+  --color-primary-light: #6BA5E7;
+
+  /* Background */
+  --color-bg: #F5F7FA;
+  --color-bg-white: #FFFFFF;
+  --color-bg-card: #FFFFFF;
+
+  /* Text */
+  --color-text-primary: #1A202C;
+  --color-text-secondary: #4A5568;
+  --color-text-muted: #A0AEC0;
+
+  /* Border */
+  --color-border: #E2E8F0;
+  --color-border-light: #EDF2F7;
+
+  /* Salinity colors (giữ nguyên) */
+  --color-salinity-low: #22c55e;
+  --color-salinity-medium: #eab308;
+  --color-salinity-high: #ef4444;
+}
