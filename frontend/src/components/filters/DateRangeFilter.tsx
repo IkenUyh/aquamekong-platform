@@ -25,7 +25,7 @@ export function DateRangeFilter({ startDate, endDate, onChange }: DateRangeFilte
           showTimeSelect
           timeFormat="HH:mm"
           timeIntervals={60}
-          dateFormat="dd/MM/yyyy HH:mm"
+          dateFormat="dd/MM HH:mm"
           locale={vi}
           className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2
                      text-sm text-gray-700 focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
@@ -41,7 +41,7 @@ export function DateRangeFilter({ startDate, endDate, onChange }: DateRangeFilte
           showTimeSelect
           timeFormat="HH:mm"
           timeIntervals={60}
-          dateFormat="dd/MM/yyyy HH:mm"
+          dateFormat="dd/MM HH:mm"
           locale={vi}
           className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2
                      text-sm text-gray-700 focus:ring-2 focus:ring-blue-300 focus:border-blue-400"

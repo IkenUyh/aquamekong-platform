@@ -50,6 +50,10 @@ export interface Station {
   latestWaterLevel?: number | null;
   latestFlowRate?: number | null;
   salinityLevel?: SalinityLevel;
+  /** Thời điểm số đo mới nhất (mọi chỉ số) */
+  lastMeasuredAt?: string | null;
+  /** Các chỉ số trạm đang có số đo */
+  metricTypes?: string[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -181,6 +185,7 @@ export interface AlertDto {
   stationCode?: string;
   province?: string;
   status?: AlertStatus;
+  resolvedAt?: string;
   metricType?: string;
   alertType?: string;
   severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'WARNING' | 'INFO';

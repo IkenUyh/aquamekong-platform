@@ -1,11 +1,13 @@
 import React from 'react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
-import { Radio, Database, ShieldAlert, Sparkles, CheckCircle, AlertTriangle, Layers, MapPin } from 'lucide-react';
+import { Radio, Database, ShieldAlert, Sparkles, CheckCircle, Layers, MapPin } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { stationApi } from '../api/client';
 import { recommendationApi } from '../api/recommendationApi';
 import { useUnresolvedAlerts } from '../hooks/useAlerts';
-import { SALINITY_THRESHOLD } from '../utils/salinity';
+import { formatNumber, isReporting, SALINITY_THRESHOLD } from '../utils/salinity';
+import { StationsMiniMap } from '../components/shared/StationsMiniMap';
+import { Link } from 'react-router-dom';
 import { MetricCard } from '../components/MetricCard';
 
 export function OverviewPage() {
@@ -22,6 +24,8 @@ export function OverviewPage() {
   });
 
   const activeStationsCount = stations.filter((s) => s.status === 'ACTIVE').length;
+  // "Đang truyền dữ liệu" = có số đo trong 2 giờ qua (trước đây chỉ đếm trạng thái ACTIVE trong danh mục)
+  const reportingCount = stations.filter((s) => isReporting(s.lastMeasuredAt)).length;
   // Số TRẠM có độ mặn mới nhất vượt ngưỡng (trước đây đếm nhầm số cảnh báo CRITICAL)
   const stationsAboveThreshold = stations.filter((s) => (s.latestSalinity ?? 0) > SALINITY_THRESHOLD).length;
 
@@ -36,7 +40,7 @@ export function OverviewPage() {
 
           <div className="space-y-3 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
             <h3 className="text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
-              <Database className="w-4 h-4 text-blue-600" /> Trạng thái Cơ sở dữ liệu
+              <Database className="w-4 h-4 text-blue-600" /> Tình trạng hệ thống
             </h3>
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
@@ -44,7 +48,7 @@ export function OverviewPage() {
                 <span className="font-bold text-gray-800">{stations.length} trạm</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Số trạm hoạt động:</span>
+                <span className="text-gray-600">Trạm đang hoạt động:</span>
                 <span className="font-bold text-green-600">{activeStationsCount} trạm</span>
               </div>
               <div className="flex justify-between">
@@ -52,15 +56,6 @@ export function OverviewPage() {
                 <span className="font-bold text-red-600">{openAlerts.length} cảnh báo</span>
               </div>
             </div>
-          </div>
-
-          <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs space-y-2">
-            <h4 className="font-bold flex items-center gap-1 text-amber-800">
-              <AlertTriangle className="w-4 h-4 text-amber-600" /> Nạp dữ liệu đo đạc (14k rows)
-            </h4>
-            <p className="leading-relaxed text-amber-700">
-              Hệ thống đã sẵn sàng đón nhận 14,000 dòng dữ liệu của bạn vào bảng <code className="bg-amber-100 px-1 py-0.5 rounded font-mono">measurements</code> qua API Backend.
-            </p>
           </div>
         </div>
       }
@@ -70,7 +65,7 @@ export function OverviewPage() {
           <div>
             <h1 className="text-xl font-bold text-gray-800">Tổng quan Hệ thống Quan trắc</h1>
             <p className="text-xs text-gray-500 mt-1">
-              Dữ liệu thời gian thực và khuyến nghị vận hành AI tự động
+              Số liệu quan trắc mới nhất và khuyến nghị vận hành theo ngưỡng độ mặn
             </p>
           </div>
 
@@ -82,15 +77,15 @@ export function OverviewPage() {
               unit="trạm"
               icon={<Radio className="w-5 h-5 text-blue-600" />}
               color="text-blue-600"
-              subtitle="Tất cả các tỉnh ven biển"
+              subtitle="Đang quản lý trên hệ thống"
             />
             <MetricCard
-              title="Trạm đang kết nối"
-              value={activeStationsCount}
-              unit="trạm"
+              title="Trạm đang truyền dữ liệu"
+              value={reportingCount}
+              unit={`/ ${activeStationsCount} trạm`}
               icon={<CheckCircle className="w-5 h-5 text-green-600" />}
               color="text-green-600"
-              subtitle="Truyền dữ liệu liên tục"
+              subtitle="Có số đo trong 2 giờ qua"
             />
             <MetricCard
               title="Trạm cảnh báo mặn"
@@ -101,12 +96,12 @@ export function OverviewPage() {
               subtitle={`Vượt ngưỡng ${SALINITY_THRESHOLD}‰`}
             />
             <MetricCard
-              title="Khuyến nghị AI"
+              title="Khuyến nghị"
               value={recommendations.length}
               unit="gợi ý"
               icon={<Sparkles className="w-5 h-5 text-amber-500" />}
               color="text-amber-600"
-              subtitle="Cho cán bộ nông nghiệp"
+              subtitle="Theo độ mặn hiện tại"
             />
           </div>
 
@@ -114,7 +109,7 @@ export function OverviewPage() {
           <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
             <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500" />
-              Khuyến nghị vận hành AI tự động
+              Khuyến nghị vận hành
             </h3>
             <div className="grid grid-cols-2 gap-3">
               {recommendations.length > 0 ? (
@@ -137,7 +132,7 @@ export function OverviewPage() {
           <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
             <h3 className="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2">
               <Layers className="w-4 h-4 text-blue-500" />
-              Danh sách trạm quan trắc trên hệ thống
+              Trạm có độ mặn cao nhất
             </h3>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
@@ -147,24 +142,31 @@ export function OverviewPage() {
                     <th className="px-3 py-2">Tên trạm</th>
                     <th className="px-3 py-2">Tỉnh/Thành</th>
                     <th className="px-3 py-2">Sông</th>
-                    <th className="px-3 py-2">Tọa độ</th>
+                    <th className="px-3 py-2 text-right">Độ mặn (‰)</th>
                     <th className="px-3 py-2 text-right">Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {stations.slice(0, 6).map((s) => (
+                  {[...stations]
+                    .sort((a, b) => (b.latestSalinity ?? -1) - (a.latestSalinity ?? -1))
+                    .slice(0, 8)
+                    .map((s) => (
                     <tr key={s.id} className="hover:bg-gray-50">
                       <td className="px-3 py-2 font-mono font-bold text-blue-600">{s.code}</td>
                       <td className="px-3 py-2 font-semibold text-gray-800">{s.name}</td>
                       <td className="px-3 py-2 text-gray-600">{s.province}</td>
                       <td className="px-3 py-2 text-gray-600">{s.riverName || 'N/A'}</td>
-                      <td className="px-3 py-2 font-mono text-[11px] text-gray-400">
-                        {s.latitude?.toFixed(4)}, {s.longitude?.toFixed(4)}
+                      <td className={`px-3 py-2 text-right font-semibold ${(s.latestSalinity ?? 0) > SALINITY_THRESHOLD ? 'text-red-500' : 'text-gray-700'}`}>
+                        {formatNumber(s.latestSalinity)}
                       </td>
                       <td className="px-3 py-2 text-right">
-                        <span className="bg-green-50 text-green-700 font-semibold px-2 py-0.5 rounded-full border border-green-200">
-                          {s.status}
-                        </span>
+                        {s.status === 'INACTIVE' ? (
+                          <span className="bg-gray-100 text-gray-500 font-semibold px-2 py-0.5 rounded-full border border-gray-200">Ngừng hoạt động</span>
+                        ) : isReporting(s.lastMeasuredAt) ? (
+                          <span className="bg-green-50 text-green-700 font-semibold px-2 py-0.5 rounded-full border border-green-200">Đang truyền</span>
+                        ) : (
+                          <span className="bg-amber-50 text-amber-700 font-semibold px-2 py-0.5 rounded-full border border-amber-200">Mất tín hiệu</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -180,9 +182,14 @@ export function OverviewPage() {
             <MapPin className="w-4 h-4 text-blue-500" />
             Bản đồ rút gọn
           </h3>
-          <p className="text-xs text-gray-500">
-            Truy cập tab <strong>Bản đồ độ mặn</strong> để xem bản đồ nhiệt Leaflet toàn vùng ĐBSCL.
-          </p>
+          <div className="h-[420px]">
+            <StationsMiniMap
+              stations={stations.map((s) => ({ id: s.id, name: s.name, latitude: s.latitude, longitude: s.longitude, salinity: s.latestSalinity }))}
+            />
+          </div>
+          <Link to="/map" className="block text-center text-xs font-medium text-blue-600 hover:underline">
+            Mở bản đồ độ mặn chi tiết &gt;
+          </Link>
         </div>
       }
     />

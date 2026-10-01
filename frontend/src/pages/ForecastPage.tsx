@@ -1,195 +1,287 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
+import { Info, RefreshCw } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { ForecastChart } from '../components/ForecastChart';
-import { MiniMap } from '../components/shared/MiniMap';
 import { StatusBadge } from '../components/shared/StatusBadge';
-import { Info } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { stationApi } from '../api/client';
-import { useForecast } from '../hooks/useForecast';
+import { StationsMiniMap } from '../components/shared/StationsMiniMap';
+import { forecastApi } from '../api/client';
+import { useStationsList } from '../hooks/useStations';
+import { forecastQueryKey } from '../hooks/useForecast';
+import type { SalinityForecast, Station } from '../types';
+import { classifySalinity, formatNumber, SALINITY_THRESHOLD } from '../utils/salinity';
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+const HORIZONS = [7, 14];
+const ALL = '';
 
-/** 5 ngày tới, bắt đầu từ ngày mai (khớp với ngày đầu tiên của dự báo) */
-function nextDays(count: number) {
-  return Array.from({ length: count }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i + 1);
-    return {
-      key: d.toISOString().slice(0, 10),
-      weekday: WEEKDAYS[d.getDay()],
-      label: d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
-    };
-  });
+const dayLabel = (iso: string) => {
+  const d = new Date(`${iso}T00:00:00`);
+  return { weekday: WEEKDAYS[d.getDay()], label: d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) };
+};
+
+const levelOf = (v: number | null | undefined) => {
+  const c = classifySalinity(v);
+  return c === 'HIGH' ? 'CRITICAL' : c === 'MEDIUM' ? 'WARNING' : 'SAFE';
+};
+
+interface StationForecast {
+  station: Station;
+  forecasts: SalinityForecast[];
+  isLoading: boolean;
+  isError: boolean;
 }
 
-function StationForecastChart({ stationId }: { stationId: number }) {
-  const { data: forecasts = [], isLoading, isError } = useForecast(stationId);
-  if (isLoading) return <div className="h-full flex items-center justify-center text-xs text-gray-400">Đang chạy dự báo...</div>;
-  if (isError) return <div className="h-full flex items-center justify-center text-xs text-red-400">Không lấy được dự báo</div>;
-  if (forecasts.length === 0) return <div className="h-full flex items-center justify-center text-xs text-gray-400">Chưa có dữ liệu dự báo</div>;
-  return <ForecastChart forecasts={forecasts} />;
+/** Nhận xét sinh từ dự báo: trạm sẽ vượt ngưỡng (ngày đầu tiên) và trạm có xu hướng tăng. */
+function buildInsights(items: StationForecast[]): string[] {
+  const ready = items.filter((i) => i.forecasts.length > 0);
+  if (ready.length === 0) return [];
+
+  const insights: string[] = [];
+  const exceeding = ready
+    .map((i) => ({ i, first: i.forecasts.find((f) => f.predictedSalinity > SALINITY_THRESHOLD) }))
+    .filter((x) => x.first);
+  if (exceeding.length > 0) {
+    insights.push(
+      `Dự báo vượt ngưỡng ${SALINITY_THRESHOLD}‰: ` +
+        exceeding.map(({ i, first }) => `${i.station.name} (từ ${dayLabel(first!.forecastDate).label}, ${formatNumber(first!.predictedSalinity)}‰)`).join('; ') + '.'
+    );
+  } else {
+    insights.push(`Không trạm nào được dự báo vượt ngưỡng ${SALINITY_THRESHOLD}‰ trong kỳ dự báo.`);
+  }
+
+  const rising = ready.filter((i) => {
+    const f = i.forecasts;
+    return f[f.length - 1].predictedSalinity - f[0].predictedSalinity >= 0.3;
+  });
+  if (rising.length > 0) insights.push(`Xu hướng tăng: ${rising.map((i) => i.station.name).join(', ')}.`);
+
+  const peak = ready
+    .flatMap((i) => i.forecasts.map((f) => ({ name: i.station.name, f })))
+    .reduce((a, b) => (b.f.predictedSalinity > a.f.predictedSalinity ? b : a));
+  insights.push(`Cao nhất: ${peak.name} ${formatNumber(peak.f.predictedSalinity)}‰ vào ${dayLabel(peak.f.forecastDate).label}.`);
+
+  const simulated = ready.filter((i) => i.forecasts[0].modelVersion?.startsWith('simulated'));
+  if (simulated.length > 0) {
+    insights.push(`Lưu ý: ${simulated.map((i) => i.station.name).join(', ')} chưa đủ dữ liệu, đang dùng dự báo mô phỏng.`);
+  }
+  return insights;
 }
 
 export function ForecastPage() {
-  const { data: stations = [] } = useQuery({
-    queryKey: ['stations', 'list'],
-    queryFn: stationApi.getAllList,
+  const queryClient = useQueryClient();
+  const { data: stations = [] } = useStationsList();
+
+  const [days, setDays] = useState(7);
+  const [province, setProvince] = useState(ALL);
+  // null = chưa chọn tay -> mặc định tất cả trạm
+  const [picked, setPicked] = useState<number[] | null>(null);
+  const [selectedDay, setSelectedDay] = useState(0);
+  const [rerunning, setRerunning] = useState(false);
+
+  const provinces = useMemo(
+    () => [...new Set(stations.map((s) => s.province).filter((p): p is string => !!p))].sort((a, b) => a.localeCompare(b, 'vi')),
+    [stations]
+  );
+  const visibleStations = stations.filter((s) => !province || s.province === province);
+  const selectedIds = picked ?? visibleStations.map((s) => s.id);
+  const selected = visibleStations.filter((s) => selectedIds.includes(s.id));
+
+  const results = useQueries({
+    queries: selected.map((s) => ({
+      queryKey: forecastQueryKey(s.id, days),
+      queryFn: () => forecastApi.getOrPredict(s.id, days),
+      staleTime: 10 * 60_000,
+    })),
   });
+  const items: StationForecast[] = selected.map((station, i) => ({
+    station,
+    forecasts: results[i]?.data ?? [],
+    isLoading: results[i]?.isLoading ?? true,
+    isError: results[i]?.isError ?? false,
+  }));
 
-  const [selectedStations, setSelectedStations] = useState<number[]>([1, 2, 3, 5, 6]);
+  const dates = items.find((i) => i.forecasts.length > 0)?.forecasts.map((f) => f.forecastDate) ?? [];
+  const dayIndex = Math.min(selectedDay, Math.max(0, dates.length - 1));
+  const insights = buildInsights(items);
 
+  const togglePicked = (id: number) =>
+    setPicked((prev) => {
+      const base = prev ?? visibleStations.map((s) => s.id);
+      return base.includes(id) ? base.filter((x) => x !== id) : [...base, id];
+    });
 
+  // Chạy ML mới cho các trạm đang chọn (ghi đè lượt dự báo mới nhất)
+  const rerun = async () => {
+    setRerunning(true);
+    try {
+      await Promise.allSettled(selected.map((s) => forecastApi.predict(s.id, days)));
+      await queryClient.invalidateQueries({ queryKey: ['forecast'] });
+    } finally {
+      setRerunning(false);
+    }
+  };
+
+  const selectClass = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500';
 
   return (
     <DashboardLayout
       leftPanel={
         <div className="p-5 space-y-6">
           <h2 className="font-bold text-gray-800">Bộ lọc dự báo</h2>
-          
+
           <div className="space-y-4 border-b border-gray-100 pb-6">
             <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">Thời gian dự báo</label>
-              <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500">
-                <option>3 - 7 ngày</option>
-                <option>14 ngày</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">Tỉnh/Thành phố</label>
-              <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500">
-                <option>Tất cả</option>
+              <label htmlFor="forecast-days" className="text-xs font-semibold text-gray-500 mb-1 block">Thời gian dự báo</label>
+              <select id="forecast-days" value={days} onChange={(e) => { setDays(Number(e.target.value)); setSelectedDay(0); }} className={selectClass}>
+                {HORIZONS.map((d) => <option key={d} value={d}>{d} ngày tới</option>)}
               </select>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-gray-500 mb-2 block">Trạm quan tâm</label>
-              <div className="space-y-2 mb-3">
-                {stations.slice(0, 10).map((s) => (
-                  <label key={s.id} className="flex items-center justify-between text-sm text-gray-700 cursor-pointer">
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="checkbox" 
-                        className="rounded border-gray-300 text-blue-500 focus:ring-blue-500" 
-                        checked={selectedStations.includes(s.id)}
-                        onChange={() => {
-                          if (selectedStations.includes(s.id)) setSelectedStations(prev => prev.filter(id => id !== s.id));
-                          else setSelectedStations(prev => [...prev, s.id]);
-                        }}
-                      />
-                      {s.name}
-                    </div>
+              <label htmlFor="forecast-province" className="text-xs font-semibold text-gray-500 mb-1 block">Tỉnh/Thành phố</label>
+              <select id="forecast-province" value={province} onChange={(e) => { setProvince(e.target.value); setPicked(null); }} className={selectClass}>
+                <option value={ALL}>Tất cả</option>
+                {provinces.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+
+            <fieldset>
+              <legend className="text-xs font-semibold text-gray-500 mb-2 block">
+                Trạm quan tâm ({selected.length}/{visibleStations.length})
+              </legend>
+              <div className="space-y-2 mb-3 max-h-64 overflow-y-auto">
+                {visibleStations.map((s) => (
+                  <label key={s.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                      checked={selectedIds.includes(s.id)}
+                      onChange={() => togglePicked(s.id)}
+                    />
+                    {s.name}
                   </label>
                 ))}
               </div>
-              <button className="text-blue-500 text-sm font-medium flex items-center gap-1 hover:underline">
-                + Thêm trạm
+              <div className="flex gap-3 text-xs font-medium">
+                <button onClick={() => setPicked(visibleStations.map((s) => s.id))} className="text-blue-500 hover:underline">Chọn tất cả</button>
+                <button onClick={() => setPicked([])} className="text-gray-500 hover:underline">Bỏ chọn</button>
+              </div>
+            </fieldset>
+
+            <button
+                onClick={rerun}
+                disabled={rerunning || selected.length === 0}
+                className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-medium py-2 rounded-lg transition-colors text-sm shadow-sm shadow-blue-500/30"
+              >
+                <RefreshCw className={`w-4 h-4 ${rerunning ? 'animate-spin' : ''}`} />
+                {rerunning ? 'Đang chạy mô hình...' : 'Chạy lại dự báo'}
               </button>
-            </div>
-
-            <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 rounded-lg transition-colors mt-2 text-sm shadow-sm shadow-blue-500/30">
-              Xem dự báo
-            </button>
-          </div>
-
-          <div>
-            <h3 className="font-bold text-gray-800 mb-3 text-sm">Hiển thị</h3>
-            <div className="space-y-3">
-              {[
-                { label: 'Độ mặn (‰)', checked: true },
-                { label: 'Mực nước (m)', checked: false },
-                { label: 'Lưu lượng (m³/s)', checked: false },
-                { label: 'Biểu đồ', checked: true },
-              ].map(t => (
-                <div key={t.label} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">{t.label}</span>
-                  <div className={`w-8 h-4 rounded-full relative cursor-pointer ${t.checked ? 'bg-blue-500' : 'bg-gray-200'}`}>
-                    <div className={`w-3 h-3 rounded-full bg-white absolute top-0.5 transition-all ${t.checked ? 'left-4' : 'left-0.5'}`} />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <p className="text-[11px] text-gray-400">
+              Dự báo được lưu lại; trang tự chạy mô hình khi trạm chưa có dự báo hoặc dự báo đã cũ.
+            </p>
           </div>
         </div>
       }
       centerContent={
         <div className="h-full flex">
-          {/* Grid Section (50%) */}
+          {/* Biểu đồ từng trạm */}
           <div className="flex-1 p-5 overflow-y-auto bg-gray-50 flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <h2 className="font-bold text-lg text-gray-800">Dự báo độ mặn 3 - 7 ngày</h2>
-              <p className="text-xs text-gray-500">Dự báo tại các trạm quan trọng tâm</p>
+              <h2 className="font-bold text-lg text-gray-800">Dự báo độ mặn {days} ngày tới</h2>
+              <p className="text-xs text-gray-500">Chọn một ngày để xem bản đồ dự báo của ngày đó</p>
             </div>
 
-            {/* Date timeline */}
-            <div className="flex gap-2 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
-              {nextDays(5).map((day, i) => (
-                <div key={day.key} className={`flex-1 text-center py-2 rounded-lg ${i===0 ? 'bg-blue-50 border border-blue-200' : ''}`}>
-                  <p className={`text-xs font-bold ${i===0 ? 'text-blue-600' : 'text-gray-500'}`}>{day.weekday}</p>
-                  <p className={`text-[10px] ${i===0 ? 'text-blue-400' : 'text-gray-400'}`}>{day.label}</p>
-                </div>
-              ))}
-            </div>
+            {dates.length > 0 && (
+              <div className="flex gap-2 bg-white p-2 rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
+                {dates.map((d, i) => {
+                  const { weekday, label } = dayLabel(d);
+                  const active = i === dayIndex;
+                  return (
+                    <button
+                      key={d}
+                      onClick={() => setSelectedDay(i)}
+                      aria-pressed={active}
+                      className={`flex-1 min-w-[56px] text-center py-2 rounded-lg ${active ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-50'}`}
+                    >
+                      <p className={`text-xs font-bold ${active ? 'text-blue-600' : 'text-gray-500'}`}>{weekday}</p>
+                      <p className={`text-[10px] ${active ? 'text-blue-400' : 'text-gray-400'}`}>{label}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
-            {/* Grid of charts */}
-            <div className="grid grid-cols-2 gap-4">
-                {stations.filter((s) => selectedStations.includes(s.id)).map((s) => {
-                const currentSalinity = s.latestSalinity || 0;
-                const isHigh = currentSalinity >= 4;
-                
+            {selected.length === 0 && (
+              <div className="text-sm text-gray-400 text-center py-10">Chọn ít nhất một trạm ở bộ lọc bên trái</div>
+            )}
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              {items.map(({ station, forecasts, isLoading, isError }) => {
+                const dayValue = forecasts[dayIndex]?.predictedSalinity;
                 return (
-                  <div key={s.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h4 className="font-bold text-gray-800 flex items-center gap-1">
-                          <div className={`w-2 h-2 rounded-full ${isHigh ? 'bg-red-500' : 'bg-blue-500'}`} />
-                          {s.name}
-                        </h4>
-                        <p className="text-xs text-gray-500">{s.riverName || 'N/A'}</p>
-                        <p className="text-lg font-bold mt-1 text-gray-800">
-                          {currentSalinity}‰ <span className="text-xs font-normal text-gray-400">hiện tại</span>
+                  <div key={station.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start mb-4 gap-2">
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-gray-800 flex items-center gap-1 truncate">{station.name}</h4>
+                        <p className="text-xs text-gray-500">{station.riverName || '—'}</p>
+                        <p className="text-sm mt-1 text-gray-600">
+                          Hiện tại <span className="font-bold text-gray-800">{formatNumber(station.latestSalinity)}‰</span>
+                          {dayValue != null && (
+                            <> · {dayLabel(forecasts[dayIndex].forecastDate).label}: <span className="font-bold text-gray-800">{formatNumber(dayValue)}‰</span></>
+                          )}
                         </p>
                       </div>
-                      <StatusBadge level={isHigh ? 'CRITICAL' : currentSalinity >= 2 ? 'WARNING' : 'SAFE'} />
+                      <StatusBadge level={levelOf(dayValue ?? station.latestSalinity)} />
                     </div>
-                    <div className="h-[120px] -mx-2">
-                      <StationForecastChart stationId={s.id} />
+                    <div className="h-[140px] -mx-2">
+                      {isLoading ? (
+                        <div className="h-full flex items-center justify-center text-xs text-gray-400">Đang chạy dự báo...</div>
+                      ) : isError ? (
+                        <div className="h-full flex items-center justify-center text-xs text-red-400">Không lấy được dự báo</div>
+                      ) : forecasts.length === 0 ? (
+                        <div className="h-full flex items-center justify-center text-xs text-gray-400">Chưa có dữ liệu dự báo</div>
+                      ) : (
+                        <ForecastChart forecasts={forecasts} />
+                      )}
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           </div>
 
-          {/* Map Section (50%) */}
-          <div className="flex-1 bg-white border-l border-gray-200 flex flex-col">
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="font-bold text-gray-800">Bản đồ dự báo độ mặn (ngày 21/05)</h3>
+          {/* Bản đồ dự báo của ngày đang chọn */}
+          <div className="w-[40%] min-w-[320px] bg-white border-l border-gray-200 flex flex-col">
+            <div className="p-4 border-b border-gray-200">
+              <h3 className="font-bold text-gray-800">
+                Bản đồ dự báo độ mặn {dates[dayIndex] ? `ngày ${dayLabel(dates[dayIndex]).label}` : ''}
+              </h3>
             </div>
             <div className="flex-1 relative">
-               <MiniMap 
-                 markers={[
-                   { id: 1, lat: 10.0, lng: 105.7, color: '#3b82f6', label: 'Cần Thơ: 2.1‰' },
-                   { id: 2, lat: 10.25, lng: 106.4, color: '#ef4444', label: 'Gò Công: 6.1‰' }
-                 ]} 
-                 height="100%" 
-               />
-               
-               <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur rounded-xl p-4 shadow-lg border border-gray-200 z-[1000]">
-                 <h4 className="font-bold text-sm text-gray-800 mb-2 flex items-center gap-2">
-                   <Info className="w-4 h-4 text-blue-500" /> Nhận xét chung
-                 </h4>
-                 <ul className="text-xs text-gray-600 space-y-1 pl-4 list-disc marker:text-blue-500">
-                   <li>Độ mặn có xu hướng tăng vào các ngày giữa tuần, đặc biệt tại khu vực ven biển.</li>
-                   <li>Cần chú ý trạm Gò Công và Trà Vinh có khả năng vượt ngưỡng 4‰.</li>
-                 </ul>
-               </div>
+              <StationsMiniMap
+                stations={items.map(({ station, forecasts }) => ({
+                  id: station.id,
+                  name: station.name,
+                  latitude: station.latitude,
+                  longitude: station.longitude,
+                  salinity: forecasts[dayIndex]?.predictedSalinity,
+                }))}
+              />
+              {insights.length > 0 && (
+                <div className="absolute top-4 left-4 right-4 bg-white/95 backdrop-blur rounded-xl p-4 shadow-lg border border-gray-200 z-[1000]">
+                  <h4 className="font-bold text-sm text-gray-800 mb-2 flex items-center gap-2">
+                    <Info className="w-4 h-4 text-blue-500" /> Nhận xét chung
+                  </h4>
+                  <ul className="text-xs text-gray-600 space-y-1 pl-4 list-disc marker:text-blue-500">
+                    {insights.map((text) => <li key={text}>{text}</li>)}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </div>
       }
-      rightPanel={<></>}
     />
   );
 }

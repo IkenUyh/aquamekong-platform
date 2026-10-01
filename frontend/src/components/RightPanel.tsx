@@ -6,41 +6,31 @@ import { RecommendationPanel } from './RecommendationPanel';
 import { AlertPanel } from './AlertPanel';
 import { SummaryMetricCards } from './SummaryMetricCards';
 
+/** Panel phải trang Bản đồ: khuyến nghị, cảnh báo, chỉ số chung luôn hiện; dự báo khi đã chọn trạm. */
 export function RightPanel({ stationId }: { stationId: number | null }) {
-  const { data: forecasts, isLoading } = useForecast(stationId);
-
-  if (isLoading) {
-    return <div className="text-sm text-gray-500 text-center">Đang tải dự báo...</div>;
-  }
-
-  if (!stationId) {
-    return <div className="text-sm text-gray-500 text-center">Vui lòng chọn trạm để xem dự báo</div>;
-  }
+  const { data: forecasts = [], isLoading } = useForecast(stationId);
 
   return (
     <>
-      {/* Recommendation Panel */}
       <RecommendationPanel />
-
-      {/* Alert Panel */}
       <AlertPanel />
 
-      {/* Forecast Summary */}
-      {forecasts && forecasts.length > 0 && (
-        <ForecastSummaryPanel forecasts={forecasts} />
-      )}
-
-      {/* Small Forecast Chart */}
-      {forecasts && forecasts.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm mb-4">
-          <h3 className="font-semibold text-gray-800 text-sm mb-3">
-            Dự báo độ mặn
-          </h3>
-          <ForecastChart forecasts={forecasts} />
+      {stationId === null ? (
+        <div className="bg-white rounded-xl border border-dashed border-gray-300 p-4 text-sm text-gray-500 text-center">
+          Chọn một trạm trên bản đồ để xem dự báo
         </div>
-      )}
+      ) : isLoading ? (
+        <div className="text-sm text-gray-500 text-center">Đang tải dự báo...</div>
+      ) : forecasts.length > 0 ? (
+        <>
+          <ForecastSummaryPanel forecasts={forecasts} />
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm mb-4">
+            <h3 className="font-semibold text-gray-800 text-sm mb-3">Dự báo độ mặn</h3>
+            <ForecastChart forecasts={forecasts} />
+          </div>
+        </>
+      ) : null}
 
-      {/* Summary Metric Cards */}
       <SummaryMetricCards />
     </>
   );

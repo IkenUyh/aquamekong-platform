@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import { startOfDay, endOfDay } from 'date-fns';
+import { endOfDay, subHours } from 'date-fns';
 
 interface FilterState {
   // Date range
@@ -19,18 +19,20 @@ interface FilterContextType extends FilterState {
   toggleLayer: (layerId: string) => void;
 }
 
+const HEAT_LAYERS = ['salinity', 'waterLevel', 'flowRate'];
+
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
 export function FilterProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<FilterState>({
-    startDate: startOfDay(new Date()),
+    // Mặc định 24 giờ qua (đầu ngày thì "hôm nay" gần như chưa có số đo)
+    startDate: subHours(new Date(), 24),
     endDate: endOfDay(new Date()),
     selectedStationId: null,
     activeLayers: {
       salinity: true,
       waterLevel: false,
       flowRate: false,
-      rainfall: false,
       provinces: true,
       rivers: true,
     },
@@ -42,14 +44,16 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
   const setSelectedStation = (id: number | null) =>
     setState(prev => ({ ...prev, selectedStationId: id }));
 
+  // Các lớp nhiệt (salinity/waterLevel/flowRate) loại trừ nhau: bật một lớp thì tắt hai lớp kia
   const toggleLayer = (layerId: string) =>
-    setState(prev => ({
-      ...prev,
-      activeLayers: {
-        ...prev.activeLayers,
-        [layerId]: !prev.activeLayers[layerId],
-      },
-    }));
+    setState(prev => {
+      const turningOn = !prev.activeLayers[layerId];
+      const next = { ...prev.activeLayers, [layerId]: turningOn };
+      if (turningOn && HEAT_LAYERS.includes(layerId)) {
+        HEAT_LAYERS.filter((l) => l !== layerId).forEach((l) => { next[l] = false; });
+      }
+      return { ...prev, activeLayers: next };
+    });
 
   return (
     <FilterContext.Provider value={{ ...state, setDateRange, setSelectedStation, toggleLayer }}>

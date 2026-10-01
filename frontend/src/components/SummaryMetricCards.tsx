@@ -21,7 +21,7 @@ export function SummaryMetricCards() {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm mb-4">
       <h3 className="font-semibold text-gray-800 text-sm mb-3">Thông số tổng hợp (24 giờ qua)</h3>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 gap-2">
         <MetricCard
           label="Độ mặn"
           value={summary.avgSalinity.current?.toFixed(2) ?? '—'}
