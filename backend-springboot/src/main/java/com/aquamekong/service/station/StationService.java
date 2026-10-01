@@ -174,6 +174,11 @@ public class StationService {
                 .updatedAt(station.getUpdatedAt());
 
         if (measurements != null && !measurements.isEmpty()) {
+            builder.lastMeasuredAt(measurements.stream()
+                    .map(Measurement::getRecordedAt)
+                    .max(Comparator.naturalOrder())
+                    .orElse(null));
+            builder.metricTypes(measurements.stream().map(Measurement::getMetricType).distinct().sorted().toList());
             for (Measurement m : measurements) {
                 if ("SALINITY".equalsIgnoreCase(m.getMetricType())) {
                     builder.latestSalinity(m.getValue());
@@ -202,6 +207,9 @@ public class StationService {
         properties.put("latestWaterLevel", dto.getLatestWaterLevel());
         properties.put("latestFlowRate", dto.getLatestFlowRate());
         properties.put("salinityLevel", dto.getSalinityLevel());
+        properties.put("lastMeasuredAt", dto.getLastMeasuredAt());
+        properties.put("metricTypes", dto.getMetricTypes());
+        properties.put("updatedAt", dto.getUpdatedAt());
 
         return GeoJsonResponse.Feature.builder()
                 .type("Feature")

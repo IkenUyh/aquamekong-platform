@@ -51,7 +51,7 @@ class AlertServiceTest {
     @Test
     void createsAlertWhenThresholdExceeded() {
         when(alertRuleRepository.findByStationIdAndMetricTypeAndIsActiveTrue(1L, "salinity")).thenReturn(List.of(rule));
-        when(alertRepository.existsByRuleIdAndStatus(7L, AlertStatus.ACTIVE)).thenReturn(false);
+        when(alertRepository.existsByRuleIdAndStatusIn(7L, AlertService.OPEN_STATUSES)).thenReturn(false);
 
         alertService.evaluateMeasurement(measurement(5.2));
 
@@ -63,9 +63,9 @@ class AlertServiceTest {
     }
 
     @Test
-    void doesNotDuplicateWhileRuleHasActiveAlert() {
+    void doesNotDuplicateWhileRuleHasOpenAlert() {
         when(alertRuleRepository.findByStationIdAndMetricTypeAndIsActiveTrue(1L, "salinity")).thenReturn(List.of(rule));
-        when(alertRepository.existsByRuleIdAndStatus(7L, AlertStatus.ACTIVE)).thenReturn(true);
+        when(alertRepository.existsByRuleIdAndStatusIn(7L, AlertService.OPEN_STATUSES)).thenReturn(true);
 
         alertService.evaluateMeasurement(measurement(5.2));
 

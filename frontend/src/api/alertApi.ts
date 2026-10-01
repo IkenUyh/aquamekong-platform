@@ -1,6 +1,7 @@
 import apiClient, { orMock, withFallback } from './client';
 import type { Alert, AlertDto, AlertRule, AlertSeverity } from '../types';
 import { MOCK_ALERTS } from '../data/mockData';
+import { metricLabel } from '../utils/salinity';
 
 const LEVEL_BY_SEVERITY: Record<AlertSeverity, NonNullable<AlertDto['alertLevel']>> = {
   CRITICAL: 'CRITICAL',
@@ -9,15 +10,10 @@ const LEVEL_BY_SEVERITY: Record<AlertSeverity, NonNullable<AlertDto['alertLevel'
   LOW: 'INFO',
 };
 
-const METRIC_LABELS: Record<string, { label: string; unit: string }> = {
-  salinity: { label: 'Độ mặn', unit: '‰' },
-  water_level: { label: 'Mực nước', unit: 'm' },
-  flow_rate: { label: 'Lưu lượng', unit: 'm³/s' },
-};
 
 /** Backend Alert -> dạng UI đang dùng (alertLevel, measuredValue, message...). */
 export function toAlertDto(a: Alert): AlertDto {
-  const metric = METRIC_LABELS[a.metricType] ?? { label: a.metricType, unit: '' };
+  const metric = metricLabel(a.metricType);
   return {
     id: a.id,
     stationId: a.stationId,
@@ -35,6 +31,7 @@ export function toAlertDto(a: Alert): AlertDto {
     isActive: a.status === 'ACTIVE',
     isResolved: a.status === 'RESOLVED',
     createdAt: a.triggeredAt ?? a.createdAt ?? new Date().toISOString(),
+    resolvedAt: a.resolvedAt,
   };
 }
 
@@ -49,11 +46,18 @@ export const alertApi = {
       MOCK_ALERTS
     ),
 
+  /** Cảnh báo chưa xử lý xong: ACTIVE + ACKNOWLEDGED, mới nhất trước */
   getUnresolved: () =>
     withFallback(
-      apiClient.get<Alert[]>('/alerts/status/ACTIVE').then((r) =>
-        r.data.length > 0 ? r.data.map(toAlertDto) : orMock([], activeMocks())
-      ),
+      Promise.all([
+        apiClient.get<Alert[]>('/alerts/status/ACTIVE'),
+        apiClient.get<Alert[]>('/alerts/status/ACKNOWLEDGED'),
+      ]).then(([active, acknowledged]) => {
+        const all = [...active.data, ...acknowledged.data]
+          .sort((a, b) => (b.triggeredAt ?? '').localeCompare(a.triggeredAt ?? ''))
+          .map(toAlertDto);
+        return all.length > 0 ? all : orMock([], activeMocks());
+      }),
       activeMocks()
     ),
 

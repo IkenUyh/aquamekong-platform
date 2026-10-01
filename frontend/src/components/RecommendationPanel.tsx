@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { recommendationApi } from '../api/recommendationApi';
@@ -22,10 +23,9 @@ export function RecommendationPanel() {
     <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm mb-4">
       <div className="flex justify-between items-center mb-3">
         <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-          Khuyến nghị AI
-          <span className="text-sm">🤖</span>
+          Khuyến nghị
         </h3>
-        <a href="#recommendations" className="text-blue-500 text-xs hover:underline">Chi tiết &gt;</a>
+        <Link to="/" className="text-blue-500 text-xs hover:underline">Chi tiết &gt;</Link>
       </div>
 
       <div className="space-y-3">
