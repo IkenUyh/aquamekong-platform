@@ -49,6 +49,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/measurements/ingest").hasAnyRole("DEVICE", "OPERATOR", "ADMIN")
                         .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
+                        // Xoá trạm xoá dây chuyền toàn bộ số đo & cảnh báo của trạm -> chỉ ADMIN
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/stations/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/auth/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/forecasts/predict").hasAnyRole("USER", "OPERATOR", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("USER", "OPERATOR", "ADMIN")
