@@ -15,19 +15,6 @@ export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 /** Phân loại độ mặn do backend trả về (StationService.classifySalinity) */
 export type SalinityLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'UNKNOWN';
 
-export interface WaterMetric {
-  id?: number;
-  stationId?: number;
-  stationCode?: string;
-  stationName?: string;
-  salinity?: number;
-  value?: number;
-  waterLevel?: number;
-  flowRate?: number;
-  recordedAt: string;
-  salinityLevel?: SalinityLevel;
-}
-
 // --- Domain: Station & River ---
 export interface River {
   id: number;

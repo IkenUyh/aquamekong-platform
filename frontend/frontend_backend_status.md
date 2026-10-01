@@ -18,21 +18,22 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
 - **Endpoints:**
   - `POST /api/v1/auth/login` (công khai). Sai 5 lần liên tiếp sẽ bị khoá 5 phút (429).
   - `GET /api/v1/auth/me` 👤, `POST /api/v1/auth/logout` 👤, `POST /api/v1/auth/change-password` 👤
-  - Quản lý người dùng `/api/v1/users/**` 🔑. Hiện **chưa có giao diện**, chỉ gọi được qua Swagger/API.
+  - Quản lý người dùng `/api/v1/users/**` 🔑 (giao diện: `/admin`, tab Người dùng)
 
 ### 2. Trạm quan trắc (Stations)
 - **Trang:** `/` (Tổng quan), `/map`, `/stations`
 - **Trạng thái:** 🟢 Đã liên kết
 - **Endpoints:**
   - `GET /api/v1/stations` (GeoJSON), `GET /api/v1/stations/list`, `GET /api/v1/stations/{id}`, `GET /api/v1/stations/nearby` 👤
-  - `POST/PUT/DELETE /api/v1/stations...` 🛠️. Hiện chưa có giao diện thêm/sửa trạm.
+  - `POST/PUT /api/v1/stations` 🛠️, `DELETE` 🔑 (giao diện: `/admin`)
 - Mỗi trạm có `latestSalinity`, `latestWaterLevel`, `latestFlowRate`: là giá trị mới nhất **theo từng chỉ số**.
 
 ### 3. Số liệu đo (Measurements) & Realtime
 - **Trang:** `/map` (bảng lịch sử, heatmap)
 - **Trạng thái:** 🟢 Đã liên kết
 - **Endpoints:**
-  - `GET /api/v1/measurements/latest`, `GET /api/v1/measurements/station/{id}?limit=` (tối đa 5000), `GET /api/v1/measurements/station/{id}/range?from=&to=` 👤
+  - `GET /api/v1/measurements/latest`, `GET /api/v1/measurements/station/{id}?metricType=&limit=` (tối đa 5000), `GET /api/v1/measurements/station/{id}/range?from=&to=&metricType=` 👤
+  - Mỗi cảm biến chỉ có 1 số đo tại 1 thời điểm. Gửi trùng sẽ nhận 409.
   - `GET /api/v1/telemetry/stream` (SSE) 👤. Token gửi qua `?access_token=` vì trình duyệt không gửi header được với EventSource. Server phát event `init`, `telemetry` và heartbeat mỗi 25 giây.
   - `POST /api/v1/measurements/ingest` 🛠️ hoặc thiết bị IoT gửi header `X-API-Key` (`INGEST_API_KEY`)
 
@@ -49,8 +50,9 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
 - **Trạng thái:** 🟢 Đã liên kết. `api/alertApi.ts` (`toAlertDto`) map dữ liệu backend sang dạng UI hiển thị.
 - **Endpoints:**
   - `GET /api/v1/alerts?limit=` (tối đa 1000), `GET /api/v1/alerts/status/ACTIVE`, `GET /api/v1/alerts/station/{id}` 👤
-  - `PUT /api/v1/alerts/{id}/status?status=` 🛠️, `GET/POST/DELETE /api/v1/alerts/rules...` (GET 👤, ghi 🛠️). Hiện chưa có giao diện quản lý rule.
-- Backend tự sinh cảnh báo cho mọi số liệu mới, kể cả dữ liệu do ML pipeline crawl về. Mỗi rule chỉ có tối đa 1 cảnh báo ACTIVE tại một thời điểm.
+  - `PUT /api/v1/alerts/{id}/status?status=` 🛠️ (các nút Xác nhận / Đã xử lý / Mở lại trên trang Cảnh báo)
+  - `GET/POST/DELETE /api/v1/alerts/rules...` (GET 👤, ghi 🛠️; giao diện: `/admin`)
+- Backend tự sinh cảnh báo cho mọi số liệu mới, kể cả dữ liệu do ML pipeline crawl về. Mỗi rule chỉ có tối đa 1 cảnh báo chưa xử lý (ACTIVE hoặc ACKNOWLEDGED) tại một thời điểm.
 
 ### 6. Khuyến nghị (Recommendations)
 - **Trang:** `/` (Tổng quan), panel trên bản đồ
@@ -68,7 +70,15 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
 
 ---
 
-## Còn thiếu (chưa có giao diện, backend đã có API)
-- Quản lý người dùng và phân quyền (`/api/v1/users`)
-- Thêm/sửa/xoá trạm, thiết bị, cảm biến
-- Quản lý rule cảnh báo và chuyển trạng thái cảnh báo (ACKNOWLEDGED/RESOLVED)
+### 8. Quản trị
+- **Trang:** `/admin` (🛠️). Tab "Người dùng" chỉ hiện với 🔑.
+- **Trạng thái:** 🟢 Đã liên kết
+- **Rule cảnh báo:** `GET/POST/DELETE /api/v1/alerts/rules` (POST có `id` là sửa). Backend validate trạm, chỉ số, toán tử và ngưỡng. Hệ thống **chỉ sinh cảnh báo khi có rule đang bật**.
+- **Trạm:** `POST/PUT /api/v1/stations` 🛠️; `DELETE` 🔑, thao tác này xoá dây chuyền số đo và cảnh báo của trạm. Muốn tạm dừng trạm thì dùng trạng thái "Ngừng hoạt động".
+- **Người dùng:** `GET/POST /api/v1/users`, `PUT /users/{id}/status`, `POST/DELETE /users/{id}/roles` 🔑. ADMIN không thể tự khoá hoặc tự gỡ quyền của mình, và hệ thống không cho gỡ ADMIN cuối cùng.
+
+---
+
+## Còn thiếu
+- Màn hình quản lý thiết bị và cảm biến (`/api/v1/devices`, `/api/v1/sensors`). `deviceApi`/`sensorApi` đã có sẵn trong `api/client.ts`.
+- User bị khoá vẫn dùng được token đã cấp cho tới khi token hết hạn (`JWT_EXPIRATION`, mặc định 8 giờ).
