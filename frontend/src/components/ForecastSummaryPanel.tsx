@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import React from 'react';
 import type { SalinityForecast } from '../types';
+import { classifySalinity, SALINITY_CLASS_COLORS, SALINITY_CLASS_SHORT_LABELS } from '../utils/salinity';
 
 interface ForecastSummaryPanelProps {
   forecasts: SalinityForecast[];
@@ -8,9 +9,8 @@ interface ForecastSummaryPanelProps {
 
 // Classify risk từ predicted salinity
 function classifyRisk(salinity: number): { level: string; color: string } {
-  if (salinity >= 4) return { level: 'Cao', color: '#ef4444' };
-  if (salinity >= 1) return { level: 'TB', color: '#eab308' };
-  return { level: 'Thấp', color: '#22c55e' };
+  const c = classifySalinity(salinity);
+  return { level: c === 'MEDIUM' ? 'TB' : SALINITY_CLASS_SHORT_LABELS[c], color: SALINITY_CLASS_COLORS[c] };
 }
 
 const DAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];

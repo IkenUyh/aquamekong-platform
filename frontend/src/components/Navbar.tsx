@@ -57,12 +57,12 @@ export function Navbar() {
         {isOfflineMode ? (
           <>
             <WifiOff className="w-3.5 h-3.5" />
-            <span>Offline Mode</span>
+            <span title="API không phản hồi — đang hiển thị dữ liệu mẫu (chế độ dev)">Dữ liệu mẫu</span>
           </>
         ) : (
           <>
             <Wifi className="w-3.5 h-3.5" />
-            <span>Live Data</span>
+            <span>Trực tuyến</span>
           </>
         )}
       </div>

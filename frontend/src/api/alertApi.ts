@@ -1,7 +1,7 @@
 import apiClient, { orMock, withFallback } from './client';
 import type { Alert, AlertDto, AlertRule, AlertSeverity } from '../types';
 import { MOCK_ALERTS } from '../data/mockData';
-import { metricLabel } from '../utils/salinity';
+import { formatNumber, metricLabel } from '../utils/salinity';
 
 const LEVEL_BY_SEVERITY: Record<AlertSeverity, NonNullable<AlertDto['alertLevel']>> = {
   CRITICAL: 'CRITICAL',
@@ -24,7 +24,7 @@ export function toAlertDto(a: Alert): AlertDto {
     severity: a.severity,
     alertLevel: LEVEL_BY_SEVERITY[a.severity] ?? 'INFO',
     status: a.status,
-    message: `${metric.label} ${a.value.toFixed(2)}${metric.unit} vượt ngưỡng ${a.threshold}${metric.unit}`,
+    message: `${metric.label} ${formatNumber(a.value)}${metric.unit} vượt ngưỡng ${formatNumber(a.threshold)}${metric.unit}`,
     thresholdValue: a.threshold,
     measuredValue: a.value,
     actualValue: a.value,

@@ -12,7 +12,8 @@ export type AlertSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type AlertStatus = 'ACTIVE' | 'ACKNOWLEDGED' | 'RESOLVED';
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
-export type SalinityLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'WARNING' | 'SAFE' | 'UNKNOWN';
+/** Phân loại độ mặn do backend trả về (StationService.classifySalinity) */
+export type SalinityLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'UNKNOWN';
 
 export interface WaterMetric {
   id?: number;
