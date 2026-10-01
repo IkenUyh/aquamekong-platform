@@ -10,7 +10,6 @@ import type {
   Sensor,
   Measurement,
   MetricType,
-  TelemetryIngest,
   ForecastRun,
   SalinityForecast,
   User,
@@ -177,14 +176,6 @@ export const sensorApi = {
   delete: (id: number) => apiClient.delete(`/sensors/${id}`),
 };
 
-export const measurementApi = {
-  getLatestPerStation: () => apiClient.get<Measurement[]>('/measurements/latest').then((r) => r.data),
-  getByStation: (stationId: number) => apiClient.get<Measurement[]>(`/measurements/station/${stationId}`).then((r) => r.data),
-  getByStationAndRange: (stationId: number, from: string, to: string) =>
-    apiClient.get<Measurement[]>(`/measurements/station/${stationId}/range`, { params: { from, to } }).then((r) => r.data),
-  ingest: (data: TelemetryIngest) => apiClient.post<Measurement>('/measurements/ingest', data).then((r) => r.data),
-};
-
 export const metricApi = {
   getLatest: () =>
     withFallback(
@@ -220,12 +211,6 @@ export const forecastApi = {
   predict: (stationId: number, daysAhead: number = 7) =>
     // ML (ARIMA + CNN) có thể chạy lâu hơn timeout mặc định 10s
     apiClient.post<SalinityForecast[]>('/forecasts/predict', { stationId, daysAhead }, { timeout: 60000 }).then((r) => r.data),
-
-  getByStation: (stationId: number) => 
-    withFallback(
-      apiClient.get<SalinityForecast[]>(`/forecasts/station/${stationId}`).then((r) => r.data),
-      generateMockForecasts(stationId)
-    ),
 
   /**
    * `daysAhead` ngày dự báo bắt đầu từ ngày mai. Lượt chạy mới nhất đã cũ (ngày đầu đã qua)

@@ -100,17 +100,20 @@ export const MOCK_REPORT_OVERVIEW: ReportOverview = {
 
 export const generateMockForecasts = (stationId: number): SalinityForecast[] => {
   const today = new Date();
-  return Array.from({length: 7}).map((_, i) => {
+  return Array.from({ length: 7 }).map((_, i) => {
     const d = new Date(today);
-    d.setDate(d.getDate() + i);
+    d.setDate(d.getDate() + i + 1); // dự báo bắt đầu từ ngày mai, như backend
+    const predicted = Math.round((3.5 + Math.random() * 2) * 10) / 10;
     return {
       id: i,
       stationId,
-      forecastDate: d.toISOString(),
-      predictedSalinity: Math.round((3.5 + Math.random() * 2) * 10) / 10,
-      confidenceScore: 85 - i * 2,
-      modelName: "AI_LSTM_V1",
-      createdAt: today.toISOString()
-    };
+      forecastDate: d.toISOString().slice(0, 10),
+      predictedSalinity: predicted,
+      lowerBound: Math.round((predicted - 0.5) * 10) / 10,
+      upperBound: Math.round((predicted + 0.5) * 10) / 10,
+      confidenceLevel: 0.9,
+      modelVersion: 'mock',
+      createdAt: today.toISOString(),
+    } satisfies SalinityForecast;
   });
 };

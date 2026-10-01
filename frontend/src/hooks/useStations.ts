@@ -18,11 +18,3 @@ export function useStationsList() {
     staleTime: 10000,
   });
 }
-
-export function useStation(id: number | null) {
-  return useQuery({
-    queryKey: ['station', id],
-    queryFn: () => stationApi.getById(id!),
-    enabled: id !== null,
-  });
-}
