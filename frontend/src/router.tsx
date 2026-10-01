@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { RequireAuth } from './components/RequireAuth';
+import { RouteError } from './components/RouteError';
 import { LoginPage } from './pages/LoginPage';
 
 // Mỗi trang là một chunk riêng: Leaflet/Recharts chỉ tải khi vào trang cần đến
@@ -19,10 +20,11 @@ function PageFallback() {
 const page = (element: React.ReactNode) => <Suspense fallback={<PageFallback />}>{element}</Suspense>;
 
 export const router = createBrowserRouter([
-  { path: '/login', element: <LoginPage /> },
+  { path: '/login', element: <LoginPage />, errorElement: <RouteError /> },
   {
     // Mọi trang còn lại yêu cầu đăng nhập
     element: <RequireAuth />,
+    errorElement: <RouteError />,
     children: [
       { path: '/',          element: page(<OverviewPage />) },
       { path: '/map',       element: page(<MapPage />) },
@@ -31,6 +33,7 @@ export const router = createBrowserRouter([
       { path: '/alerts',    element: page(<AlertsPage />) },
       { path: '/reports',   element: page(<ReportsPage />) },
       { path: '/account',   element: page(<AccountPage />) },
+      { path: '*',          element: <RouteError notFound /> },
     ],
   },
 ]);

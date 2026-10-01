@@ -9,6 +9,7 @@ import type {
   Device,
   Sensor,
   Measurement,
+  MetricType,
   TelemetryIngest,
   ForecastRun,
   SalinityForecast,
@@ -190,16 +191,17 @@ export const metricApi = {
       []
     ),
 
-  getByStation: (stationId: number) =>
+  /** metricType (vd. 'salinity') để chỉ lấy 1 chỉ số — API trả về mọi chỉ số nếu bỏ trống */
+  getByStation: (stationId: number, metricType?: MetricType, limit?: number) =>
     withFallback(
-      apiClient.get<Measurement[]>(`/measurements/station/${stationId}`).then((r) => r.data),
+      apiClient.get<Measurement[]>(`/measurements/station/${stationId}`, { params: { metricType, limit } }).then((r) => r.data),
       []
     ),
 
-  getByStationWithDateRange: (stationId: number, from: string, to: string) =>
+  getByStationWithDateRange: (stationId: number, from: string, to: string, metricType?: MetricType) =>
     withFallback(
       apiClient.get<Measurement[]>(`/measurements/station/${stationId}/range`, {
-        params: { from, to },
+        params: { from, to, metricType },
       }).then((r) => r.data),
       []
     ),

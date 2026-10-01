@@ -36,8 +36,12 @@ public class MeasurementService {
     }
 
     @Transactional(readOnly = true)
-    public List<MeasurementDto> getByStationId(Long stationId, int limit) {
-        return measurementRepository.findByStationIdOrderByRecordedAtDesc(stationId, limitOf(limit))
+    public List<MeasurementDto> getByStationId(Long stationId, String metricType, int limit) {
+        List<Measurement> rows = metricType == null || metricType.isBlank()
+                ? measurementRepository.findByStationIdOrderByRecordedAtDesc(stationId, limitOf(limit))
+                : measurementRepository.findByStationIdAndMetricTypeOrderByRecordedAtDesc(
+                        stationId, MetricTypes.normalize(metricType), limitOf(limit));
+        return rows
                 .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
@@ -60,8 +64,12 @@ public class MeasurementService {
     }
 
     @Transactional(readOnly = true)
-    public List<MeasurementDto> getByStationAndTimeRange(Long stationId, OffsetDateTime from, OffsetDateTime to, int limit) {
-        return measurementRepository.findByStationIdAndRecordedAtBetweenOrderByRecordedAtDesc(stationId, from, to, limitOf(limit))
+    public List<MeasurementDto> getByStationAndTimeRange(Long stationId, String metricType, OffsetDateTime from, OffsetDateTime to, int limit) {
+        List<Measurement> rows = metricType == null || metricType.isBlank()
+                ? measurementRepository.findByStationIdAndRecordedAtBetweenOrderByRecordedAtDesc(stationId, from, to, limitOf(limit))
+                : measurementRepository.findByStationIdAndMetricTypeAndRecordedAtBetweenOrderByRecordedAtDesc(
+                        stationId, MetricTypes.normalize(metricType), from, to, limitOf(limit));
+        return rows
                 .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());

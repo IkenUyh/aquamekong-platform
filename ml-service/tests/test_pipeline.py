@@ -46,3 +46,12 @@ def test_failed_insert_does_not_mark_data_as_processed(monkeypatch):
     scheduler.run_pipeline()
 
     crawler.mark_processed.assert_not_called()
+
+
+def test_insert_is_idempotent_per_sensor_and_time(monkeypatch):
+    _, conn = _setup(monkeypatch)
+
+    scheduler.run_pipeline()
+
+    sql = str(conn.execute.call_args.args[0])
+    assert "ON CONFLICT (sensor_id, recorded_at) DO NOTHING" in sql

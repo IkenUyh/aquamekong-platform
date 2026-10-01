@@ -4,7 +4,8 @@ import { Radio, Database, ShieldAlert, Sparkles, CheckCircle, AlertTriangle, Lay
 import { useQuery } from '@tanstack/react-query';
 import { stationApi } from '../api/client';
 import { recommendationApi } from '../api/recommendationApi';
-import { useAlerts } from '../hooks/useAlerts';
+import { useUnresolvedAlerts } from '../hooks/useAlerts';
+import { SALINITY_THRESHOLD } from '../utils/salinity';
 import { MetricCard } from '../components/MetricCard';
 
 export function OverviewPage() {
@@ -13,7 +14,7 @@ export function OverviewPage() {
     queryFn: stationApi.getAllList,
   });
 
-  const { data: alerts = [] } = useAlerts();
+  const { data: openAlerts = [] } = useUnresolvedAlerts();
 
   const { data: recommendations = [] } = useQuery({
     queryKey: ['recommendations'],
@@ -21,7 +22,8 @@ export function OverviewPage() {
   });
 
   const activeStationsCount = stations.filter((s) => s.status === 'ACTIVE').length;
-  const criticalAlertsCount = alerts.filter((a) => a.severity === 'CRITICAL' || a.alertLevel === 'CRITICAL').length;
+  // Số TRẠM có độ mặn mới nhất vượt ngưỡng (trước đây đếm nhầm số cảnh báo CRITICAL)
+  const stationsAboveThreshold = stations.filter((s) => (s.latestSalinity ?? 0) > SALINITY_THRESHOLD).length;
 
   return (
     <DashboardLayout
@@ -47,7 +49,7 @@ export function OverviewPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Cảnh báo đang mở:</span>
-                <span className="font-bold text-red-600">{alerts.length} cảnh báo</span>
+                <span className="font-bold text-red-600">{openAlerts.length} cảnh báo</span>
               </div>
             </div>
           </div>
@@ -92,11 +94,11 @@ export function OverviewPage() {
             />
             <MetricCard
               title="Trạm cảnh báo mặn"
-              value={criticalAlertsCount}
+              value={stationsAboveThreshold}
               unit="trạm"
               icon={<ShieldAlert className="w-5 h-5 text-red-500" />}
               color="text-red-500"
-              subtitle="Vượt ngưỡng 4.0‰"
+              subtitle={`Vượt ngưỡng ${SALINITY_THRESHOLD}‰`}
             />
             <MetricCard
               title="Khuyến nghị AI"
