@@ -16,13 +16,12 @@ export function SalinityHeatmap({ features, enabled }: SalinityHeatmapProps) {
     if (!enabled || !features || features.length === 0) return;
 
     // Convert GeoJSON features -> heatmap points [lat, lng, intensity]
-    const points: [number, number, number][] = features
-      .filter(f => (f.properties as any).latestSalinity !== undefined && (f.properties as any).latestSalinity !== null)
-      .map(f => [
-        f.geometry.coordinates[1], // lat
-        f.geometry.coordinates[0], // lng
-        normalizeIntensity((f.properties as any).latestSalinity),
-      ]);
+    const points: [number, number, number][] = features.flatMap((f) => {
+      const salinity = f.properties.latestSalinity;
+      return salinity == null
+        ? []
+        : [[f.geometry.coordinates[1], f.geometry.coordinates[0], normalizeIntensity(salinity)] as [number, number, number]];
+    });
 
     if (points.length === 0) return;
 

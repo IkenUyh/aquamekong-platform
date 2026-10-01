@@ -95,45 +95,40 @@ export const riverApi = {
   delete: (id: number) => apiClient.delete(`/rivers/${id}`),
 };
 
+const toFeatureCollection = (stations: Station[]): GeoJsonFeatureCollection => ({
+  type: 'FeatureCollection',
+  features: stations.map((s) => ({
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [s.longitude, s.latitude] },
+    properties: s,
+  })),
+});
+
+const EMPTY_FEATURE_COLLECTION: GeoJsonFeatureCollection = { type: 'FeatureCollection', features: [] };
+
 export const stationApi = {
-  getAll: () => {
-    const fallback: any = {
-      type: "FeatureCollection",
-      features: MOCK_STATIONS_LIST.map(s => ({
-        type: "Feature",
-        geometry: { type: "Point", coordinates: [s.longitude, s.latitude] },
-        properties: s
-      }))
-    };
+  /** GET /stations trả GeoJSON; chấp nhận cả dạng mảng (backend cũ) */
+  getAll: (): Promise<GeoJsonFeatureCollection> => {
+    const fallback = toFeatureCollection(MOCK_STATIONS_LIST);
     return withFallback(
-      apiClient.get('/stations').then((r: any) => {
-        if (r.data && r.data.type === "FeatureCollection") {
-          return r.data;
-        }
-        if (Array.isArray(r.data)) {
-          return {
-            type: "FeatureCollection",
-            features: r.data.map((s: any) => ({
-              type: "Feature",
-              geometry: { type: "Point", coordinates: [s.longitude || 105.5, s.latitude || 10.0] },
-              properties: s
-            }))
-          };
-        }
-        return orMock({ type: "FeatureCollection", features: [] }, fallback);
-      }), 
+      apiClient.get<GeoJsonFeatureCollection | Station[]>('/stations').then((r) => {
+        if (Array.isArray(r.data)) return toFeatureCollection(r.data);
+        if (r.data?.type === 'FeatureCollection') return r.data;
+        return orMock(EMPTY_FEATURE_COLLECTION, fallback);
+      }),
       fallback
     );
   },
 
-  getAllList: () => 
+  /** GET /stations/list trả mảng Station; chấp nhận cả dạng GeoJSON */
+  getAllList: (): Promise<Station[]> =>
     withFallback(
-      apiClient.get('/stations/list').then((r: any) => {
+      apiClient.get<Station[] | GeoJsonFeatureCollection>('/stations/list').then((r) => {
         if (Array.isArray(r.data) && r.data.length > 0) return r.data;
-        if (r.data && Array.isArray(r.data.features)) {
-          return r.data.features.map((f: any) => f.properties);
+        if (!Array.isArray(r.data) && Array.isArray(r.data?.features)) {
+          return r.data.features.map((f) => f.properties);
         }
-        return orMock([], MOCK_STATIONS_LIST);
+        return orMock<Station[]>([], MOCK_STATIONS_LIST);
       }),
       MOCK_STATIONS_LIST
     ),
@@ -158,7 +153,7 @@ export const stationApi = {
       apiClient.get<GeoJsonFeatureCollection>('/stations/nearby', {
         params: { lng, lat, radius },
       }).then((r) => r.data),
-      { type: "FeatureCollection", features: [] } as any
+      EMPTY_FEATURE_COLLECTION
     ),
 };
 
