@@ -22,6 +22,18 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     r = 6371 # Radius of earth in kilometers
     return c * r
 
+class MekongDataset(Dataset):
+    """Sliding-window dataset (X: lookback x features, y: target) cho Hybrid ARIMA-CNN / LSTM."""
+    def __init__(self, X, y):
+        self.X = torch.tensor(X, dtype=torch.float32)
+        self.y = torch.tensor(y, dtype=torch.float32)
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, idx):
+        return self.X[idx], self.y[idx]
+
 class STGNNDataset(Dataset):
     def __init__(self, X, y):
         # X shape: (Batch, N_stations, Lookback, N_features)
@@ -50,21 +62,33 @@ class DataLoaderService:
         self.feature_cols = ['water_level_min', 'water_level_max', 'salinity_min', 'salinity_max']
         self.target_col = 'salinity_max'
 
+    def _find_csv(self) -> str:
+        all_files = glob.glob(os.path.join(self.data_dir, "**", "*with_metadata*.csv"), recursive=True)
+        if not all_files:
+            all_files = glob.glob(os.path.join(self.data_dir, "**", "*.csv"), recursive=True)
+            if not all_files:
+                raise FileNotFoundError(f"No CSV data found in {self.data_dir}")
+        all_files.sort(key=os.path.getmtime, reverse=True)
+        return all_files[0]
+
+    def load_long_data(self) -> pd.DataFrame:
+        """
+        Dạng long (date, station_id, feature_cols...) — dùng cho Hybrid ARIMA-CNN.
+        load_raw_data() bên dưới trả về dạng pivot cho ST-GNN.
+        """
+        df = pd.read_csv(self._find_csv())
+        df['date'] = pd.to_datetime(df['date'])
+        df = df.sort_values(by=['station_id', 'date']).reset_index(drop=True)
+        df[self.feature_cols] = df.groupby('station_id')[self.feature_cols].transform(lambda x: x.ffill().bfill())
+        df[self.feature_cols] = df[self.feature_cols].fillna(0)
+        return df
+
     def load_raw_data(self):
         """
         Scan the data directory for the metadata CSV file, pivot it for ST-GNN,
         and compute the distance matrix W_D.
         """
-        all_files = glob.glob(os.path.join(self.data_dir, "**", "*with_metadata*.csv"), recursive=True)
-        if not all_files:
-            # Fallback if the specific metadata file is not found
-            all_files = glob.glob(os.path.join(self.data_dir, "**", "*.csv"), recursive=True)
-            if not all_files:
-                raise FileNotFoundError(f"No CSV data found in {self.data_dir}")
-        
-        # We use the newest file assuming it's the metadata one
-        all_files.sort(key=os.path.getmtime, reverse=True)
-        file_path = all_files[0]
+        file_path = self._find_csv()
         
         print(f"Loading data from: {file_path}")
         df = pd.read_csv(file_path)
