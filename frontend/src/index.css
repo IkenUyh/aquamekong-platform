@@ -23,6 +23,12 @@ body {
   overflow: hidden;
 }
 
+/* Checkbox/radio gốc của trình duyệt theo màu chủ đạo */
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--color-primary);
+}
+
 #root {
   width: 100vw;
   height: 100vh;
