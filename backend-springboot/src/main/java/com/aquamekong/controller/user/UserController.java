@@ -1,10 +1,12 @@
 package com.aquamekong.controller.user;
 
+import com.aquamekong.dto.user.CreateUserRequest;
 import com.aquamekong.dto.user.UserDto;
 import com.aquamekong.entity.enums.UserStatus;
 import com.aquamekong.service.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,8 +42,8 @@ public class UserController {
 
     @PostMapping
     @Operation(summary = "Tạo người dùng mới")
-    public ResponseEntity<UserDto> createUser(@RequestBody UserDto dto, @RequestParam String password) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(dto, password));
+    public ResponseEntity<UserDto> createUser(@Valid @RequestBody CreateUserRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request));
     }
 
     @PutMapping("/{id}/status")
