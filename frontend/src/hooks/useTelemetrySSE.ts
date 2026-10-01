@@ -1,7 +1,9 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { TelemetryEvent } from '../types';
+import { getToken } from '../auth/tokenStorage';
 
-const SSE_URL = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/telemetry/stream`;
+const SSE_URL = `${import.meta.env.VITE_API_BASE_URL ?? ''}/api/v1/telemetry/stream`;
+const RECONNECT_DELAY_MS = 5000;
 
 interface UseTelemetrySSEOptions {
   onTelemetry?: (data: TelemetryEvent) => void;
@@ -10,72 +12,63 @@ interface UseTelemetrySSEOptions {
 }
 
 export function useTelemetrySSE({ onTelemetry, onInit, enabled = true }: UseTelemetrySSEOptions = {}) {
-  const eventSourceRef = useRef<EventSource | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState<TelemetryEvent | null>(null);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const connect = useCallback(() => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
-
-    const es = new EventSource(SSE_URL);
-    eventSourceRef.current = es;
-
-    es.onopen = () => {
-      setIsConnected(true);
-      console.log('[SSE] Connected to telemetry stream');
-    };
-
-    // Handle initial data event
-    es.addEventListener('init', (event) => {
-      try {
-        const data = JSON.parse(event.data) as TelemetryEvent[];
-        onInit?.(data);
-        console.log('[SSE] Received initial data:', data.length, 'metrics');
-      } catch (e) {
-        console.error('[SSE] Failed to parse init data', e);
-      }
-    });
-
-    // Handle telemetry updates
-    es.addEventListener('telemetry', (event) => {
-      try {
-        const data = JSON.parse(event.data) as TelemetryEvent;
-        setLastEvent(data);
-        onTelemetry?.(data);
-      } catch (e) {
-        console.error('[SSE] Failed to parse telemetry data', e);
-      }
-    });
-
-    es.onerror = () => {
-      setIsConnected(false);
-      es.close();
-      console.warn('[SSE] Connection lost. Reconnecting in 5s...');
-
-      // Auto-reconnect after 5 seconds
-      reconnectTimeoutRef.current = setTimeout(() => {
-        if (enabled) connect();
-      }, 5000);
-    };
-  }, [onTelemetry, onInit, enabled]);
+  // Callback giữ trong ref: đổi callback không làm đóng/mở lại kết nối SSE
+  const onTelemetryRef = useRef(onTelemetry);
+  const onInitRef = useRef(onInit);
+  onTelemetryRef.current = onTelemetry;
+  onInitRef.current = onInit;
 
   useEffect(() => {
-    if (enabled) {
-      connect();
-    }
+    if (!enabled) return;
+
+    let es: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    let disposed = false;
+
+    const connect = () => {
+      // EventSource không gửi được header Authorization -> token qua query param (chỉ endpoint SSE nhận)
+      const token = getToken();
+      es = new EventSource(token ? `${SSE_URL}?access_token=${encodeURIComponent(token)}` : SSE_URL);
+
+      es.onopen = () => setIsConnected(true);
+
+      es.addEventListener('init', (event) => {
+        try {
+          onInitRef.current?.(JSON.parse((event as MessageEvent).data) as TelemetryEvent[]);
+        } catch (e) {
+          console.error('[SSE] Failed to parse init data', e);
+        }
+      });
+
+      es.addEventListener('telemetry', (event) => {
+        try {
+          const data = JSON.parse((event as MessageEvent).data) as TelemetryEvent;
+          setLastEvent(data);
+          onTelemetryRef.current?.(data);
+        } catch (e) {
+          console.error('[SSE] Failed to parse telemetry data', e);
+        }
+      });
+
+      es.onerror = () => {
+        setIsConnected(false);
+        es?.close();
+        if (!disposed) reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS);
+      };
+    };
+
+    connect();
 
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
+      disposed = true;
+      es?.close();
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      setIsConnected(false);
     };
-  }, [connect, enabled]);
+  }, [enabled]);
 
   return { isConnected, lastEvent };
 }

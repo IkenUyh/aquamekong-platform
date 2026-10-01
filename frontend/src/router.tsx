@@ -1,17 +1,34 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
-import { MapPage } from './pages/MapPage';
-import { OverviewPage } from './pages/OverviewPage';
-import { StationsPage } from './pages/StationsPage';
-import { AlertsPage } from './pages/AlertsPage';
-import { ForecastPage } from './pages/ForecastPage';
-import { ReportsPage } from './pages/ReportsPage';
+import { RequireAuth } from './components/RequireAuth';
+import { LoginPage } from './pages/LoginPage';
+
+// Mỗi trang là một chunk riêng: Leaflet/Recharts chỉ tải khi vào trang cần đến
+const OverviewPage = lazy(() => import('./pages/OverviewPage').then((m) => ({ default: m.OverviewPage })));
+const MapPage = lazy(() => import('./pages/MapPage').then((m) => ({ default: m.MapPage })));
+const StationsPage = lazy(() => import('./pages/StationsPage').then((m) => ({ default: m.StationsPage })));
+const ForecastPage = lazy(() => import('./pages/ForecastPage').then((m) => ({ default: m.ForecastPage })));
+const AlertsPage = lazy(() => import('./pages/AlertsPage').then((m) => ({ default: m.AlertsPage })));
+const ReportsPage = lazy(() => import('./pages/ReportsPage').then((m) => ({ default: m.ReportsPage })));
+
+function PageFallback() {
+  return <div className="h-screen flex items-center justify-center text-sm text-gray-400">Đang tải...</div>;
+}
+
+const page = (element: React.ReactNode) => <Suspense fallback={<PageFallback />}>{element}</Suspense>;
 
 export const router = createBrowserRouter([
-  { path: '/',          element: <OverviewPage /> },
-  { path: '/map',       element: <MapPage /> },
-  { path: '/stations',  element: <StationsPage /> },
-  { path: '/forecast',  element: <ForecastPage /> },
-  { path: '/alerts',    element: <AlertsPage /> },
-  { path: '/reports',   element: <ReportsPage /> },
+  { path: '/login', element: <LoginPage /> },
+  {
+    // Mọi trang còn lại yêu cầu đăng nhập
+    element: <RequireAuth />,
+    children: [
+      { path: '/',          element: page(<OverviewPage />) },
+      { path: '/map',       element: page(<MapPage />) },
+      { path: '/stations',  element: page(<StationsPage />) },
+      { path: '/forecast',  element: page(<ForecastPage />) },
+      { path: '/alerts',    element: page(<AlertsPage />) },
+      { path: '/reports',   element: page(<ReportsPage />) },
+    ],
+  },
 ]);

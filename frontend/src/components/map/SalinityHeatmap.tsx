@@ -26,7 +26,6 @@ export function SalinityHeatmap({ features, enabled }: SalinityHeatmapProps) {
 
     if (points.length === 0) return;
 
-    // @ts-ignore - leaflet.heat extends L globally
     const heatLayer = L.heatLayer(points, {
       radius: 60,        // Bán kính pixel
       blur: 40,          // Blur

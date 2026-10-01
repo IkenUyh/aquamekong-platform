@@ -6,15 +6,10 @@ import { SummaryCounter } from '../components/shared/SummaryCounter';
 import { AlertTriangle, AlertCircle, Info, Settings, TrendingUp } from 'lucide-react';
 import type { AlertDto } from '../types/alert';
 import { HistoryChart } from '../components/HistoryChart';
-import { useQuery } from '@tanstack/react-query';
-import { alertApi } from '../api/alertApi';
+import { useAlerts } from '../hooks/useAlerts';
 
 export function AlertsPage() {
-  const { data: alerts = [], isLoading } = useQuery({
-    queryKey: ['alerts', 'recent'],
-    queryFn: alertApi.getRecent,
-    refetchInterval: 30000,
-  });
+  const { data: alerts = [], isLoading } = useAlerts();
 
   const [selectedAlert, setSelectedAlert] = useState<AlertDto | null>(null);
   const [page, setPage] = useState(1);
@@ -29,7 +24,7 @@ export function AlertsPage() {
   const columns: Column<AlertDto>[] = [
     { key: 'severity', header: 'Mức độ', render: (a) => <StatusBadge level={a.alertLevel as StatusLevel || 'INFO'} /> },
     { key: 'station', header: 'Trạm', render: (a) => <span className="font-semibold text-gray-800">{a.stationName?.split(' ')[0] || `Trạm ${a.stationId}`}</span> },
-    { key: 'province', header: 'Tỉnh/Thành', render: () => 'Tiền Giang' },
+    { key: 'province', header: 'Tỉnh/Thành', render: (a) => a.province || '—' },
     { key: 'salinity', header: 'Độ mặn (‰)', render: (a) => <span className="font-bold" style={{ color: a.alertLevel === 'CRITICAL' ? '#ef4444' : a.alertLevel === 'WARNING' ? '#eab308' : '#22c55e' }}>{'>'} {a.measuredValue?.toFixed(1) || 0}</span> },
     { key: 'time', header: 'Thời gian', render: (a) => new Date(a.createdAt).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) + ' ' + new Date(a.createdAt).toLocaleDateString('vi-VN') },
     { key: 'status', header: 'Trạng thái', render: (a) => a.message },

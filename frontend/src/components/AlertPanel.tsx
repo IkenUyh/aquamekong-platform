@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useUnresolvedAlerts } from '../hooks/useAlerts';
 import type { AlertDto } from '../types/alert';
 
@@ -22,12 +23,12 @@ export function AlertPanel() {
             {alerts.length}
           </span>
         </h3>
-        <a href="#alerts" className="text-blue-500 text-xs hover:underline">Xem tất cả &gt;</a>
+        <Link to="/alerts" className="text-blue-500 text-xs hover:underline">Xem tất cả &gt;</Link>
       </div>
 
       <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
         {alerts.slice(0, 3).map((alert: AlertDto) => {
-          const severityKey = alert.severity || alert.alertLevel || 'INFO';
+          const severityKey = alert.alertLevel && SEVERITY_STYLES[alert.alertLevel] ? alert.alertLevel : 'INFO';
           const style = SEVERITY_STYLES[severityKey] || SEVERITY_STYLES.INFO;
           return (
             <div key={alert.id}
