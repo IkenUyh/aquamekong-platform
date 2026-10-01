@@ -35,6 +35,7 @@ function MapPageContent() {
 
   return (
     <DashboardLayout
+      mobileCenterHeight="h-[60vh]"
       leftPanel={
         <div className="h-full flex flex-col bg-white">
           <FilterPanel />
