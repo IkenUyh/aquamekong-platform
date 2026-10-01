@@ -5,6 +5,7 @@ for predicting salinity levels in Mekong Delta waterways.
 
 import logging
 import os
+import threading
 from datetime import date, timedelta
 from pathlib import Path
 from typing import List, Optional
@@ -30,6 +31,19 @@ class SalinityModel:
     def __init__(self):
         self.model_dir = Path(settings.model_dir)
         self.model_dir.mkdir(parents=True, exist_ok=True)
+        # station_id -> (mtime, model): tránh joblib.load ở mỗi request
+        self._cache = {}
+        self._lock = threading.Lock()
+
+    def _load(self, station_id: int):
+        path = self._model_path(station_id)
+        mtime = path.stat().st_mtime
+        with self._lock:
+            cached = self._cache.get(station_id)
+            if cached is None or cached[0] != mtime:
+                cached = (mtime, joblib.load(path))
+                self._cache[station_id] = cached
+            return cached[1]
 
     def _model_path(self, station_id: int) -> Path:
         return self.model_dir / f"station_{station_id}_prophet.pkl"
@@ -51,55 +65,49 @@ class SalinityModel:
         """
         try:
             from prophet import Prophet
+        except ImportError as e:
+            raise RuntimeError("Prophet chưa được cài: pip install prophet") from e
 
-            # Prepare data for Prophet (requires 'ds' and 'y' columns)
-            prophet_df = pd.DataFrame({
-                "ds": df.index,
-                "y": df["salinity"].values,
-            }).dropna()
+        logging.getLogger("cmdstanpy").setLevel(logging.WARNING)
 
-            if len(prophet_df) < 10:
-                raise ValueError(
-                    f"Need at least 10 data points, got {len(prophet_df)}"
-                )
+        # Dữ liệu đo theo giờ -> trung bình theo ngày, khớp với dự báo theo ngày
+        index = pd.to_datetime(df.index)
+        if index.tz is not None:
+            index = index.tz_localize(None)
+        daily = pd.Series(pd.to_numeric(df["salinity"], errors="coerce").values, index=index)
+        daily = daily.resample("1D").mean().dropna()
+        prophet_df = pd.DataFrame({"ds": daily.index, "y": daily.values})
 
-            # Configure and train model
-            model = Prophet(
-                changepoint_prior_scale=0.05,
-                seasonality_prior_scale=10,
-                yearly_seasonality=True,
-                weekly_seasonality=True,
-                daily_seasonality=False,
-            )
+        if len(prophet_df) < 10:
+            raise ValueError(f"Need at least 10 days of data, got {len(prophet_df)}")
 
-            # Suppress Prophet logs
-            model.fit(prophet_df, suppress_logging=True if hasattr(Prophet, 'suppress_logging') else False)
+        model = Prophet(
+            changepoint_prior_scale=0.05,
+            seasonality_prior_scale=10,
+            yearly_seasonality=len(prophet_df) >= 365,
+            weekly_seasonality=True,
+            daily_seasonality=False,
+        )
+        model.fit(prophet_df)
 
-            # Save model
-            model_path = self._model_path(station_id)
-            joblib.dump(model, model_path)
+        model_path = self._model_path(station_id)
+        joblib.dump(model, model_path)
 
-            # Calculate training metrics
-            predictions = model.predict(prophet_df[["ds"]])
-            from sklearn.metrics import mean_absolute_error, mean_squared_error
-            import numpy as np
+        # Training metrics (in-sample)
+        from sklearn.metrics import mean_absolute_error, mean_squared_error
+        import numpy as np
 
-            mae = mean_absolute_error(prophet_df["y"], predictions["yhat"])
-            rmse = np.sqrt(mean_squared_error(prophet_df["y"], predictions["yhat"]))
+        predictions = model.predict(prophet_df[["ds"]])
+        mae = mean_absolute_error(prophet_df["y"], predictions["yhat"])
+        rmse = np.sqrt(mean_squared_error(prophet_df["y"], predictions["yhat"]))
 
-            metrics = {
-                "mae": round(mae, 4),
-                "rmse": round(rmse, 4),
-                "data_points": len(prophet_df),
-                "model_path": str(model_path),
-            }
-
-            logger.info(f"Model trained for station {station_id}: MAE={mae:.4f}, RMSE={rmse:.4f}")
-            return metrics
-
-        except ImportError:
-            logger.error("Prophet not installed. Install with: pip install prophet")
-            return {"error": "Prophet not available", "status": "failed"}
+        logger.info(f"Model trained for station {station_id}: MAE={mae:.4f}, RMSE={rmse:.4f}")
+        return {
+            "mae": round(float(mae), 4),
+            "rmse": round(float(rmse), 4),
+            "data_points": len(prophet_df),
+            "model_path": str(model_path),
+        }
 
     def predict(self, station_id: int, days_ahead: int = 7) -> List[PredictionItem]:
         """
@@ -117,15 +125,12 @@ class SalinityModel:
         if not model_path.exists():
             raise FileNotFoundError(f"No trained model for station {station_id}")
 
-        model = joblib.load(model_path)
+        model = self._load(station_id)
 
-        # Create future dataframe
-        future = model.make_future_dataframe(periods=days_ahead)
-        forecast = model.predict(future)
-
-        # Extract only future predictions
-        today = pd.Timestamp(date.today())
-        future_forecast = forecast[forecast["ds"] > today].tail(days_ahead)
+        # Luôn dự báo từ ngày mai, kể cả khi dữ liệu train đã cũ
+        today = date.today()
+        future = pd.DataFrame({"ds": pd.to_datetime([today + timedelta(days=i) for i in range(1, days_ahead + 1)])})
+        future_forecast = model.predict(future)
 
         predictions = []
         for _, row in future_forecast.iterrows():
@@ -133,10 +138,9 @@ class SalinityModel:
                 PredictionItem(
                     date=row["ds"].date(),
                     salinity=round(max(0, row["yhat"]), 2),
-                    confidence=round(
+                    confidence=round(min(1.0, max(0.0,
                         1.0 - (row["yhat_upper"] - row["yhat_lower"]) / (2 * max(row["yhat"], 0.1)),
-                        2,
-                    ),
+                    )), 2),
                     lower_bound=round(max(0, row["yhat_lower"]), 2),
                     upper_bound=round(row["yhat_upper"], 2),
                     model_version="prophet-v1.0",
