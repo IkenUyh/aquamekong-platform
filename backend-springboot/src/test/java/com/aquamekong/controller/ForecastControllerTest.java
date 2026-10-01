@@ -80,8 +80,11 @@ class ForecastControllerTest {
 
     @Test
     @WithAnonymousUser
-    void anonymousIsUnauthorized() throws Exception {
-        mvc.perform(get("/api/v1/forecasts/runs")).andExpect(status().isUnauthorized());
+    void anonymousCanReadButNotRunPrediction() throws Exception {
+        mvc.perform(get("/api/v1/forecasts/runs")).andExpect(status().isOk());
+        mvc.perform(post("/api/v1/forecasts/predict").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"stationId\":1,\"daysAhead\":7}"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

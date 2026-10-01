@@ -1,11 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { RefreshCw } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { ForecastChart } from '../components/ForecastChart';
 import { StatusBadge } from '../components/shared/StatusBadge';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
 import { forecastApi } from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
 import { useStationsList } from '../hooks/useStations';
 import { forecastQueryKey } from '../hooks/useForecast';
 import type { SalinityForecast, Station } from '../types';
@@ -78,6 +80,7 @@ export function ForecastPage() {
   const [picked, setPicked] = useState<number[] | null>(null);
   const [selectedDay, setSelectedDay] = useState(0);
   const [rerunning, setRerunning] = useState(false);
+  const { user } = useAuth();
 
   const provinces = useMemo(
     () => [...new Set(stations.map((s) => s.province).filter((p): p is string => !!p))].sort((a, b) => a.localeCompare(b, 'vi')),
@@ -169,7 +172,8 @@ export function ForecastPage() {
               </div>
             </fieldset>
 
-            <button
+            {user ? (
+              <button
                 onClick={rerun}
                 disabled={rerunning || selected.length === 0}
                 className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-700 disabled:opacity-60 text-white font-medium py-2 rounded-lg transition-colors text-sm"
@@ -177,9 +181,17 @@ export function ForecastPage() {
                 <RefreshCw className={`w-4 h-4 ${rerunning ? 'animate-spin' : ''}`} />
                 {rerunning ? 'Đang chạy mô hình...' : 'Chạy lại dự báo'}
               </button>
-            <p className="text-[11px] text-gray-400">
-              Dự báo được lưu lại; trang tự chạy mô hình khi trạm chưa có dự báo hoặc dự báo đã cũ.
-            </p>
+            ) : (
+              <p className="text-xs text-gray-500">
+                <Link to="/login" state={{ from: '/forecast' }} className="font-medium text-primary hover:underline">Đăng nhập</Link>{' '}
+                để chạy lại mô hình dự báo.
+              </p>
+            )}
+            {user && (
+              <p className="text-[11px] text-gray-400">
+                Dự báo được lưu lại; trang tự chạy mô hình khi trạm chưa có dự báo hoặc dự báo đã cũ.
+              </p>
+            )}
           </div>
         </div>
       }

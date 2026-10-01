@@ -103,6 +103,14 @@ export function Navbar() {
           </div>
         )}
 
+        {/* Chưa đăng nhập: vẫn xem được dữ liệu, nút đăng nhập để nhận cảnh báo / thao tác */}
+        {!user && (
+          <NavLink to="/login" state={{ from: pathname }}
+            className="hidden lg:inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium bg-white text-primary hover:bg-white/90 whitespace-nowrap">
+            Đăng nhập
+          </NavLink>
+        )}
+
         {/* Nút menu (< lg) */}
         <button
           className="lg:hidden p-2 rounded-md text-white hover:bg-white/10"
@@ -126,6 +134,11 @@ export function Navbar() {
               </NavLink>
             ))}
           </nav>
+          {!user && (
+            <div className="border-t border-gray-100 p-3">
+              <NavLink to="/login" state={{ from: pathname }} className="btn-primary w-full py-2">Đăng nhập</NavLink>
+            </div>
+          )}
           {user && (
             <div className="border-t border-gray-100 p-3 flex items-center justify-between gap-2">
               <NavLink to="/account" className="flex items-center gap-2 text-sm text-gray-700 min-w-0">

@@ -191,10 +191,13 @@ export interface AlertDto {
 export interface User {
   id: number;
   username: string;
-  email: string;
+  /** null = tài khoản tạo bằng Zalo (Zalo không cung cấp email) */
+  email: string | null;
   fullName?: string;
   status: UserStatus;
   roles?: string[];
+  /** false = tài khoản tạo bằng Google, chưa đặt mật khẩu */
+  hasPassword?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
