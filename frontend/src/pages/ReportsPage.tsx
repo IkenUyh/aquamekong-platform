@@ -94,7 +94,7 @@ export function ReportsPage() {
             <div className="flex flex-wrap justify-between items-center gap-2 mb-6">
               <h3 className="font-semibold text-gray-900">Xu hướng độ mặn theo thời gian</h3>
               <div className="flex gap-4 text-xs font-medium">
-                <span className="flex items-center gap-1.5"><div className="w-3 h-3 bg-primary-500 rounded-full"/> Trung bình toàn vùng</span>
+                <span className="flex items-center gap-1.5"><div className="w-3 h-3 bg-primary rounded-full"/> Trung bình toàn vùng</span>
                 <span className="flex items-center gap-1.5"><div className="w-3 h-3 bg-gray-300 rounded-full"/> Kỳ trước</span>
                 <span className="flex items-center gap-1.5"><div className="w-3 h-1 border-b-2 border-red-500 border-dashed"/> Ngưỡng 4‰</span>
               </div>
@@ -111,7 +111,7 @@ export function ReportsPage() {
                     <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
                     <ReferenceLine y={overview?.salinityThreshold ?? 4} stroke="#ef4444" strokeDasharray="3 3" />
                     <Line type="monotone" dataKey="previous" name="Kỳ trước" stroke="#cbd5e1" strokeWidth={2} dot={false} connectNulls />
-                    <Line type="monotone" dataKey="current" name="Kỳ này" stroke="#3b82f6" strokeWidth={3} activeDot={{ r: 6 }} connectNulls />
+                    <Line type="monotone" dataKey="current" name="Kỳ này" stroke="#0F3D5E" strokeWidth={3} activeDot={{ r: 6 }} connectNulls />
                   </LineChart>
                 </ResponsiveContainer>
               )}

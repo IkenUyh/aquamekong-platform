@@ -1,177 +1,185 @@
 import React from 'react';
-import { DashboardLayout } from '../layouts/DashboardLayout';
-import { Database, Sparkles, Layers, MapPin } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { stationApi } from '../api/client';
-import { recommendationApi } from '../api/recommendationApi';
-import { useUnresolvedAlerts } from '../hooks/useAlerts';
-import { formatNumber, isReporting, SALINITY_THRESHOLD } from '../utils/salinity';
-import { StationsMiniMap } from '../components/shared/StationsMiniMap';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Navbar } from '../components/Navbar';
 import { MetricCard } from '../components/MetricCard';
 import { RecommendationList } from '../components/RecommendationList';
+import { StationsMiniMap } from '../components/shared/StationsMiniMap';
+import { useStationsList } from '../hooks/useStations';
+import { useUnresolvedAlerts } from '../hooks/useAlerts';
+import { recommendationApi } from '../api/recommendationApi';
+import { percentChange, reportApi } from '../api/reportApi';
+import type { Station } from '../types';
+import {
+  classifySalinity, formatNumber, isReporting, SALINITY_CLASS_COLORS, SALINITY_THRESHOLD,
+} from '../utils/salinity';
+
+/** Thang của thanh ngang: 2 × ngưỡng, để vạch ngưỡng nằm giữa */
+const BAR_MAX = SALINITY_THRESHOLD * 2;
+
+function SalinityBar({ value }: { value: number | null | undefined }) {
+  const pct = value == null ? 0 : Math.min(value / BAR_MAX, 1) * 100;
+  return (
+    <div className="relative h-1.5 w-full rounded-full bg-gray-100" aria-hidden="true">
+      <div className="absolute inset-y-0 left-0 rounded-full"
+        style={{ width: `${pct}%`, backgroundColor: SALINITY_CLASS_COLORS[classifySalinity(value)] }} />
+      {/* vạch ngưỡng */}
+      <div className="absolute -top-1 -bottom-1 w-px bg-gray-400" style={{ left: `${(SALINITY_THRESHOLD / BAR_MAX) * 100}%` }} />
+    </div>
+  );
+}
+
+function StationRanking({ stations }: { stations: Station[] }) {
+  const sorted = [...stations].sort((a, b) => (b.latestSalinity ?? -1) - (a.latestSalinity ?? -1));
+  return (
+    <ul className="divide-y divide-gray-100">
+      {sorted.map((s) => {
+        const above = (s.latestSalinity ?? 0) > SALINITY_THRESHOLD;
+        return (
+          <li key={s.id} className="py-2.5">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-sm text-gray-900 truncate">
+                {s.name}
+                {!isReporting(s.lastMeasuredAt) && <span className="ml-1.5 text-xs text-amber-700">· mất tín hiệu</span>}
+              </span>
+              <span className={`text-sm num font-semibold ${above ? 'text-red-600' : 'text-gray-900'}`}>
+                {formatNumber(s.latestSalinity)}<span className="ml-0.5 text-xs font-normal text-gray-500">‰</span>
+              </span>
+            </div>
+            <div className="mt-1.5"><SalinityBar value={s.latestSalinity} /></div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 export function OverviewPage() {
-  const { data: stations = [] } = useQuery({
-    queryKey: ['stations', 'list'],
-    queryFn: stationApi.getAllList,
-  });
-
+  const { data: stations = [] } = useStationsList();
   const { data: openAlerts = [] } = useUnresolvedAlerts();
-
   const { data: recommendations = [] } = useQuery({
     queryKey: ['recommendations'],
     queryFn: recommendationApi.getRecommendations,
   });
+  const { data: last24h } = useQuery({ queryKey: ['reports', 'overview', 1], queryFn: () => reportApi.getOverview(1) });
+  const { data: trend = [] } = useQuery({ queryKey: ['reports', 'trend', 7], queryFn: () => reportApi.getTrend(7) });
 
-  const activeStationsCount = stations.filter((s) => s.status === 'ACTIVE').length;
-  // "Đang truyền dữ liệu" = có số đo trong 2 giờ qua (trước đây chỉ đếm trạng thái ACTIVE trong danh mục)
+  const aboveThreshold = stations.filter((s) => (s.latestSalinity ?? 0) > SALINITY_THRESHOLD).length;
+  const activeCount = stations.filter((s) => s.status === 'ACTIVE').length;
   const reportingCount = stations.filter((s) => isReporting(s.lastMeasuredAt)).length;
-  // Số TRẠM có độ mặn mới nhất vượt ngưỡng (trước đây đếm nhầm số cảnh báo CRITICAL)
-  const stationsAboveThreshold = stations.filter((s) => (s.latestSalinity ?? 0) > SALINITY_THRESHOLD).length;
+  const lastUpdate = stations
+    .map((s) => s.lastMeasuredAt)
+    .filter((t): t is string => !!t)
+    .sort()
+    .pop();
+  const salinityChange = last24h ? percentChange(last24h.avgSalinity) : null;
+
+  const trendData = trend.map((p) => ({
+    ...p,
+    label: new Date(p.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
+  }));
+  const hasTrend = trendData.some((p) => p.current != null);
 
   return (
-    <DashboardLayout
-      leftPanel={
-        <div className="p-5 space-y-6">
-          <div>
-            <h2 className="font-semibold text-gray-900 text-lg mb-1">AquaMekong System</h2>
-            <p className="text-xs text-gray-500">Giám sát & Dự báo Thủy văn ĐBSCL</p>
-          </div>
-
-          <div className="space-y-3 bg-primary-50/50 p-4 rounded-lg border border-primary-100">
-            <h3 className="text-xs font-bold text-primary-900 flex items-center gap-1.5">
-              <Database className="w-4 h-4 text-primary-600" /> Tình trạng hệ thống
-            </h3>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Số trạm hiện có:</span>
-                <span className="font-semibold text-gray-900">{stations.length} trạm</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Trạm đang hoạt động:</span>
-                <span className="font-bold text-green-600">{activeStationsCount} trạm</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Cảnh báo đang mở:</span>
-                <span className="font-bold text-red-600">{openAlerts.length} cảnh báo</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      }
-      centerContent={
-        <div className="h-full bg-gray-50 p-4 lg:p-6 overflow-y-auto space-y-6">
-          {/* Header */}
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">Tổng quan Hệ thống Quan trắc</h1>
-            <p className="text-xs text-gray-500 mt-1">
-              Số liệu quan trắc mới nhất và khuyến nghị vận hành theo ngưỡng độ mặn
+    <div className="flex flex-col h-screen w-screen bg-[var(--color-bg)]">
+      <Navbar />
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto w-full p-4 lg:p-6 space-y-6">
+          {/* Tiêu đề */}
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h1 className="text-2xl font-semibold text-gray-900">Tổng quan</h1>
+            <p className="text-sm text-gray-500 num">
+              {lastUpdate
+                ? `Số đo mới nhất lúc ${new Date(lastUpdate).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}`
+                : 'Chưa có số đo'}
             </p>
           </div>
 
-          {/* Top Metric Cards */}
+          {/* Chỉ số chính */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
             <MetricCard
-              label="Tổng số trạm quan trắc"
-              value={stations.length}
-              unit="trạm"
-              hint="Đang quản lý trên hệ thống"
+              label={`Trạm vượt ngưỡng ${SALINITY_THRESHOLD}‰`}
+              value={`${aboveThreshold} / ${stations.length}`}
+              tone={aboveThreshold > 0 ? 'danger' : 'default'}
+              hint="theo số đo mới nhất"
+            />
+            <MetricCard
+              label="Độ mặn trung bình 24 giờ"
+              value={formatNumber(last24h?.avgSalinity.current)}
+              unit="‰"
+              change={salinityChange != null ? { value: salinityChange, kind: '%', label: 'so với 24h trước', upIsBad: true } : undefined}
             />
             <MetricCard
               label="Trạm đang truyền dữ liệu"
-              value={reportingCount}
-              unit={`/ ${activeStationsCount} trạm`}
-              hint="Có số đo trong 2 giờ qua"
+              value={`${reportingCount} / ${activeCount}`}
+              hint="có số đo trong 2 giờ qua"
             />
             <MetricCard
-              label="Trạm cảnh báo mặn"
-              value={stationsAboveThreshold}
-              tone={stationsAboveThreshold > 0 ? 'danger' : 'default'}
-              unit="trạm"
-              hint={`Vượt ngưỡng ${SALINITY_THRESHOLD}‰`}
-            />
-            <MetricCard
-              label="Khuyến nghị"
-              value={recommendations.length}
-              unit="gợi ý"
-              hint="Theo độ mặn hiện tại"
+              label="Cảnh báo chưa xử lý"
+              value={openAlerts.length}
+              tone={openAlerts.length > 0 ? 'danger' : 'default'}
+              hint={openAlerts.length > 0 ? undefined : 'không có cảnh báo mở'}
             />
           </div>
 
-          {/* Recommendations List */}
-          <div className="card p-5 space-y-4">
-            <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              Khuyến nghị vận hành
-            </h3>
-            <RecommendationList items={recommendations} />
+          {/* Bản đồ + xếp hạng trạm */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <section className="card overflow-hidden lg:col-span-2 flex flex-col">
+              <div className="flex items-baseline justify-between px-4 py-3 border-b border-gray-200">
+                <h2 className="text-sm font-semibold text-gray-900">Độ mặn tại các trạm</h2>
+                <Link to="/map" className="text-xs font-medium text-primary hover:underline">Mở bản đồ chi tiết</Link>
+              </div>
+              <div className="h-[420px]">
+                <StationsMiniMap
+                  stations={stations.map((s) => ({ id: s.id, name: s.name, latitude: s.latitude, longitude: s.longitude, salinity: s.latestSalinity }))}
+                />
+              </div>
+            </section>
+
+            <section className="card p-4">
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-sm font-semibold text-gray-900">Xếp hạng theo độ mặn</h2>
+                <span className="text-xs text-gray-500">vạch = ngưỡng {SALINITY_THRESHOLD}‰</span>
+              </div>
+              {stations.length === 0
+                ? <p className="mt-3 text-sm text-gray-500">Chưa có trạm.</p>
+                : <StationRanking stations={stations} />}
+            </section>
           </div>
 
-          {/* Stations Quick View Table */}
-          <div className="card p-5">
-            <h3 className="font-semibold text-gray-900 text-sm mb-3 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-primary-500" />
-              Trạm có độ mặn cao nhất
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-gray-50 text-gray-500 font-semibold border-b border-gray-200">
-                  <tr>
-                    <th className="px-3 py-2">Mã trạm</th>
-                    <th className="px-3 py-2">Tên trạm</th>
-                    <th className="px-3 py-2">Tỉnh/Thành</th>
-                    <th className="px-3 py-2">Sông</th>
-                    <th className="px-3 py-2 text-right">Độ mặn (‰)</th>
-                    <th className="px-3 py-2 text-right">Trạng thái</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {[...stations]
-                    .sort((a, b) => (b.latestSalinity ?? -1) - (a.latestSalinity ?? -1))
-                    .slice(0, 8)
-                    .map((s) => (
-                    <tr key={s.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-2 font-mono font-bold text-primary-600">{s.code}</td>
-                      <td className="px-3 py-2 font-semibold text-gray-800">{s.name}</td>
-                      <td className="px-3 py-2 text-gray-600">{s.province}</td>
-                      <td className="px-3 py-2 text-gray-600">{s.riverName || 'N/A'}</td>
-                      <td className={`px-3 py-2 text-right font-semibold ${(s.latestSalinity ?? 0) > SALINITY_THRESHOLD ? 'text-red-500' : 'text-gray-700'}`}>
-                        {formatNumber(s.latestSalinity)}
-                      </td>
-                      <td className="px-3 py-2 text-right">
-                        {s.status === 'INACTIVE' ? (
-                          <span className="bg-gray-100 text-gray-500 font-semibold px-2 py-0.5 rounded-full border border-gray-200">Ngừng hoạt động</span>
-                        ) : isReporting(s.lastMeasuredAt) ? (
-                          <span className="bg-green-50 text-green-700 font-semibold px-2 py-0.5 rounded-full border border-green-200">Đang truyền</span>
-                        ) : (
-                          <span className="bg-amber-50 text-amber-700 font-semibold px-2 py-0.5 rounded-full border border-amber-200">Mất tín hiệu</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {/* Xu hướng + khuyến nghị */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <section className="card p-4 lg:col-span-2">
+              <div className="flex items-baseline justify-between mb-3">
+                <h2 className="text-sm font-semibold text-gray-900">Độ mặn trung bình toàn vùng, 7 ngày</h2>
+                <Link to="/reports" className="text-xs font-medium text-primary hover:underline">Xem báo cáo</Link>
+              </div>
+              <div className="h-[220px]">
+                {hasTrend ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={trendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="label" tick={{ fill: '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(v: number) => [`${formatNumber(v)}‰`, 'Độ mặn TB']} />
+                      <ReferenceLine y={SALINITY_THRESHOLD} stroke="#ef4444" strokeDasharray="4 4" />
+                      <Line type="monotone" dataKey="current" stroke="#0F3D5E" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-sm text-gray-500">Chưa đủ dữ liệu 7 ngày</div>
+                )}
+              </div>
+            </section>
+
+            <section className="card p-4">
+              <h2 className="text-sm font-semibold text-gray-900 mb-3">Khuyến nghị vận hành</h2>
+              <RecommendationList items={recommendations} />
+            </section>
           </div>
         </div>
-      }
-      rightPanel={
-        <div className="p-4 space-y-4">
-          <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-1.5">
-            <MapPin className="w-4 h-4 text-primary-500" />
-            Bản đồ rút gọn
-          </h3>
-          <div className="h-[420px]">
-            <StationsMiniMap
-              stations={stations.map((s) => ({ id: s.id, name: s.name, latitude: s.latitude, longitude: s.longitude, salinity: s.latestSalinity }))}
-            />
-          </div>
-          <Link to="/map" className="block text-center text-xs font-medium text-primary-600 hover:underline">
-            Mở bản đồ độ mặn chi tiết &gt;
-          </Link>
-        </div>
-      }
-    />
+      </div>
+    </div>
   );
 }
