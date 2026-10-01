@@ -1,4 +1,5 @@
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
+import { clearToken, getToken, UNAUTHORIZED_EVENT } from '../auth/tokenStorage';
 import { store } from '../store';
 import { setOfflineMode } from '../store/networkSlice';
 import type {
@@ -11,13 +12,12 @@ import type {
   TelemetryIngest,
   ForecastRun,
   SalinityForecast,
-  AlertRule,
-  Alert,
   User,
 } from '../types';
 import { MOCK_STATIONS_LIST, generateMockForecasts } from '../data/mockData';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+// Mặc định gọi cùng origin: nginx (production) và Vite dev server đều proxy /api -> backend
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 
 const apiClient = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
@@ -27,8 +27,38 @@ const apiClient = axios.create({
   timeout: 10000,
 });
 
+// Gắn access token vào mọi request
+apiClient.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// 401 (token hết hạn / không hợp lệ) -> xoá token, AuthContext chuyển về trang đăng nhập
+apiClient.interceptors.response.use(undefined, (error) => {
+  if (isAxiosError(error) && error.response?.status === 401 && !error.config?.url?.startsWith('/auth/login')) {
+    clearToken();
+    window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+  }
+  return Promise.reject(error);
+});
+
+const isAuthError = (error: unknown) =>
+  isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403);
+
+// Mock data chỉ dùng khi dev (hoặc bật VITE_ENABLE_MOCK_FALLBACK=true), để production không che lỗi API thật
+export const MOCK_FALLBACK_ENABLED =
+  import.meta.env.DEV || import.meta.env.VITE_ENABLE_MOCK_FALLBACK === 'true';
+
+// Thay dữ liệu rỗng bằng mock — chỉ khi mock fallback được bật
+export function orMock<T>(data: T, mock: T): T {
+  return MOCK_FALLBACK_ENABLED ? mock : data;
+}
+
 // Helper function for fallback mechanism
 export async function withFallback<T>(promise: Promise<T>, fallbackData: T): Promise<T> {
+  if (!MOCK_FALLBACK_ENABLED) return promise;
+
   try {
     const result = await promise;
     
@@ -39,6 +69,9 @@ export async function withFallback<T>(promise: Promise<T>, fallbackData: T): Pro
     
     return result;
   } catch (error) {
+    // Lỗi đăng nhập / phân quyền không bao giờ được che bằng mock data
+    if (isAuthError(error)) throw error;
+
     console.warn('[Offline Fallback Activated] Failed to fetch data, using mock data.', error);
     
     // Dispatch offline mode if not already set
@@ -87,7 +120,7 @@ export const stationApi = {
             }))
           };
         }
-        return fallback;
+        return orMock({ type: "FeatureCollection", features: [] }, fallback);
       }), 
       fallback
     );
@@ -100,7 +133,7 @@ export const stationApi = {
         if (r.data && Array.isArray(r.data.features)) {
           return r.data.features.map((f: any) => f.properties);
         }
-        return MOCK_STATIONS_LIST;
+        return orMock([], MOCK_STATIONS_LIST);
       }),
       MOCK_STATIONS_LIST
     ),
@@ -181,7 +214,8 @@ export const forecastApi = {
   getRuns: () => apiClient.get<ForecastRun[]>('/forecasts/runs').then((r) => r.data),
 
   predict: (stationId: number, daysAhead: number = 7) =>
-    apiClient.post<SalinityForecast[]>('/forecasts/predict', { stationId, daysAhead }).then((r) => r.data),
+    // ML (ARIMA + CNN) có thể chạy lâu hơn timeout mặc định 10s
+    apiClient.post<SalinityForecast[]>('/forecasts/predict', { stationId, daysAhead }, { timeout: 60000 }).then((r) => r.data),
 
   getByStation: (stationId: number) => 
     withFallback(
@@ -189,22 +223,20 @@ export const forecastApi = {
       generateMockForecasts(stationId)
     ),
 
+  /** Dự báo mới nhất của trạm; chưa có thì chạy ML (POST /forecasts/predict) rồi trả về kết quả. */
+  getOrPredict: (stationId: number, daysAhead: number = 7) =>
+    withFallback(
+      apiClient
+        .get<SalinityForecast[]>(`/forecasts/station/${stationId}`)
+        .then((r) => (r.data.length > 0 ? r.data : forecastApi.predict(stationId, daysAhead))),
+      generateMockForecasts(stationId)
+    ),
+
   getByRunId: (runId: number) => apiClient.get<SalinityForecast[]>(`/forecasts/run/${runId}`).then((r) => r.data),
 };
 
-export const alertApi = {
-  getAll: () => apiClient.get<Alert[]>('/alerts').then((r) => r.data),
-  getByStation: (stationId: number) => apiClient.get<Alert[]>(`/alerts/station/${stationId}`).then((r) => r.data),
-  getRules: () => apiClient.get<AlertRule[]>('/alerts/rules').then((r) => r.data),
-  saveRule: (rule: Partial<AlertRule>) => apiClient.post<AlertRule>('/alerts/rules', rule).then((r) => r.data),
-  deleteRule: (id: number) => apiClient.delete(`/alerts/rules/${id}`),
-};
 
 export const userApi = {
   getAll: () => apiClient.get<User[]>('/users').then((r) => r.data),
   getById: (id: number) => apiClient.get<User>(`/users/${id}`).then((r) => r.data),
-};
-
-export const recommendationApi = {
-  getAll: () => apiClient.get<any[]>('/recommendations').then((r) => r.data),
 };

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { DataTable, Column } from '../components/shared/DataTable';
 import { useStationsList } from '../hooks/useStations';
-import { StatusBadge } from '../components/shared/StatusBadge';
 import { MiniMap } from '../components/shared/MiniMap';
 import { Search } from 'lucide-react';
 import type { Station } from '../types';
@@ -30,8 +29,20 @@ export function StationsPage() {
       ),
       align: 'right'
     },
-    { key: 'updatedAt', header: 'Cập nhật', render: () => '09:00' },
-    { key: 'status', header: 'Trạng thái', render: (s) => <span className="text-green-600 text-xs font-medium bg-green-50 px-2 py-1 rounded">Hoạt động</span> },
+    {
+      key: 'updatedAt',
+      header: 'Cập nhật',
+      render: (s) => s.updatedAt
+        ? new Date(s.updatedAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })
+        : '—',
+    },
+    {
+      key: 'status',
+      header: 'Trạng thái',
+      render: (s) => s.status === 'INACTIVE'
+        ? <span className="text-gray-500 text-xs font-medium bg-gray-100 px-2 py-1 rounded">Ngừng hoạt động</span>
+        : <span className="text-green-600 text-xs font-medium bg-green-50 px-2 py-1 rounded">Hoạt động</span>,
+    },
   ];
 
   const mapMarkers = stationsList.map((s: any) => {

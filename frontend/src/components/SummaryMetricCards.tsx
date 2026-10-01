@@ -1,67 +1,56 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import apiClient from '../api/client';
 import { MetricCard } from './MetricCard';
-import type { AxiosResponse } from 'axios';
+import { reportApi, percentChange } from '../api/reportApi';
 
-interface MetricSummaryDto {
-  rainfall?: number;
-  rainfallDeltaPercent?: number;
-  rainfallPeriod?: string;
-  flowRate?: number;
-  flowRateDeltaPercent?: number;
-  flowRateStation?: string;
-  waterLevel?: number;
-  waterLevelDelta?: number;
-  waterLevelStation?: string;
-}
-
+/** Trung bình toàn vùng 24h qua, so với 24h trước đó (GET /reports/overview?days=1). */
 export function SummaryMetricCards() {
   const { data: summary } = useQuery({
-    queryKey: ['metrics', 'summary'],
-    queryFn: () => Promise.resolve({
-      rainfall: 12.5, rainfallDeltaPercent: 5.2, rainfallPeriod: "24 giờ qua",
-      flowRate: 2450.0, flowRateDeltaPercent: -2.1, flowRateStation: "Vàm Cỏ",
-      waterLevel: 1.45, waterLevelDelta: 0.12, waterLevelStation: "Vàm Cỏ"
-    } as MetricSummaryDto),
-    refetchInterval: 30000,
+    queryKey: ['reports', 'overview', 1],
+    queryFn: () => reportApi.getOverview(1),
+    refetchInterval: 60_000,
   });
 
   if (!summary) return null;
 
+  const waterLevelDelta =
+    summary.avgWaterLevel.current != null && summary.avgWaterLevel.previous != null
+      ? Math.round((summary.avgWaterLevel.current - summary.avgWaterLevel.previous) * 100) / 100
+      : undefined;
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm mb-4">
-      <h3 className="font-semibold text-gray-800 text-sm mb-3">Thông số tổng hợp</h3>
+      <h3 className="font-semibold text-gray-800 text-sm mb-3">Thông số tổng hợp (24 giờ qua)</h3>
       <div className="grid grid-cols-3 gap-2">
         <MetricCard
-          label="Lượng mưa"
-          value={summary.rainfall?.toFixed(1) ?? '—'}
-          unit="mm"
-          icon={<span className="text-blue-500 font-bold">🌧</span>}
-          delta={summary.rainfallDeltaPercent}
+          label="Độ mặn"
+          value={summary.avgSalinity.current?.toFixed(2) ?? '—'}
+          unit="‰"
+          icon={<span className="text-blue-500 font-bold">💧</span>}
+          delta={percentChange(summary.avgSalinity) ?? undefined}
           deltaType="percent"
           deltaLabel="24h"
-          subtitle={summary.rainfallPeriod}
+          subtitle="Trung bình toàn vùng"
         />
         <MetricCard
           label="Lưu lượng"
-          value={summary.flowRate?.toLocaleString() ?? '—'}
+          value={summary.avgFlowRate.current?.toLocaleString('vi-VN', { maximumFractionDigits: 0 }) ?? '—'}
           unit="m³/s"
           icon={<span className="text-teal-500 font-bold">💨</span>}
-          delta={summary.flowRateDeltaPercent}
+          delta={percentChange(summary.avgFlowRate) ?? undefined}
           deltaType="percent"
           deltaLabel="24h"
-          subtitle={summary.flowRateStation}
+          subtitle="Trung bình toàn vùng"
         />
         <MetricCard
           label="Mực nước"
-          value={summary.waterLevel?.toFixed(2) ?? '—'}
+          value={summary.avgWaterLevel.current?.toFixed(2) ?? '—'}
           unit="m"
           icon={<span className="text-indigo-500 font-bold">🌊</span>}
-          delta={summary.waterLevelDelta}
+          delta={waterLevelDelta}
           deltaType="absolute"
           deltaLabel="24h"
-          subtitle={summary.waterLevelStation}
+          subtitle="Trung bình toàn vùng"
         />
       </div>
     </div>
