@@ -26,10 +26,7 @@ export function HistorySection({ stationId }: { stationId: number }) {
         <HistoryChart metrics={metrics} stationName={station.name} />
       </div>
       <div className="w-[280px] border-l border-gray-200 h-full overflow-y-auto">
-        <ComparisonCards
-          currentSalinity={station.latestSalinity ?? 0}
-          metrics={metrics}
-        />
+        <ComparisonCards stationId={stationId} currentSalinity={station.latestSalinity ?? null} />
       </div>
     </div>
   );

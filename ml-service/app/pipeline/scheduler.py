@@ -69,14 +69,16 @@ def run_pipeline():
         # 4. Save to DB
         rows = db_df[['sensor_id', 'station_id', 'metric_type', 'value', 'unit', 'recorded_at']].to_dict('records')
         with engine.begin() as conn:
+            # Unique (sensor_id, recorded_at) — Flyway V6: crawl lại cùng giờ không tạo bản ghi trùng
             conn.execute(
                 text("""
                     INSERT INTO measurements (sensor_id, station_id, metric_type, value, unit, recorded_at)
                     VALUES (:sensor_id, :station_id, :metric_type, :value, :unit, :recorded_at)
+                    ON CONFLICT (sensor_id, recorded_at) DO NOTHING
                 """),
                 rows,
             )
-        logger.info(f"Successfully inserted {len(rows)} records into measurements table.")
+        logger.info(f"Saved {len(rows)} records into measurements table (duplicates skipped).")
         crawler.mark_processed(raw_data)
 
     except Exception as e:

@@ -35,11 +35,12 @@ public class MeasurementController {
     }
 
     @GetMapping("/station/{stationId}")
-    @Operation(summary = "Số liệu theo trạm", description = "Mới nhất trước, tối đa `limit` dòng (≤ 5000)")
+    @Operation(summary = "Số liệu theo trạm", description = "Mới nhất trước, tối đa `limit` dòng (≤ 5000); `metricType` để lọc 1 chỉ số")
     public ResponseEntity<List<MeasurementDto>> getByStationId(
             @PathVariable Long stationId,
+            @RequestParam(required = false) String metricType,
             @RequestParam(defaultValue = "500") int limit) {
-        return ResponseEntity.ok(measurementService.getByStationId(stationId, limit));
+        return ResponseEntity.ok(measurementService.getByStationId(stationId, metricType, limit));
     }
 
     @GetMapping("/station/{stationId}/latest")
@@ -56,8 +57,9 @@ public class MeasurementController {
             @PathVariable Long stationId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to,
+            @RequestParam(required = false) String metricType,
             @RequestParam(defaultValue = "5000") int limit) {
-        return ResponseEntity.ok(measurementService.getByStationAndTimeRange(stationId, from, to, limit));
+        return ResponseEntity.ok(measurementService.getByStationAndTimeRange(stationId, metricType, from, to, limit));
     }
 
     @GetMapping("/sensor/{sensorId}")

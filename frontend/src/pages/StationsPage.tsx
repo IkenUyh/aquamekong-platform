@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { DataTable, Column } from '../components/shared/DataTable';
 import { useStationsList } from '../hooks/useStations';
@@ -8,11 +8,6 @@ import type { Station } from '../types';
 
 export function StationsPage() {
   const { data: stationsList = [] } = useStationsList();
-  const [page, setPage] = useState(1);
-  const itemsPerPage = 10;
-  
-  const totalPages = Math.ceil(stationsList.length / itemsPerPage);
-  const currentData = stationsList.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   const columns: Column<Station>[] = [
     { key: 'name', header: 'Tên trạm', render: (s) => <span className="font-semibold text-gray-800">{s.name}</span> },
@@ -121,13 +116,9 @@ export function StationsPage() {
           
           <div className="flex-1 overflow-hidden">
             <DataTable
-              data={currentData}
+              data={stationsList}
               columns={columns}
               keyExtractor={(s) => s.id}
-              page={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-              totalElements={stationsList.length}
             />
           </div>
         </div>

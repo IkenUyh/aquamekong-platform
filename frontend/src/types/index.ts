@@ -87,6 +87,8 @@ export interface Sensor {
 }
 
 // --- Domain: Telemetry & Measurement ---
+export type MetricType = 'salinity' | 'water_level' | 'flow_rate';
+
 export interface Measurement {
   id: number;
   sensorId: number;

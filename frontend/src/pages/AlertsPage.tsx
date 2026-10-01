@@ -7,12 +7,33 @@ import { AlertTriangle, AlertCircle, Info, Settings, TrendingUp } from 'lucide-r
 import type { AlertDto } from '../types/alert';
 import { HistoryChart } from '../components/HistoryChart';
 import { useAlerts } from '../hooks/useAlerts';
+import { useQuery } from '@tanstack/react-query';
+import { metricApi } from '../api/client';
+import { SALINITY_THRESHOLD } from '../utils/salinity';
+
+const HOUR = 3600_000;
+
+/** Độ mặn của trạm trong 24h trước thời điểm cảnh báo (tới hiện tại nếu cảnh báo còn mới). */
+function AlertHistoryChart({ alert }: { alert: AlertDto }) {
+  const triggeredAt = new Date(alert.createdAt).getTime();
+  const { data: metrics = [], isLoading } = useQuery({
+    queryKey: ['metrics', 'alert-history', alert.id],
+    queryFn: () =>
+      metricApi.getByStationWithDateRange(
+        alert.stationId,
+        new Date(triggeredAt - 24 * HOUR).toISOString(),
+        new Date(Math.min(Date.now(), triggeredAt + 6 * HOUR)).toISOString(),
+        'salinity'
+      ),
+  });
+  if (isLoading) return <div className="h-full flex items-center justify-center text-xs text-gray-400">Đang tải...</div>;
+  return <HistoryChart metrics={metrics} stationName="" threshold={alert.thresholdValue ?? SALINITY_THRESHOLD} />;
+}
 
 export function AlertsPage() {
   const { data: alerts = [], isLoading } = useAlerts();
 
   const [selectedAlert, setSelectedAlert] = useState<AlertDto | null>(null);
-  const [page, setPage] = useState(1);
 
   // Auto select first alert if not selected and data is loaded
   React.useEffect(() => {
@@ -100,10 +121,6 @@ export function AlertsPage() {
               keyExtractor={(a) => a.id}
               selectedRowKey={selectedAlert?.id}
               onRowClick={setSelectedAlert}
-              page={page}
-              totalPages={1}
-              onPageChange={setPage}
-              totalElements={alerts.length}
             />
           </div>
         </div>
@@ -136,17 +153,7 @@ export function AlertsPage() {
               </div>
               
               <div className="h-[200px] -mx-4">
-                {/* Mock chart for detail panel */}
-                <HistoryChart 
-                  metrics={[
-                    { id: 1, stationId: 1, stationCode: '', stationName: '', salinity: 3.5, waterLevel: 0, flowRate: 0, recordedAt: '2025-05-17T00:00:00Z', salinityLevel: 'MEDIUM' },
-                    { id: 1, stationId: 1, stationCode: '', stationName: '', salinity: 4.1, waterLevel: 0, flowRate: 0, recordedAt: '2025-05-17T04:00:00Z', salinityLevel: 'MEDIUM' },
-                    { id: 1, stationId: 1, stationCode: '', stationName: '', salinity: 5.2, waterLevel: 0, flowRate: 0, recordedAt: '2025-05-17T06:00:00Z', salinityLevel: 'HIGH' },
-                    { id: 1, stationId: 1, stationCode: '', stationName: '', salinity: 6.1, waterLevel: 0, flowRate: 0, recordedAt: '2025-05-17T09:00:00Z', salinityLevel: 'HIGH' },
-                  ]}
-                  stationName=""
-                  threshold={4.0}
-                />
+                <AlertHistoryChart alert={selectedAlert} />
               </div>
 
               <div className="mt-4 pt-4 border-t border-gray-100">
