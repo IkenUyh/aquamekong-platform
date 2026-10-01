@@ -69,7 +69,7 @@ public class StationService {
     public StationDto getStationById(Long id) {
         Station station = stationRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Station not found: " + id));
-        List<Measurement> measurements = measurementRepository.findByStationIdOrderByRecordedAtDesc(id);
+        List<Measurement> measurements = measurementRepository.findLatestPerMetricByStationId(id);
         return toDto(station, measurements);
     }
 
@@ -120,7 +120,7 @@ public class StationService {
         }
 
         Station saved = stationRepository.save(station);
-        List<Measurement> measurements = measurementRepository.findByStationIdOrderByRecordedAtDesc(id);
+        List<Measurement> measurements = measurementRepository.findLatestPerMetricByStationId(id);
         return toDto(saved, measurements);
     }
 

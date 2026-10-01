@@ -12,6 +12,7 @@ import com.aquamekong.repository.alert.AlertRepository;
 import com.aquamekong.repository.alert.AlertRuleRepository;
 import com.aquamekong.repository.station.StationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,8 +67,8 @@ public class AlertService {
     }
 
     @Transactional(readOnly = true)
-    public List<AlertDto> getAllAlerts() {
-        return alertRepository.findAll().stream()
+    public List<AlertDto> getAllAlerts(int limit) {
+        return alertRepository.findAllByOrderByTriggeredAtDesc(PageRequest.of(0, Math.max(1, Math.min(limit, 1000)))).stream()
                 .map(this::toAlertDto)
                 .collect(Collectors.toList());
     }
@@ -81,7 +82,7 @@ public class AlertService {
 
     @Transactional(readOnly = true)
     public List<AlertDto> getAlertsByStatus(AlertStatus status) {
-        return alertRepository.findByStatus(status).stream()
+        return alertRepository.findByStatusOrderByTriggeredAtDesc(status).stream()
                 .map(this::toAlertDto)
                 .collect(Collectors.toList());
     }
@@ -121,7 +122,8 @@ public class AlertService {
                 case "==" -> triggered = val == thresh;
             }
 
-            if (triggered) {
+            // Rule đang có cảnh báo ACTIVE thì không tạo thêm (tránh spam mỗi lần đo)
+            if (triggered && !alertRepository.existsByRuleIdAndStatus(rule.getId(), AlertStatus.ACTIVE)) {
                 Alert alert = Alert.builder()
                         .station(rule.getStation())
                         .rule(rule)
@@ -162,6 +164,7 @@ public class AlertService {
                 .stationId(entity.getStation() != null ? entity.getStation().getId() : null)
                 .stationCode(entity.getStation() != null ? entity.getStation().getCode() : null)
                 .stationName(entity.getStation() != null ? entity.getStation().getName() : null)
+                .province(entity.getStation() != null ? entity.getStation().getProvince() : null)
                 .ruleId(entity.getRule() != null ? entity.getRule().getId() : null)
                 .metricType(entity.getMetricType())
                 .value(entity.getValue())
