@@ -2,8 +2,9 @@ import React from 'react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { Radio, Database, ShieldAlert, Sparkles, CheckCircle, AlertTriangle, Layers, MapPin } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { stationApi, recommendationApi, metricApi } from '../api/client';
-import { alertApi } from '../api/alertApi';
+import { stationApi } from '../api/client';
+import { recommendationApi } from '../api/recommendationApi';
+import { useAlerts } from '../hooks/useAlerts';
 import { MetricCard } from '../components/MetricCard';
 
 export function OverviewPage() {
@@ -12,19 +13,11 @@ export function OverviewPage() {
     queryFn: stationApi.getAllList,
   });
 
-  const { data: metrics = [] } = useQuery({
-    queryKey: ['metrics', 'latest'],
-    queryFn: metricApi.getLatest,
-  });
-
-  const { data: alerts = [] } = useQuery({
-    queryKey: ['alerts', 'recent'],
-    queryFn: alertApi.getRecent,
-  });
+  const { data: alerts = [] } = useAlerts();
 
   const { data: recommendations = [] } = useQuery({
     queryKey: ['recommendations'],
-    queryFn: recommendationApi.getAll,
+    queryFn: recommendationApi.getRecommendations,
   });
 
   const activeStationsCount = stations.filter((s: any) => s.status === 'ACTIVE').length;

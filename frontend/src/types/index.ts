@@ -153,11 +153,13 @@ export interface AlertRule {
   updatedAt?: string;
 }
 
+/** Cảnh báo đúng như backend trả về (GET /api/v1/alerts) */
 export interface Alert {
   id: number;
   stationId: number;
   stationCode?: string;
   stationName?: string;
+  province?: string;
   ruleId?: number;
   metricType: string;
   value: number;
@@ -169,11 +171,14 @@ export interface Alert {
   createdAt?: string;
 }
 
+/** Cảnh báo dạng hiển thị cho UI (map từ Alert trong api/alertApi.ts) */
 export interface AlertDto {
   id: number;
   stationId: number;
   stationName?: string;
   stationCode?: string;
+  province?: string;
+  status?: AlertStatus;
   metricType?: string;
   alertType?: string;
   severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'WARNING' | 'INFO';
@@ -215,14 +220,5 @@ export interface GeoJsonFeature {
 }
 
 // SSE Event types
-export interface TelemetryEvent {
-  stationId: number;
-  stationCode: string;
-  stationName: string;
-  salinity?: number;
-  waterLevel?: number;
-  flowRate?: number;
-  rainfall?: number;
-  recordedAt: string;
-  salinityLevel?: SalinityLevel;
-}
+/** Event SSE "telemetry"/"init" — chính là MeasurementDto của backend */
+export type TelemetryEvent = Measurement;

@@ -1,14 +1,35 @@
 import React, { useState } from 'react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
-import { ForecastSummaryPanel } from '../components/ForecastSummaryPanel';
 import { ForecastChart } from '../components/ForecastChart';
 import { MiniMap } from '../components/shared/MiniMap';
 import { StatusBadge } from '../components/shared/StatusBadge';
-import { Search, Info } from 'lucide-react';
-import type { SalinityForecast, Station } from '../types';
+import { Info } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { stationApi } from '../api/client';
-import { generateMockForecasts } from '../data/mockData';
+import { useForecast } from '../hooks/useForecast';
+
+const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
+/** 5 ngày tới, bắt đầu từ ngày mai (khớp với ngày đầu tiên của dự báo) */
+function nextDays(count: number) {
+  return Array.from({ length: count }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i + 1);
+    return {
+      key: d.toISOString().slice(0, 10),
+      weekday: WEEKDAYS[d.getDay()],
+      label: d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
+    };
+  });
+}
+
+function StationForecastChart({ stationId }: { stationId: number }) {
+  const { data: forecasts = [], isLoading, isError } = useForecast(stationId);
+  if (isLoading) return <div className="h-full flex items-center justify-center text-xs text-gray-400">Đang chạy dự báo...</div>;
+  if (isError) return <div className="h-full flex items-center justify-center text-xs text-red-400">Không lấy được dự báo</div>;
+  if (forecasts.length === 0) return <div className="h-full flex items-center justify-center text-xs text-gray-400">Chưa có dữ liệu dự báo</div>;
+  return <ForecastChart forecasts={forecasts} />;
+}
 
 export function ForecastPage() {
   const { data: stations = [] } = useQuery({
@@ -103,10 +124,10 @@ export function ForecastPage() {
 
             {/* Date timeline */}
             <div className="flex gap-2 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
-              {['T2', 'T3', 'T4', 'T5', 'T6'].map((day, i) => (
-                <div key={day} className={`flex-1 text-center py-2 rounded-lg ${i===0 ? 'bg-blue-50 border border-blue-200' : ''}`}>
-                  <p className={`text-xs font-bold ${i===0 ? 'text-blue-600' : 'text-gray-500'}`}>{day}</p>
-                  <p className={`text-[10px] ${i===0 ? 'text-blue-400' : 'text-gray-400'}`}>19/05</p>
+              {nextDays(5).map((day, i) => (
+                <div key={day.key} className={`flex-1 text-center py-2 rounded-lg ${i===0 ? 'bg-blue-50 border border-blue-200' : ''}`}>
+                  <p className={`text-xs font-bold ${i===0 ? 'text-blue-600' : 'text-gray-500'}`}>{day.weekday}</p>
+                  <p className={`text-[10px] ${i===0 ? 'text-blue-400' : 'text-gray-400'}`}>{day.label}</p>
                 </div>
               ))}
             </div>
@@ -116,7 +137,6 @@ export function ForecastPage() {
                 {stations.filter((s: any) => selectedStations.includes(s.id)).map((s: any) => {
                 const currentSalinity = s.latestSalinity || 0;
                 const isHigh = currentSalinity >= 4;
-                const trend = s.salinityLevel === 'CRITICAL' ? 'high' : s.salinityLevel === 'WARNING' ? 'rising' : 'stable';
                 
                 return (
                   <div key={s.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow">
@@ -134,7 +154,7 @@ export function ForecastPage() {
                       <StatusBadge level={isHigh ? 'CRITICAL' : currentSalinity >= 2 ? 'WARNING' : 'SAFE'} />
                     </div>
                     <div className="h-[120px] -mx-2">
-                      <ForecastChart forecasts={generateMockForecasts(currentSalinity)} />
+                      <StationForecastChart stationId={s.id} />
                     </div>
                   </div>
                 )
