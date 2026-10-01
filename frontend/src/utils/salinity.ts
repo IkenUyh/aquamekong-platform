@@ -28,6 +28,14 @@ export const SALINITY_CLASS_LABELS: Record<SalinityClass, string> = {
   UNKNOWN: 'Chưa có dữ liệu',
 };
 
+/** Nhãn ngắn (marker, badge) */
+export const SALINITY_CLASS_SHORT_LABELS: Record<SalinityClass, string> = {
+  LOW: 'Thấp',
+  MEDIUM: 'Trung bình',
+  HIGH: 'Cao',
+  UNKNOWN: 'Chưa có dữ liệu',
+};
+
 /** Định dạng số đo kiểu Việt Nam (dấu phẩy thập phân), tối đa `digits` chữ số lẻ; null -> "—" */
 export function formatNumber(value: number | null | undefined, digits = 2): string {
   return value == null ? '—' : value.toLocaleString('vi-VN', { maximumFractionDigits: digits });

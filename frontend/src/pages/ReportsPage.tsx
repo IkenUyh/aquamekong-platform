@@ -5,7 +5,8 @@ import { DonutChart } from '../components/shared/DonutChart';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
 import { FileText } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { reportApi, percentChange, type PeriodValue, type ReportOverview } from '../api/reportApi';
+import { reportApi, percentChange, type PeriodValue } from '../api/reportApi';
+import { formatNumber, SALINITY_CLASS_COLORS } from '../utils/salinity';
 
 const PERIODS = [
   { days: 7, label: '7 ngày qua' },
@@ -13,15 +14,8 @@ const PERIODS = [
   { days: 90, label: '90 ngày qua' },
 ];
 
-const LEVEL_COLORS: Record<ReportOverview['levelDistribution'][number]['level'], string> = {
-  HIGH: '#ef4444',
-  MEDIUM: '#eab308',
-  LOW: '#22c55e',
-  UNKNOWN: '#cbd5e1',
-};
 
-const fmt = (v: number | null | undefined, digits = 2) =>
-  v == null ? '—' : v.toLocaleString('vi-VN', { maximumFractionDigits: digits });
+const fmt = formatNumber;
 
 /** trend cho MetricCard: isPositive = tăng (MetricCard tô đỏ khi tăng) */
 function trendOf(v: PeriodValue | undefined) {
@@ -138,7 +132,7 @@ export function ReportsPage() {
             <h3 className="font-bold text-gray-800 mb-6">Tỷ lệ trạm theo mức độ mặn</h3>
             <div className="flex-1">
               <DonutChart
-                data={distribution.map((d) => ({ name: d.label, value: d.count, color: LEVEL_COLORS[d.level] }))}
+                data={distribution.map((d) => ({ name: d.label, value: d.count, color: SALINITY_CLASS_COLORS[d.level] }))}
                 totalLabel="Trạm"
                 totalValue={totalStations}
               />
@@ -147,7 +141,7 @@ export function ReportsPage() {
               {distribution.map((d) => (
                 <div key={d.level} className="flex items-center justify-between">
                   <span className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: LEVEL_COLORS[d.level] }} /> {d.label}
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: SALINITY_CLASS_COLORS[d.level] }} /> {d.label}
                   </span>
                   <span className="font-bold text-gray-700">{d.count} ({percentOf(d.count)}%)</span>
                 </div>

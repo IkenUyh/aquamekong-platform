@@ -1,7 +1,10 @@
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 
-import type { GeoJsonFeature, SalinityLevel } from '../types';
+import type { GeoJsonFeature } from '../types';
+import {
+  classifySalinity, formatNumber, SALINITY_CLASS_COLORS, SALINITY_CLASS_SHORT_LABELS, type SalinityClass,
+} from '../utils/salinity';
 
 interface StationMarkerProps {
   feature: GeoJsonFeature;
@@ -9,28 +12,8 @@ interface StationMarkerProps {
   onClick: () => void;
 }
 
-const SALINITY_COLORS: Record<SalinityLevel, string> = {
-  LOW:      '#22c55e',
-  SAFE:     '#22c55e',
-  MEDIUM:   '#eab308',
-  WARNING:  '#eab308',
-  HIGH:     '#ef4444',
-  CRITICAL: '#ef4444',
-  UNKNOWN:  '#94a3b8',
-};
-
-const SALINITY_LABELS: Record<SalinityLevel, string> = {
-  LOW:      'An toàn',
-  SAFE:     'An toàn',
-  MEDIUM:   'Cảnh báo',
-  WARNING:  'Cảnh báo',
-  HIGH:     'Nguy hiểm',
-  CRITICAL: 'Nguy hiểm',
-  UNKNOWN:  'Không rõ',
-};
-
-function createLabelIcon(name: string, salinity: number | null, level: SalinityLevel, isSelected: boolean): L.DivIcon {
-  const color = SALINITY_COLORS[level];
+function createLabelIcon(name: string, salinity: number | null, level: SalinityClass, isSelected: boolean): L.DivIcon {
+  const color = SALINITY_CLASS_COLORS[level];
   const scale = isSelected ? 1.1 : 1;
   const shadow = isSelected ? '0 4px 12px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.15)';
   const border = isSelected ? `2px solid ${color}` : `1px solid ${color}`;
@@ -55,7 +38,7 @@ function createLabelIcon(name: string, salinity: number | null, level: SalinityL
       ">
         <div style="font-size: 11px; color: #4A5568;">${name}</div>
         <div style="color: ${color}; font-size: 14px;">
-          ${salinity !== null ? salinity.toFixed(1) + '‰' : '—'}
+          ${salinity !== null ? formatNumber(salinity, 1) + '‰' : '—'}
         </div>
       </div>
     `,
@@ -67,7 +50,8 @@ function createLabelIcon(name: string, salinity: number | null, level: SalinityL
 export function StationMarker({ feature, isSelected, onClick }: StationMarkerProps) {
   const { geometry, properties } = feature;
   const [lng, lat] = geometry.coordinates;
-  const level = (properties.salinityLevel || 'UNKNOWN') as SalinityLevel;
+  // Phân loại từ giá trị (cùng thang với chú giải), không phụ thuộc salinityLevel do backend gửi
+  const level = classifySalinity(properties.latestSalinity);
 
   return (
     <Marker
@@ -81,7 +65,7 @@ export function StationMarker({ feature, isSelected, onClick }: StationMarkerPro
           <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
             <div
               className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: SALINITY_COLORS[level] }}
+              style={{ backgroundColor: SALINITY_CLASS_COLORS[level] }}
             />
             <div>
               <h3 className="font-bold text-sm text-gray-800">{properties.name}</h3>
@@ -90,7 +74,7 @@ export function StationMarker({ feature, isSelected, onClick }: StationMarkerPro
           </div>
 
           {/* River */}
-          <p className="text-xs text-blue-500 mb-3">🏞️ {properties.riverName}</p>
+          <p className="text-xs text-blue-500 mb-3">🏞️ {properties.riverName ?? '—'}</p>
 
           {/* Metrics */}
           <div className="space-y-2">
@@ -120,14 +104,16 @@ export function StationMarker({ feature, isSelected, onClick }: StationMarkerPro
             <span
               className="text-xs font-semibold px-2 py-0.5 rounded-full"
               style={{
-                backgroundColor: `${SALINITY_COLORS[level]}22`,
-                color: SALINITY_COLORS[level],
-                border: `1px solid ${SALINITY_COLORS[level]}44`,
+                backgroundColor: `${SALINITY_CLASS_COLORS[level]}22`,
+                color: SALINITY_CLASS_COLORS[level],
+                border: `1px solid ${SALINITY_CLASS_COLORS[level]}44`,
               }}
             >
-              {SALINITY_LABELS[level]}
+              {SALINITY_CLASS_SHORT_LABELS[level]}
             </span>
-            <span className="text-[10px] text-gray-400">{properties.status}</span>
+            <span className="text-[10px] text-gray-400">
+              {properties.lastMeasuredAt ? `Đo lúc ${new Date(properties.lastMeasuredAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}` : 'Chưa có số đo'}
+            </span>
           </div>
         </div>
       </Popup>
@@ -146,7 +132,7 @@ function MetricRow({
   label: string;
   value: number | null;
   unit: string;
-  level?: SalinityLevel;
+  level?: SalinityClass;
 }) {
   return (
     <div className="flex items-center justify-between text-xs">
@@ -156,10 +142,10 @@ function MetricRow({
       <span
         className="font-medium"
         style={{
-          color: level ? SALINITY_COLORS[level] : '#4A5568',
+          color: level ? SALINITY_CLASS_COLORS[level] : '#4A5568',
         }}
       >
-        {value !== null && value !== undefined ? `${value} ${unit}` : '—'}
+        {value !== null && value !== undefined ? `${formatNumber(value)} ${unit}` : '—'}
       </span>
     </div>
   );
