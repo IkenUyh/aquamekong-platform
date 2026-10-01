@@ -1,24 +1,30 @@
 import React, { useState } from 'react';
-import { isAxiosError } from 'axios';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Navbar } from '../components/Navbar';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
+import { ZaloButton } from '../components/ZaloButton';
 import { useAuth } from '../contexts/AuthContext';
-import { authApi } from '../api/authApi';
+import { authApi, type LinkedIdentity } from '../api/authApi';
+import { apiErrorMessage } from '../api/client';
 
 const MIN_PASSWORD_LENGTH = 8;
+const IDENTITIES_KEY = ['auth', 'identities'];
 
-export function AccountPage() {
-  const { user } = useAuth();
+function PasswordForm() {
+  const { user, refreshUser } = useAuth();
+  // Tài khoản tạo bằng Zalo/Google: đặt mật khẩu lần đầu, không hỏi mật khẩu cũ
+  const hasPassword = user?.hasPassword !== false;
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(false);
+    setSuccess(null);
     if (newPassword.length < MIN_PASSWORD_LENGTH) {
       setError(`Mật khẩu mới phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`);
       return;
@@ -29,63 +35,143 @@ export function AccountPage() {
     }
     setSubmitting(true);
     try {
-      await authApi.changePassword(currentPassword, newPassword);
-      setSuccess(true);
+      await authApi.changePassword(hasPassword ? currentPassword : undefined, newPassword);
+      setSuccess(hasPassword ? 'Đã đổi mật khẩu.' : `Đã đặt mật khẩu. Từ giờ bạn có thể đăng nhập bằng tên ${user?.username}.`);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      if (!hasPassword) await refreshUser();
     } catch (err) {
-      const message = isAxiosError(err) ? err.response?.data?.message : undefined;
-      setError(typeof message === 'string' ? message : 'Không đổi được mật khẩu, vui lòng thử lại.');
+      setError(apiErrorMessage(err, 'Không lưu được mật khẩu, vui lòng thử lại.'));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const inputClass = 'field';
+  return (
+    <form onSubmit={onSubmit} className="card p-5 space-y-4">
+      <div>
+        <h2 className="font-semibold text-gray-900">{hasPassword ? 'Đổi mật khẩu' : 'Đặt mật khẩu'}</h2>
+        {!hasPassword && (
+          <p className="mt-1 text-sm text-gray-500">
+            Tài khoản đang đăng nhập bằng Zalo hoặc Google. Đặt mật khẩu để đăng nhập được cả bằng tên <span className="font-medium">{user?.username}</span>.
+          </p>
+        )}
+      </div>
+
+      {hasPassword && (
+        <div>
+          <label htmlFor="current-password" className="field-label">Mật khẩu hiện tại</label>
+          <input id="current-password" type="password" autoComplete="current-password" required
+            value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="field" />
+        </div>
+      )}
+      <div>
+        <label htmlFor="new-password" className="field-label">Mật khẩu mới (tối thiểu {MIN_PASSWORD_LENGTH} ký tự)</label>
+        <input id="new-password" type="password" autoComplete="new-password" required
+          value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="field" />
+      </div>
+      <div>
+        <label htmlFor="confirm-password" className="field-label">Nhập lại mật khẩu mới</label>
+        <input id="confirm-password" type="password" autoComplete="new-password" required
+          value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="field" />
+      </div>
+
+      {error && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</p>}
+      {success && <p role="status" className="text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-md px-3 py-2">{success}</p>}
+
+      <button type="submit" disabled={submitting} className="btn-primary w-full py-2.5">
+        {submitting ? 'Đang lưu...' : hasPassword ? 'Đổi mật khẩu' : 'Đặt mật khẩu'}
+      </button>
+    </form>
+  );
+}
+
+const PROVIDER_LABELS: Record<LinkedIdentity['provider'], string> = { zalo: 'Zalo', google: 'Google' };
+
+function LinkedAccounts({ googleClientId, zaloAppId }: { googleClientId: string | null; zaloAppId: string | null }) {
+  const queryClient = useQueryClient();
+  const { data: identities = [], isLoading } = useQuery({ queryKey: IDENTITIES_KEY, queryFn: authApi.identities });
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const act = async (action: () => Promise<unknown>) => {
+    setError(null);
+    setBusy(true);
+    try {
+      await action();
+      await queryClient.invalidateQueries({ queryKey: IDENTITIES_KEY });
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Không thực hiện được, vui lòng thử lại.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const providers = (['zalo', 'google'] as const).filter((p) => (p === 'zalo' ? zaloAppId : googleClientId));
+
+  return (
+    <section className="card p-5 space-y-4">
+      <div>
+        <h2 className="font-semibold text-gray-900">Tài khoản liên kết</h2>
+        <p className="mt-1 text-sm text-gray-500">Đăng nhập nhanh bằng Zalo hoặc Google thay cho mật khẩu.</p>
+      </div>
+
+      {isLoading ? (
+        <p className="text-sm text-gray-400">Đang tải...</p>
+      ) : (
+        <ul className="divide-y divide-gray-100">
+          {providers.map((provider) => {
+            const linked = identities.find((i) => i.provider === provider);
+            return (
+              <li key={provider} className="py-3 first:pt-0 last:pb-0 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900">{PROVIDER_LABELS[provider]}</p>
+                    <p className="text-sm text-gray-500 truncate">{linked ? linked.email ?? 'Đã liên kết' : 'Chưa liên kết'}</p>
+                  </div>
+                  {linked && (
+                    <button type="button" disabled={busy} onClick={() => void act(() => authApi.unlink(provider))} className="btn-secondary shrink-0">
+                      Huỷ liên kết
+                    </button>
+                  )}
+                </div>
+                {!linked && provider === 'zalo' && zaloAppId && (
+                  <ZaloButton appId={zaloAppId} intent="link" from="/account" label="Liên kết Zalo" />
+                )}
+                {!linked && provider === 'google' && googleClientId && (
+                  <GoogleSignInButton clientId={googleClientId} text="continue_with"
+                    onCredential={(token) => void act(() => authApi.linkGoogle(token))} />
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {error && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</p>}
+    </section>
+  );
+}
+
+export function AccountPage() {
+  const { user, config } = useAuth();
 
   return (
     <div className="flex flex-col h-screen w-screen bg-[var(--color-bg)]">
       <Navbar />
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="max-w-lg mx-auto space-y-6">
-          <div className="card p-5 flex items-center gap-4">
-            <div>
-              <p className="font-semibold text-gray-900">{user?.fullName || user?.username}</p>
-              <p className="text-sm text-gray-500">{user?.username} · {user?.email}</p>
-              <p className="text-xs text-gray-400 mt-1">{user?.roles?.join(', ')}</p>
-            </div>
+          <div className="card p-5">
+            <p className="font-semibold text-gray-900">{user?.fullName || user?.username}</p>
+            <p className="text-sm text-gray-500">{[user?.username, user?.email].filter(Boolean).join(' · ')}</p>
+            <p className="text-xs text-gray-400 mt-1">{user?.roles?.join(', ')}</p>
           </div>
 
-          <form onSubmit={onSubmit} className="card p-5 space-y-4">
-            <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-              Đổi mật khẩu
-            </h2>
-
-            <div className="space-y-1">
-              <label htmlFor="current-password" className="text-xs font-semibold text-gray-500">Mật khẩu hiện tại</label>
-              <input id="current-password" type="password" autoComplete="current-password" required
-                value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className={inputClass} />
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="new-password" className="text-xs font-semibold text-gray-500">Mật khẩu mới (tối thiểu {MIN_PASSWORD_LENGTH} ký tự)</label>
-              <input id="new-password" type="password" autoComplete="new-password" required
-                value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={inputClass} />
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="confirm-password" className="text-xs font-semibold text-gray-500">Nhập lại mật khẩu mới</label>
-              <input id="confirm-password" type="password" autoComplete="new-password" required
-                value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputClass} />
-            </div>
-
-            {error && <p role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
-            {success && <p role="status" className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">Đã đổi mật khẩu.</p>}
-
-            <button type="submit" disabled={submitting}
-              className="w-full bg-primary hover:bg-primary-700 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg transition-colors text-sm">
-              {submitting ? 'Đang lưu...' : 'Đổi mật khẩu'}
-            </button>
-          </form>
+          <PasswordForm />
+          {(config?.googleClientId || config?.zaloAppId) && (
+            <LinkedAccounts googleClientId={config.googleClientId} zaloAppId={config.zaloAppId} />
+          )}
         </div>
       </div>
     </div>

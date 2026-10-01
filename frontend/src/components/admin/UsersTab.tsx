@@ -60,7 +60,7 @@ export function UsersTab() {
     { key: 'user', header: 'Tài khoản', render: (u) => (
       <div>
         <p className="font-semibold text-gray-800">{u.fullName || u.username}{u.username === me?.username && <span className="text-xs text-gray-400 font-normal"> (bạn)</span>}</p>
-        <p className="text-xs text-gray-400">{u.username} · {u.email}</p>
+        <p className="text-xs text-gray-400">{[u.username, u.email].filter(Boolean).join(' · ')}</p>
       </div>
     ) },
     { key: 'roles', header: 'Vai trò', render: (u) => (

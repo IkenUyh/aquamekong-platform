@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     static final String SSE_PATH = "/api/v1/telemetry/stream";
 
     private final JwtService jwtService;
+    private final JsonAuthErrorHandler authErrorHandler;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -30,11 +32,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = resolveToken(request);
         var current = SecurityContextHolder.getContext().getAuthentication();
         if (token != null && (current == null || current instanceof AnonymousAuthenticationToken)) {
-            jwtService.parse(token).ifPresent(claims -> {
-                var authorities = JwtService.roles(claims).stream().map(SimpleGrantedAuthority::new).toList();
-                var auth = new UsernamePasswordAuthenticationToken(claims.getSubject(), null, authorities);
-                SecurityContextHolder.getContext().setAuthentication(auth);
-            });
+            var claims = jwtService.parse(token);
+            if (claims.isEmpty()) {
+                // Token hết hạn / sai: trả 401 ngay cả ở API công khai, để frontend biết phiên đã hết
+                // thay vì lặng lẽ coi như người chưa đăng nhập
+                authErrorHandler.commence(request, response, new BadCredentialsException("Token không hợp lệ"));
+                return;
+            }
+            var authorities = JwtService.roles(claims.get()).stream().map(SimpleGrantedAuthority::new).toList();
+            var auth = new UsernamePasswordAuthenticationToken(claims.get().getSubject(), null, authorities);
+            SecurityContextHolder.getContext().setAuthentication(auth);
         }
         chain.doFilter(request, response);
     }

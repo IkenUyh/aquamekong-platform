@@ -1,26 +1,12 @@
 import React, { useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { apiErrorMessage } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
-import { Logo } from '../components/Logo';
-
-/** Hoạ tiết sóng mờ cho nửa trái (SVG thuần, không ảnh ngoài) */
-function WavePattern() {
-  return (
-    <svg className="absolute inset-x-0 bottom-0 w-full h-64 opacity-[0.12]" viewBox="0 0 600 260" preserveAspectRatio="none" aria-hidden="true">
-      {[0, 1, 2, 3, 4, 5].map((i) => (
-        <path
-          key={i}
-          d={`M0 ${60 + i * 34} C 100 ${30 + i * 34}, 200 ${90 + i * 34}, 300 ${60 + i * 34} S 500 ${30 + i * 34}, 600 ${60 + i * 34}`}
-          stroke="#FFFFFF" strokeWidth="1.5" fill="none"
-        />
-      ))}
-    </svg>
-  );
-}
+import { AuthLayout } from '../components/AuthLayout';
+import { SocialLogin } from '../components/SocialLogin';
 
 export function LoginPage() {
-  const { login, status } = useAuth();
+  const { login, loginWithGoogle, status, config } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from || '/';
@@ -33,12 +19,11 @@ export function LoginPage() {
 
   if (status === 'authenticated') return <Navigate to={from} replace />;
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const run = async (action: () => Promise<void>) => {
     setError(null);
     setSubmitting(true);
     try {
-      await login(username.trim(), password);
+      await action();
       navigate(from, { replace: true });
     } catch (err) {
       setError(apiErrorMessage(err, 'Không kết nối được máy chủ, vui lòng thử lại.'));
@@ -47,35 +32,29 @@ export function LoginPage() {
     }
   };
 
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void run(() => login(username.trim(), password));
+  };
+
   return (
-    <div className="min-h-screen grid md:grid-cols-2 bg-[var(--color-bg)]">
-      {/* Nhận diện (≥ md) */}
-      <aside className="relative hidden md:flex flex-col justify-between overflow-hidden bg-primary p-10 lg:p-14 text-white">
-        <Logo tone="light" />
-        <div className="relative max-w-md">
-          <h2 className="text-3xl font-semibold leading-tight">Giám sát và dự báo xâm nhập mặn Đồng bằng sông Cửu Long</h2>
-          <p className="mt-4 text-white/70 leading-relaxed">
-            Số đo độ mặn, mực nước và lưu lượng từ các trạm quan trắc; dự báo 7–14 ngày và cảnh báo khi vượt ngưỡng.
+    <AuthLayout>
+      <div className="space-y-5">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Đăng nhập</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            {config?.registrationEnabled
+              ? 'Xem dữ liệu không cần đăng nhập. Đăng nhập để chạy dự báo và dùng các tính năng cá nhân.'
+              : 'Dùng tài khoản được quản trị viên cấp.'}
           </p>
         </div>
-        <p className="relative text-xs text-white/50">AquaMekong · Hệ thống quan trắc thủy văn</p>
-        <WavePattern />
-      </aside>
 
-      {/* Form */}
-      <main className="flex items-center justify-center px-4 py-12">
-        <form onSubmit={onSubmit} className="w-full max-w-sm space-y-5">
-          <div className="md:hidden mb-8">
-            <Logo tone="dark" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Đăng nhập</h1>
-            <p className="mt-1 text-sm text-gray-500">Dùng tài khoản được quản trị viên cấp.</p>
-          </div>
+        <SocialLogin variant="login" from={from} onGoogle={(token) => void run(() => loginWithGoogle(token))} />
 
+        <form onSubmit={onSubmit} className="space-y-5">
           <div>
             <label htmlFor="username" className="field-label">Tên đăng nhập</label>
-            <input id="username" autoComplete="username" autoFocus required
+            <input id="username" autoComplete="username" required
               value={username} onChange={(e) => setUsername(e.target.value)} className="field" />
           </div>
 
@@ -100,7 +79,14 @@ export function LoginPage() {
             {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
         </form>
-      </main>
-    </div>
+
+        {config?.registrationEnabled && (
+          <p className="text-center text-sm text-gray-500">
+            Chưa có tài khoản?{' '}
+            <Link to="/register" state={location.state} className="font-medium text-primary hover:underline">Đăng ký</Link>
+          </p>
+        )}
+      </div>
+    </AuthLayout>
   );
 }

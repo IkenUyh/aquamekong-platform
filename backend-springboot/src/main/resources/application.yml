@@ -77,6 +77,17 @@ app:
       expiration: ${JWT_EXPIRATION:8h}
     # Header X-API-Key cho thiết bị IoT gọi /measurements/ingest. Để trống = tắt
     ingest-api-key: ${INGEST_API_KEY:}
+    # Người chưa đăng nhập được xem bản đồ, số đo, dự báo, cảnh báo, báo cáo (chỉ đọc)
+    public-read: ${PUBLIC_READ_ENABLED:true}
+    # Cho phép tự đăng ký (mật khẩu hoặc Google). Tài khoản tự đăng ký chỉ có ROLE_USER
+    registration-enabled: ${REGISTRATION_ENABLED:true}
+    google:
+      # OAuth Client ID (loại Web application) từ Google Cloud Console. Trống = tắt đăng nhập Google
+      client-id: ${GOOGLE_CLIENT_ID:}
+    zalo:
+      # https://developers.zalo.me -> Ứng dụng -> Đăng nhập. Thiếu một trong hai = tắt đăng nhập Zalo
+      app-id: ${ZALO_APP_ID:}
+      app-secret: ${ZALO_APP_SECRET:}
     bootstrap-admin:
       username: ${ADMIN_USERNAME:admin}
       email: ${ADMIN_EMAIL:admin@aquamekong.local}
