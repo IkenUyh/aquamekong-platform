@@ -88,6 +88,12 @@ app:
       # https://developers.zalo.me -> Ứng dụng -> Đăng nhập. Thiếu một trong hai = tắt đăng nhập Zalo
       app-id: ${ZALO_APP_ID:}
       app-secret: ${ZALO_APP_SECRET:}
+    webauthn:
+      # Tên miền (không có scheme/port) mà passkey gắn vào, vd. aquamekong.vn. Trống = tắt passkey.
+      # Đổi rp-id sau này thì các passkey đã tạo không dùng được nữa
+      rp-id: ${WEBAUTHN_RP_ID:localhost}
+      # Origin đầy đủ mà trình duyệt mở trang (scheme + host + port), cách nhau dấu phẩy
+      origins: ${WEBAUTHN_ORIGINS:http://localhost:3000,http://localhost:5173}
     bootstrap-admin:
       username: ${ADMIN_USERNAME:admin}
       email: ${ADMIN_EMAIL:admin@aquamekong.local}

@@ -17,13 +17,15 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
 - **Trang:** `/login`, `/register`, `/auth/zalo/callback`, `/account` (đổi/đặt mật khẩu, liên kết Zalo/Google). Nút Đăng nhập / Đăng xuất nằm trên Navbar.
 - **Trạng thái:** 🟢 Đã liên kết (`api/authApi.ts`, `contexts/AuthContext.tsx`, `components/SocialLogin.tsx`, `auth/zaloOAuth.ts`)
 - **Endpoints:**
-  - `GET /api/v1/auth/config` (công khai): `publicRead`, `registrationEnabled`, `googleClientId`, `zaloAppId`. Frontend dựa vào đây để ẩn/hiện nút Đăng ký, Google, Zalo.
+  - `GET /api/v1/auth/config` (công khai): `publicRead`, `registrationEnabled`, `googleClientId`, `zaloAppId`, `passkeyEnabled`. Frontend dựa vào đây để ẩn/hiện nút Đăng ký, Google, Zalo, passkey.
   - `POST /api/v1/auth/login` (công khai). Sai 5 lần liên tiếp sẽ bị khoá 5 phút (429).
   - `POST /api/v1/auth/register` (công khai, tắt bằng `REGISTRATION_ENABLED=false`): luôn tạo `ROLE_USER`.
   - `POST /api/v1/auth/google` `{idToken}` (công khai): frontend lấy ID token bằng Google Identity Services, backend kiểm tra chữ ký, `aud` = `GOOGLE_CLIENT_ID`. Lần đầu sẽ tạo tài khoản mới (chưa có mật khẩu). Nếu email đã có tài khoản thì trả 409: đăng nhập bằng mật khẩu rồi liên kết Google ở `/account` (không tự gộp theo email để tránh chiếm tài khoản).
   - `POST /api/v1/auth/zalo` `{code, codeVerifier}` (công khai): frontend chuyển sang Zalo (OAuth v4 + PKCE, kiểm tra `state`), Zalo trả `code` về `/auth/zalo/callback`, backend đổi code bằng `ZALO_APP_SECRET` rồi lấy id + tên. Zalo **không trả email**: tài khoản tạo bằng Zalo không có email, tên đăng nhập sinh từ tên Zalo bỏ dấu.
   - `GET /api/v1/auth/me` 👤, `POST /api/v1/auth/logout` 👤, `POST /api/v1/auth/change-password` 👤 (tài khoản tạo bằng Google đặt mật khẩu lần đầu không cần mật khẩu cũ)
   - `GET /api/v1/auth/identities` 👤, `POST /api/v1/auth/identities/google` 👤, `POST /api/v1/auth/identities/zalo` 👤, `DELETE /api/v1/auth/identities/{provider}` 👤 (không cho huỷ liên kết cuối cùng khi chưa có mật khẩu)
+  - **Passkey** (`auth/passkey.ts`, `PasskeyService`, thư viện Yubico): `POST /api/v1/auth/passkeys/login/start` + `/login/finish` (công khai, không cần nhập tên: trình duyệt cho chọn passkey đã lưu), `GET /api/v1/auth/passkeys`, `POST /register/start` + `/register/finish`, `DELETE /api/v1/auth/passkeys/{id}` 👤. Bắt buộc xác minh người dùng (vân tay/Face ID/PIN). Mọi tài khoản đều thêm được; trang Tài khoản khuyên dùng cho cán bộ. Cấu hình `WEBAUTHN_RP_ID` (tên miền) + `WEBAUTHN_ORIGINS`.
+  - Không gỡ được cách đăng nhập cuối cùng (mật khẩu, Google/Zalo, passkey đều tính).
   - Quản lý người dùng `/api/v1/users/**` 🔑 (giao diện: `/admin`, tab Người dùng)
 
 ### 2. Trạm quan trắc (Stations)
@@ -88,6 +90,7 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
 ## Còn thiếu
 - Màn hình quản lý thiết bị và cảm biến (`/api/v1/devices`, `/api/v1/sensors`). `deviceApi`/`sensorApi` đã có sẵn trong `api/client.ts`.
 - User bị khoá vẫn dùng được token đã cấp cho tới khi token hết hạn (`JWT_EXPIRATION`, mặc định 8 giờ). (Đăng nhập Google mới thì bị chặn ngay.)
-- Passkey (WebAuthn) cho tài khoản cán bộ.
+- Challenge passkey lưu trong bộ nhớ backend (5 phút): chạy nhiều instance backend thì cần chuyển sang Redis.
+- Chưa bắt buộc passkey cho OPERATOR/ADMIN (hiện chỉ khuyến khích).
 - Lấy số điện thoại Zalo (cần xin quyền riêng từ Zalo) để gửi cảnh báo qua Zalo OA.
 - Đăng ký chưa xác minh email và chưa giới hạn số lượt theo IP (backend chưa đọc `X-Forwarded-For` sau nginx).

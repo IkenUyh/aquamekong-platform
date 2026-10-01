@@ -17,6 +17,22 @@ export interface AuthConfig {
   googleClientId: string | null;
   /** null = chưa cấu hình đăng nhập Zalo */
   zaloAppId: string | null;
+  /** Backend đã cấu hình WEBAUTHN_RP_ID */
+  passkeyEnabled: boolean;
+}
+
+/** Tham số cho navigator.credentials.create/get + requestId gửi kèm ở bước finish */
+export interface PasskeyOptions {
+  requestId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- JSON WebAuthn do backend sinh
+  publicKey: any;
+}
+
+export interface Passkey {
+  id: number;
+  name: string;
+  createdAt: string;
+  lastUsedAt?: string;
 }
 
 export interface RegisterRequest {
@@ -52,4 +68,12 @@ export const authApi = {
   linkGoogle: (idToken: string) => apiClient.post('/auth/identities/google', { idToken }),
   linkZalo: (code: string, codeVerifier: string) => apiClient.post('/auth/identities/zalo', { code, codeVerifier }),
   unlink: (provider: string) => apiClient.delete(`/auth/identities/${provider}`),
+  passkeyLoginStart: () => apiClient.post<PasskeyOptions>('/auth/passkeys/login/start').then((r) => r.data),
+  passkeyLoginFinish: (requestId: string, credential: object) =>
+    apiClient.post<LoginResponse>('/auth/passkeys/login/finish', { requestId, credential }).then((r) => r.data),
+  passkeys: () => apiClient.get<Passkey[]>('/auth/passkeys').then((r) => r.data),
+  passkeyRegisterStart: () => apiClient.post<PasskeyOptions>('/auth/passkeys/register/start').then((r) => r.data),
+  passkeyRegisterFinish: (requestId: string, credential: object, name: string) =>
+    apiClient.post<Passkey>('/auth/passkeys/register/finish', { requestId, credential, name }).then((r) => r.data),
+  deletePasskey: (id: number) => apiClient.delete(`/auth/passkeys/${id}`),
 };

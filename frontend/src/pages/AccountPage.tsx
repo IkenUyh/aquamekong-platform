@@ -6,6 +6,7 @@ import { ZaloButton } from '../components/ZaloButton';
 import { useAuth } from '../contexts/AuthContext';
 import { authApi, type LinkedIdentity } from '../api/authApi';
 import { apiErrorMessage } from '../api/client';
+import { createPasskey, passkeyErrorMessage, passkeySupported } from '../auth/passkey';
 
 const MIN_PASSWORD_LENGTH = 8;
 const IDENTITIES_KEY = ['auth', 'identities'];
@@ -154,6 +155,88 @@ function LinkedAccounts({ googleClientId, zaloAppId }: { googleClientId: string 
   );
 }
 
+const PASSKEYS_KEY = ['auth', 'passkeys'];
+const dateTime = (iso?: string) => (iso ? new Date(iso).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : '');
+
+function Passkeys() {
+  const { hasRole } = useAuth();
+  const queryClient = useQueryClient();
+  const { data: passkeys = [], isLoading } = useQuery({ queryKey: PASSKEYS_KEY, queryFn: authApi.passkeys });
+  const [name, setName] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const act = async (action: () => Promise<unknown>, done?: string) => {
+    setError(null);
+    setSuccess(null);
+    setBusy(true);
+    try {
+      await action();
+      await queryClient.invalidateQueries({ queryKey: PASSKEYS_KEY });
+      if (done) setSuccess(done);
+    } catch (err) {
+      setError(passkeyErrorMessage(err) ?? apiErrorMessage(err, 'Không thực hiện được, vui lòng thử lại.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const add = (e: React.FormEvent) => {
+    e.preventDefault();
+    void act(async () => {
+      const options = await authApi.passkeyRegisterStart();
+      const credential = await createPasskey(options.publicKey);
+      await authApi.passkeyRegisterFinish(options.requestId, credential, name.trim());
+      setName('');
+    }, 'Đã thêm passkey. Lần sau bấm "Đăng nhập bằng passkey" ở trang đăng nhập.');
+  };
+
+  return (
+    <section className="card p-5 space-y-4">
+      <div>
+        <h2 className="font-semibold text-gray-900">Passkey</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Đăng nhập bằng vân tay, Face ID, mã PIN của thiết bị hoặc khoá bảo mật, không cần mật khẩu.
+          {hasRole('ROLE_OPERATOR', 'ROLE_ADMIN') && ' Khuyên dùng cho tài khoản cán bộ: passkey không bị lộ qua trang web giả mạo.'}
+        </p>
+      </div>
+
+      {isLoading ? (
+        <p className="text-sm text-gray-400">Đang tải...</p>
+      ) : passkeys.length > 0 && (
+        <ul className="divide-y divide-gray-100">
+          {passkeys.map((p) => (
+            <li key={p.id} className="py-3 first:pt-0 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{p.name}</p>
+                <p className="text-xs text-gray-500">
+                  Tạo {dateTime(p.createdAt)}{p.lastUsedAt ? ` · Dùng lần cuối ${dateTime(p.lastUsedAt)}` : ' · Chưa dùng'}
+                </p>
+              </div>
+              <button type="button" disabled={busy} onClick={() => void act(() => authApi.deletePasskey(p.id))} className="btn-secondary shrink-0">
+                Xoá
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <form onSubmit={add} className="flex flex-col sm:flex-row gap-2">
+        <label htmlFor="passkey-name" className="sr-only">Tên passkey</label>
+        <input id="passkey-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100}
+          placeholder="Tên gợi nhớ, vd. Điện thoại của tôi" className="field flex-1" />
+        <button type="submit" disabled={busy} className="btn-primary shrink-0">
+          {busy ? 'Đang chờ thiết bị...' : 'Thêm passkey'}
+        </button>
+      </form>
+
+      {error && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</p>}
+      {success && <p role="status" className="text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-md px-3 py-2">{success}</p>}
+    </section>
+  );
+}
+
 export function AccountPage() {
   const { user, config } = useAuth();
 
@@ -169,6 +252,7 @@ export function AccountPage() {
           </div>
 
           <PasswordForm />
+          {config?.passkeyEnabled && passkeySupported() && <Passkeys />}
           {(config?.googleClientId || config?.zaloAppId) && (
             <LinkedAccounts googleClientId={config.googleClientId} zaloAppId={config.zaloAppId} />
           )}
