@@ -15,6 +15,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
 
+    Optional<User> findByWebauthnUserHandle(byte[] handle);
+
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);

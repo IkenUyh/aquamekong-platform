@@ -44,7 +44,7 @@ class AuthControllerTest {
 
     @Test
     void configIsPublic() throws Exception {
-        when(authService.config()).thenReturn(new AuthConfigDto(true, true, "cid", "zalo-app"));
+        when(authService.config()).thenReturn(new AuthConfigDto(true, true, "cid", "zalo-app", true));
         mvc.perform(get("/api/v1/auth/config"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.googleClientId").value("cid"));

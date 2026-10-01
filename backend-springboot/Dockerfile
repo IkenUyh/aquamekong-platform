@@ -6,7 +6,9 @@ WORKDIR /app
 
 # Copy POM and dependencies first (cache layer)
 COPY pom.xml ./
-RUN mvn dependency:go-offline -B
+# dependency:resolve theo dependencyManagement của Spring Boot; go-offline thì không
+# (thư viện Yubico WebAuthn kéo theo Jackson và go-offline chọn nhầm bản SNAPSHOT không tồn tại)
+RUN mvn dependency:resolve dependency:resolve-plugins -B
 
 # Copy source and build
 COPY src/ src/

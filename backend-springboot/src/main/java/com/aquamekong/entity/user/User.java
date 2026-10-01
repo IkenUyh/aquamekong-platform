@@ -35,6 +35,10 @@ public class User {
     @Column(name = "full_name", length = 255)
     private String fullName;
 
+    /** User handle WebAuthn (32 byte ngẫu nhiên), null cho tới khi tạo passkey đầu tiên */
+    @Column(name = "webauthn_user_handle", unique = true)
+    private byte[] webauthnUserHandle;
+
     @Enumerated(EnumType.STRING)
     @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(nullable = false)

@@ -41,6 +41,7 @@ class ExternalAuthServiceTest {
     @Mock UserRepository userRepository;
     @Mock UserService userService;
     @Mock AuthService authService;
+    @Mock LoginMethodGuard loginMethodGuard;
     @InjectMocks ExternalAuthService service;
 
     private static final ExternalProfile PROFILE =
@@ -144,17 +145,16 @@ class ExternalAuthServiceTest {
 
     @Test
     void cannotUnlinkLastLoginMethod() {
-        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(alice)); // không có mật khẩu
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(alice));
         when(identityRepository.existsByUserIdAndProvider(1L, "google")).thenReturn(true);
-        when(identityRepository.countByUserId(1L)).thenReturn(1L);
+        doThrow(new IllegalArgumentException("last")).when(loginMethodGuard).requireAnotherMethod(alice);
 
         assertThatThrownBy(() -> service.unlink("alice", "google")).isInstanceOf(IllegalArgumentException.class);
         verify(identityRepository, never()).deleteByUserIdAndProvider(anyLong(), anyString());
     }
 
     @Test
-    void canUnlinkWhenPasswordIsSet() {
-        alice.setPasswordHash("$2a$hash");
+    void canUnlinkWhenAnotherMethodExists() {
         when(userRepository.findByUsername("alice")).thenReturn(Optional.of(alice));
         when(identityRepository.existsByUserIdAndProvider(1L, "google")).thenReturn(true);
 
