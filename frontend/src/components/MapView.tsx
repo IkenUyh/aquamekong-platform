@@ -4,8 +4,12 @@ import { MapLegend } from './MapLegend';
 import { MapFlyToStation } from '../hooks/useMapFlyTo';
 import type { GeoJsonFeature } from '../types';
 import { SalinityHeatmap } from './map/SalinityHeatmap';
-import provincesGeoJson from '../data/mekong-provinces.json';
-import riversGeoJson from '../data/mekong-rivers.json';
+import type { GeoJsonObject } from 'geojson';
+import provincesData from '../data/mekong-provinces.json';
+import riversData from '../data/mekong-rivers.json';
+
+const provincesGeoJson = provincesData as GeoJsonObject;
+const riversGeoJson = riversData as GeoJsonObject;
 
 interface MapViewProps {
   features: GeoJsonFeature[];
@@ -42,7 +46,7 @@ export function MapView({ features, selectedStationId, onSelectStation, activeLa
 
       {activeLayers.provinces && (
         <GeoJSON
-          data={provincesGeoJson as any}
+          data={provincesGeoJson}
           style={{
             color: '#94a3b8',
             weight: 1.5,
@@ -54,7 +58,7 @@ export function MapView({ features, selectedStationId, onSelectStation, activeLa
 
       {activeLayers.rivers && (
         <GeoJSON
-          data={riversGeoJson as any}
+          data={riversGeoJson}
           style={{
             color: '#60a5fa',
             weight: 2,

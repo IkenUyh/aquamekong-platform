@@ -66,7 +66,7 @@ export function ForecastPage() {
             <div>
               <label className="text-xs font-semibold text-gray-500 mb-2 block">Trạm quan tâm</label>
               <div className="space-y-2 mb-3">
-                {stations.slice(0, 10).map((s: any) => (
+                {stations.slice(0, 10).map((s) => (
                   <label key={s.id} className="flex items-center justify-between text-sm text-gray-700 cursor-pointer">
                     <div className="flex items-center gap-2">
                       <input 
@@ -134,7 +134,7 @@ export function ForecastPage() {
 
             {/* Grid of charts */}
             <div className="grid grid-cols-2 gap-4">
-                {stations.filter((s: any) => selectedStations.includes(s.id)).map((s: any) => {
+                {stations.filter((s) => selectedStations.includes(s.id)).map((s) => {
                 const currentSalinity = s.latestSalinity || 0;
                 const isHigh = currentSalinity >= 4;
                 

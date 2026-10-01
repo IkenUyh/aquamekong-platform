@@ -45,7 +45,7 @@ export function StationsPage() {
     },
   ];
 
-  const mapMarkers = stationsList.map((s: any) => {
+  const mapMarkers = stationsList.map((s) => {
     let color = '#22c55e';
     if (s.latestSalinity && s.latestSalinity >= 4) color = '#ef4444';
     else if (s.latestSalinity && s.latestSalinity >= 1) color = '#eab308';

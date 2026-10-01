@@ -20,8 +20,8 @@ export function OverviewPage() {
     queryFn: recommendationApi.getRecommendations,
   });
 
-  const activeStationsCount = stations.filter((s: any) => s.status === 'ACTIVE').length;
-  const criticalAlertsCount = alerts.filter((a: any) => a.severity === 'CRITICAL' || a.alertLevel === 'CRITICAL').length;
+  const activeStationsCount = stations.filter((s) => s.status === 'ACTIVE').length;
+  const criticalAlertsCount = alerts.filter((a) => a.severity === 'CRITICAL' || a.alertLevel === 'CRITICAL').length;
 
   return (
     <DashboardLayout
@@ -116,7 +116,7 @@ export function OverviewPage() {
             </h3>
             <div className="grid grid-cols-2 gap-3">
               {recommendations.length > 0 ? (
-                recommendations.map((rec: any, idx: number) => (
+                recommendations.map((rec, idx) => (
                   <div key={idx} className="p-3 bg-amber-50/60 rounded-lg border border-amber-100 flex items-start gap-3">
                     <span className="text-xl">{rec.icon || '💡'}</span>
                     <div>
@@ -150,7 +150,7 @@ export function OverviewPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {stations.slice(0, 6).map((s: any) => (
+                  {stations.slice(0, 6).map((s) => (
                     <tr key={s.id} className="hover:bg-gray-50">
                       <td className="px-3 py-2 font-mono font-bold text-blue-600">{s.code}</td>
                       <td className="px-3 py-2 font-semibold text-gray-800">{s.name}</td>
