@@ -10,6 +10,7 @@ const StationsPage = lazy(() => import('./pages/StationsPage').then((m) => ({ de
 const ForecastPage = lazy(() => import('./pages/ForecastPage').then((m) => ({ default: m.ForecastPage })));
 const AlertsPage = lazy(() => import('./pages/AlertsPage').then((m) => ({ default: m.AlertsPage })));
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then((m) => ({ default: m.ReportsPage })));
+const AccountPage = lazy(() => import('./pages/AccountPage').then((m) => ({ default: m.AccountPage })));
 
 function PageFallback() {
   return <div className="h-screen flex items-center justify-center text-sm text-gray-400">Đang tải...</div>;
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
       { path: '/forecast',  element: page(<ForecastPage />) },
       { path: '/alerts',    element: page(<AlertsPage />) },
       { path: '/reports',   element: page(<ReportsPage />) },
+      { path: '/account',   element: page(<AccountPage />) },
     ],
   },
 ]);
