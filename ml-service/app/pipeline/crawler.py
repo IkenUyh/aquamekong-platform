@@ -1,13 +1,11 @@
 import logging
 import random
 from datetime import datetime, timezone, timedelta
-import redis
 import requests
 import json
-from app.config import get_settings
+from app.cache import get_redis
 
 logger = logging.getLogger(__name__)
-settings = get_settings()
 
 class Crawler:
     """
@@ -15,7 +13,7 @@ class Crawler:
     Implements Incremental Polling and Redis caching to prevent duplicates.
     """
     def __init__(self):
-        self.redis_client = redis.from_url(settings.redis_url, decode_responses=True)
+        self.redis_client = get_redis()
         # Mock station codes from database
         self.station_codes = ["CT-001", "MT-001", "BT-001", "TV-001", "ST-001", "CM-001"]
         
@@ -29,6 +27,11 @@ class Crawler:
             
         return True
         
+    def mark_processed(self, raw_data):
+        """Đánh dấu đã xử lý — chỉ gọi SAU KHI ghi DB thành công, để lần lỗi sau còn crawl lại."""
+        for record in raw_data:
+            self._update_cache(record["station_code"], record["recorded_at"])
+
     def _update_cache(self, station_code: str, timestamp_str: str):
         """Update the last processed timestamp for a station."""
         cache_key = f"last_updated_at:{station_code}"
@@ -67,7 +70,6 @@ class Crawler:
                     "flow_rate": 3000 + random.uniform(-200, 200)
                 }
                 raw_data.append(raw_record)
-                self._update_cache(code, timestamp_str)
                 
         logger.info(f"Ingestion complete. Fetched {len(raw_data)} new records.")
         return raw_data

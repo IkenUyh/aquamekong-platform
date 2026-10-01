@@ -9,7 +9,10 @@ import com.aquamekong.entity.telemetry.Measurement;
 import com.aquamekong.repository.device.SensorRepository;
 import com.aquamekong.repository.station.StationRepository;
 import com.aquamekong.repository.telemetry.MeasurementRepository;
+import com.aquamekong.util.MetricTypes;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,17 +28,28 @@ public class MeasurementService {
     private final StationRepository stationRepository;
     private final SensorRepository sensorRepository;
 
+    /** Giới hạn cứng số dòng trả về cho các truy vấn lịch sử (bảng measurements tăng rất nhanh). */
+    public static final int MAX_LIMIT = 5000;
+
+    private static Pageable limitOf(int limit) {
+        return PageRequest.of(0, Math.max(1, Math.min(limit, MAX_LIMIT)));
+    }
+
     @Transactional(readOnly = true)
-    public List<MeasurementDto> getByStationId(Long stationId) {
-        return measurementRepository.findByStationIdOrderByRecordedAtDesc(stationId)
+    public List<MeasurementDto> getByStationId(Long stationId, String metricType, int limit) {
+        List<Measurement> rows = metricType == null || metricType.isBlank()
+                ? measurementRepository.findByStationIdOrderByRecordedAtDesc(stationId, limitOf(limit))
+                : measurementRepository.findByStationIdAndMetricTypeOrderByRecordedAtDesc(
+                        stationId, MetricTypes.normalize(metricType), limitOf(limit));
+        return rows
                 .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<MeasurementDto> getBySensorId(Long sensorId) {
-        return measurementRepository.findBySensorIdOrderByRecordedAtDesc(sensorId)
+    public List<MeasurementDto> getBySensorId(Long sensorId, int limit) {
+        return measurementRepository.findBySensorIdOrderByRecordedAtDesc(sensorId, limitOf(limit))
                 .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
@@ -43,18 +57,38 @@ public class MeasurementService {
 
     @Transactional(readOnly = true)
     public List<MeasurementDto> getByStationAndMetric(Long stationId, String metricType) {
-        return measurementRepository.findByStationIdAndMetricTypeOrderByRecordedAtDesc(stationId, metricType)
+        return measurementRepository.findByStationIdAndMetricTypeOrderByRecordedAtDesc(stationId, MetricTypes.normalize(metricType))
                 .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<MeasurementDto> getByStationAndTimeRange(Long stationId, OffsetDateTime from, OffsetDateTime to) {
-        return measurementRepository.findByStationIdAndRecordedAtBetweenOrderByRecordedAtDesc(stationId, from, to)
+    public List<MeasurementDto> getByStationAndTimeRange(Long stationId, String metricType, OffsetDateTime from, OffsetDateTime to, int limit) {
+        List<Measurement> rows = metricType == null || metricType.isBlank()
+                ? measurementRepository.findByStationIdAndRecordedAtBetweenOrderByRecordedAtDesc(stationId, from, to, limitOf(limit))
+                : measurementRepository.findByStationIdAndMetricTypeAndRecordedAtBetweenOrderByRecordedAtDesc(
+                        stationId, MetricTypes.normalize(metricType), from, to, limitOf(limit));
+        return rows
                 .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Các số liệu có id > lastId (theo thứ tự ghi), dùng cho poller SSE + cảnh báo.
+     */
+    @Transactional(readOnly = true)
+    public List<MeasurementDto> getNewSince(Long lastId, int limit) {
+        return measurementRepository.findByIdGreaterThanOrderByIdAsc(lastId, limitOf(limit))
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Long getMaxId() {
+        return measurementRepository.findMaxId();
     }
 
     @Transactional(readOnly = true)
@@ -67,7 +101,7 @@ public class MeasurementService {
 
     @Transactional(readOnly = true)
     public MeasurementDto getLatestByStationAndMetric(Long stationId, String metricType) {
-        Measurement measurement = measurementRepository.findLatestByStationIdAndMetricType(stationId, metricType);
+        Measurement measurement = measurementRepository.findLatestByStationIdAndMetricType(stationId, MetricTypes.normalize(metricType));
         return measurement != null ? toDto(measurement) : null;
     }
 

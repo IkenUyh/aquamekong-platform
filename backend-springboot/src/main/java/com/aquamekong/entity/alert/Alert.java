@@ -1,5 +1,6 @@
 package com.aquamekong.entity.alert;
 
+import com.aquamekong.util.MetricTypes;
 import com.aquamekong.entity.enums.AlertSeverity;
 import com.aquamekong.entity.enums.AlertStatus;
 import com.aquamekong.entity.station.Station;
@@ -62,6 +63,12 @@ public class Alert {
 
     @PrePersist
     protected void onCreate() {
+        metricType = MetricTypes.normalize(metricType);
         createdAt = OffsetDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        metricType = MetricTypes.normalize(metricType);
     }
 }
