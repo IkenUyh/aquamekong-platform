@@ -5,7 +5,8 @@ interface DashboardLayoutProps {
   leftPanel: React.ReactNode;
   centerContent: React.ReactNode;
   bottomContent?: React.ReactNode;
-  rightPanel: React.ReactNode;
+  /** Bỏ trống để vùng giữa chiếm hết phần còn lại */
+  rightPanel?: React.ReactNode;
 }
 
 export function DashboardLayout({ leftPanel, centerContent, bottomContent, rightPanel }: DashboardLayoutProps) {
@@ -30,9 +31,11 @@ export function DashboardLayout({ leftPanel, centerContent, bottomContent, right
         </main>
 
         {/* Right panel */}
-        <aside className="w-[320px] bg-[var(--color-bg)] border-l border-[var(--color-border)] overflow-y-auto p-4 space-y-4 z-10">
-          {rightPanel}
-        </aside>
+        {rightPanel && (
+          <aside className="w-[320px] bg-[var(--color-bg)] border-l border-[var(--color-border)] overflow-y-auto p-4 space-y-4 z-10">
+            {rightPanel}
+          </aside>
+        )}
       </div>
     </div>
   );

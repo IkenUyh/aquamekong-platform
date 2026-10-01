@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import React from 'react';
 import type { SalinityForecast } from '../types';
 
@@ -32,7 +33,7 @@ export function ForecastSummaryPanel({ forecasts }: ForecastSummaryPanelProps) {
     <div className="bg-white rounded-xl border border-gray-200 p-4">
       <div className="flex justify-between items-start mb-3">
         <h3 className="font-semibold text-gray-800">Dự báo những ngày tới</h3>
-        <a href="/forecast" className="text-blue-500 text-xs">Xem chi tiết &gt;</a>
+        <Link to="/forecast" className="text-blue-500 text-xs hover:underline">Xem chi tiết &gt;</Link>
       </div>
 
       {/* Overall risk */}

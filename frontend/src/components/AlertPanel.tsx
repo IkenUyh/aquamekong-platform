@@ -36,12 +36,8 @@ export function AlertPanel() {
               <div className="flex items-start gap-2">
                 <span className="text-lg leading-none mt-0.5">{style.icon}</span>
                 <div>
-                  <p className={`text-sm font-medium ${style.text}`}>
-                    Vượt ngưỡng {alert.thresholdValue}‰
-                  </p>
-                  <p className="text-xs text-gray-600 mt-0.5">
-                    Trạm {alert.stationName} ({alert.actualValue}‰)
-                  </p>
+                  <p className={`text-sm font-medium ${style.text}`}>{alert.stationName}</p>
+                  <p className="text-xs text-gray-600 mt-0.5">{alert.message}</p>
                   <p className="text-[10px] text-gray-400 mt-1">
                     {new Date(alert.createdAt).toLocaleString('vi-VN')}
                   </p>

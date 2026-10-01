@@ -207,6 +207,12 @@ export const metricApi = {
     ),
 };
 
+/** Ngày theo giờ máy người dùng, dạng yyyy-MM-dd (cùng định dạng LocalDate của backend) */
+const isoDate = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const todayIso = () => isoDate(new Date());
+const tomorrowIso = () => isoDate(new Date(Date.now() + 86_400_000));
+
 export const forecastApi = {
   getRuns: () => apiClient.get<ForecastRun[]>('/forecasts/runs').then((r) => r.data),
 
@@ -220,12 +226,18 @@ export const forecastApi = {
       generateMockForecasts(stationId)
     ),
 
-  /** Dự báo mới nhất của trạm; chưa có thì chạy ML (POST /forecasts/predict) rồi trả về kết quả. */
+  /**
+   * `daysAhead` ngày dự báo bắt đầu từ ngày mai. Lượt chạy mới nhất đã cũ (ngày đầu đã qua)
+   * hoặc ngắn hơn số ngày cần -> chạy ML lại (POST /forecasts/predict).
+   */
   getOrPredict: (stationId: number, daysAhead: number = 7) =>
     withFallback(
-      apiClient
-        .get<SalinityForecast[]>(`/forecasts/station/${stationId}`)
-        .then((r) => (r.data.length > 0 ? r.data : forecastApi.predict(stationId, daysAhead))),
+      apiClient.get<SalinityForecast[]>(`/forecasts/station/${stationId}`).then(async (r) => {
+        const fromTomorrow = r.data.filter((f) => f.forecastDate > todayIso());
+        const usable = fromTomorrow.length >= daysAhead && r.data[0]?.forecastDate === tomorrowIso();
+        const forecasts = usable ? fromTomorrow : await forecastApi.predict(stationId, daysAhead);
+        return forecasts.slice(0, daysAhead);
+      }),
       generateMockForecasts(stationId)
     ),
 
