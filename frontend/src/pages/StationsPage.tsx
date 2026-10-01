@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { DataTable, Column } from '../components/shared/DataTable';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
+import { StatusBadge } from '../components/shared/StatusBadge';
 import { useStationsList } from '../hooks/useStations';
 import { Search } from 'lucide-react';
 import type { Station } from '../types';
@@ -75,12 +76,10 @@ export function StationsPage() {
       key: 'status',
       header: 'Trạng thái',
       render: (s) => {
-        if (s.status === 'INACTIVE') {
-          return <span className="text-gray-500 text-xs font-medium bg-gray-100 px-2 py-1 rounded">Ngừng hoạt động</span>;
-        }
+        if (s.status === 'INACTIVE') return <StatusBadge level="INFO" text="Ngừng hoạt động" />;
         return isReporting(s.lastMeasuredAt)
-          ? <span className="text-green-600 text-xs font-medium bg-green-50 px-2 py-1 rounded">Đang truyền dữ liệu</span>
-          : <span className="text-amber-600 text-xs font-medium bg-amber-50 px-2 py-1 rounded" title="Không có số đo trong 2 giờ qua">Mất tín hiệu</span>;
+          ? <StatusBadge level="SAFE" text="Đang truyền" />
+          : <span title="Không có số đo trong 2 giờ qua"><StatusBadge level="WARNING" text="Mất tín hiệu" /></span>;
       },
     },
   ];
