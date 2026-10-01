@@ -4,7 +4,7 @@ import { isAxiosError } from 'axios';
 import { router } from './router';
 import { AuthProvider } from './contexts/AuthContext';
 
-export const queryClient = new QueryClient({
+const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       // Lỗi 4xx (401, 403, 404...) thử lại cũng vô ích

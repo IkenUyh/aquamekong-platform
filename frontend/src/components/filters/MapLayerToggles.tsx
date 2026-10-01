@@ -8,6 +8,7 @@ export interface MapLayer {
   enabled: boolean;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const DEFAULT_LAYERS: MapLayer[] = [
   { id: 'salinity',    label: 'Độ mặn (‰)',    icon: <Droplets className="w-4 h-4" />,  enabled: true },
   { id: 'waterLevel',  label: 'Mực nước',      icon: <Waves className="w-4 h-4" />,     enabled: false },

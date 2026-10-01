@@ -20,9 +20,13 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
-      // Code cũ còn nhiều `any` — cảnh báo để dọn dần, không chặn build
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },
+  },
+  {
+    // File cấu hình route (lazy import các trang), không phải module component
+    files: ['src/router.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
   },
 );
