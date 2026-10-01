@@ -1,5 +1,6 @@
 package com.aquamekong.service.forecast;
 
+import com.aquamekong.client.MlServiceClient;
 import com.aquamekong.dto.forecast.ForecastRunDto;
 import com.aquamekong.dto.forecast.SalinityForecastDto;
 import com.aquamekong.entity.enums.ForecastRunStatus;
@@ -9,9 +10,12 @@ import com.aquamekong.entity.station.Station;
 import com.aquamekong.repository.forecast.ForecastRunRepository;
 import com.aquamekong.repository.forecast.SalinityForecastRepository;
 import com.aquamekong.repository.station.StationRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -25,10 +29,12 @@ public class ForecastService {
     private final ForecastRunRepository forecastRunRepository;
     private final SalinityForecastRepository salinityForecastRepository;
     private final StationRepository stationRepository;
+    private final MlServiceClient mlServiceClient;
+    private final TransactionTemplate transactionTemplate;
 
     @Transactional(readOnly = true)
-    public List<ForecastRunDto> getAllRuns() {
-        return forecastRunRepository.findAll()
+    public List<ForecastRunDto> getAllRuns(int limit) {
+        return forecastRunRepository.findAllByOrderByRunAtDesc(PageRequest.of(0, Math.max(1, Math.min(limit, 1000))))
                 .stream()
                 .map(this::toRunDto)
                 .collect(Collectors.toList());
@@ -38,7 +44,7 @@ public class ForecastService {
     public ForecastRunDto getRunById(Long id) {
         return forecastRunRepository.findById(id)
                 .map(this::toRunDto)
-                .orElse(null);
+                .orElseThrow(() -> new EntityNotFoundException("ForecastRun không tồn tại với ID: " + id));
     }
 
     @Transactional
@@ -57,7 +63,7 @@ public class ForecastService {
 
     @Transactional(readOnly = true)
     public List<SalinityForecastDto> getForecastsByStationId(Long stationId) {
-        return salinityForecastRepository.findByStationIdOrderByForecastDateAsc(stationId)
+        return salinityForecastRepository.findLatestRunByStationId(stationId)
                 .stream()
                 .map(this::toSalinityDto)
                 .collect(Collectors.toList());
@@ -100,6 +106,43 @@ public class ForecastService {
 
         SalinityForecast saved = salinityForecastRepository.save(forecast);
         return toSalinityDto(saved);
+    }
+
+    /**
+     * Gọi ML service dự báo cho trạm, lưu thành 1 forecast_run + các salinity_forecasts.
+     * Lời gọi HTTP nằm ngoài transaction để không giữ connection DB trong lúc chờ ML.
+     */
+    public List<SalinityForecastDto> predict(Long stationId, int daysAhead) {
+        if (!stationRepository.existsById(stationId)) {
+            throw new IllegalArgumentException("Station không tồn tại với ID: " + stationId);
+        }
+
+        MlServiceClient.PredictionResponse response = mlServiceClient.predict(stationId, daysAhead);
+
+        return transactionTemplate.execute(status -> {
+            Station station = stationRepository.getReferenceById(stationId);
+            ForecastRun run = forecastRunRepository.save(ForecastRun.builder()
+                    .modelVersion(response.modelVersion() != null ? response.modelVersion() : "unknown")
+                    .runAt(OffsetDateTime.now())
+                    .status(ForecastRunStatus.SUCCESS)
+                    .build());
+
+            List<SalinityForecast> forecasts = response.predictions().stream()
+                    .map(p -> SalinityForecast.builder()
+                            .run(run)
+                            .station(station)
+                            .forecastDate(p.date())
+                            .predictedSalinity(p.salinity())
+                            .lowerBound(p.lowerBound())
+                            .upperBound(p.upperBound())
+                            .confidenceLevel(p.confidence() != null ? p.confidence() : 0.95)
+                            .build())
+                    .collect(Collectors.toList());
+
+            return salinityForecastRepository.saveAll(forecasts).stream()
+                    .map(this::toSalinityDto)
+                    .collect(Collectors.toList());
+        });
     }
 
     public ForecastRunDto toRunDto(ForecastRun entity) {
