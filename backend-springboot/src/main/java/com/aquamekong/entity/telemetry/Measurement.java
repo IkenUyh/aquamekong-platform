@@ -1,5 +1,6 @@
 package com.aquamekong.entity.telemetry;
 
+import com.aquamekong.util.MetricTypes;
 import com.aquamekong.entity.device.Sensor;
 import com.aquamekong.entity.enums.QualityStatus;
 import com.aquamekong.entity.station.Station;
@@ -54,6 +55,12 @@ public class Measurement {
 
     @PrePersist
     protected void onCreate() {
+        metricType = MetricTypes.normalize(metricType);
         createdAt = OffsetDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        metricType = MetricTypes.normalize(metricType);
     }
 }
