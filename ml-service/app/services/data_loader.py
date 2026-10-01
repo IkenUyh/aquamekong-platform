@@ -3,17 +3,15 @@ Data loader service — Loads hydrology data & persists forecast results to Post
 """
 
 import pandas as pd
-from sqlalchemy import create_engine, text
-from app.config import get_settings
+from sqlalchemy import text
+from app.db import get_engine
 from typing import Optional, List
 from datetime import datetime, timedelta
 
-settings = get_settings()
-
 
 def get_db_engine():
-    """Create SQLAlchemy engine for PostgreSQL connection."""
-    return create_engine(settings.database_url)
+    """Shared SQLAlchemy engine for PostgreSQL connection."""
+    return get_engine()
 
 
 def load_station_metrics(

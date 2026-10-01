@@ -22,7 +22,7 @@ def train_hybrid():
     loader_service = DataLoaderService(lookback=14, horizon=1)
     
     # 1. Load Raw Data and scale it
-    df = loader_service.load_raw_data()
+    df = loader_service.load_long_data()
     df[loader_service.feature_cols] = loader_service.scaler.fit_transform(df[loader_service.feature_cols])
     
     print("Phase 1: Fitting ARIMA models to extract residuals...")
