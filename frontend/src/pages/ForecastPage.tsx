@@ -1,11 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
-import { Info, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { RefreshCw } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { ForecastChart } from '../components/ForecastChart';
 import { StatusBadge } from '../components/shared/StatusBadge';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
 import { forecastApi } from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
 import { useStationsList } from '../hooks/useStations';
 import { forecastQueryKey } from '../hooks/useForecast';
 import type { SalinityForecast, Station } from '../types';
@@ -78,6 +80,7 @@ export function ForecastPage() {
   const [picked, setPicked] = useState<number[] | null>(null);
   const [selectedDay, setSelectedDay] = useState(0);
   const [rerunning, setRerunning] = useState(false);
+  const { user } = useAuth();
 
   const provinces = useMemo(
     () => [...new Set(stations.map((s) => s.province).filter((p): p is string => !!p))].sort((a, b) => a.localeCompare(b, 'vi')),
@@ -122,24 +125,24 @@ export function ForecastPage() {
     }
   };
 
-  const selectClass = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500';
+  const selectClass = 'field';
 
   return (
     <DashboardLayout
       leftPanel={
         <div className="p-5 space-y-6">
-          <h2 className="font-bold text-gray-800">Bộ lọc dự báo</h2>
+          <h2 className="font-semibold text-gray-900">Bộ lọc dự báo</h2>
 
           <div className="space-y-4 border-b border-gray-100 pb-6">
             <div>
-              <label htmlFor="forecast-days" className="text-xs font-semibold text-gray-500 mb-1 block">Thời gian dự báo</label>
+              <label htmlFor="forecast-days" className="field-label">Thời gian dự báo</label>
               <select id="forecast-days" value={days} onChange={(e) => { setDays(Number(e.target.value)); setSelectedDay(0); }} className={selectClass}>
                 {HORIZONS.map((d) => <option key={d} value={d}>{d} ngày tới</option>)}
               </select>
             </div>
 
             <div>
-              <label htmlFor="forecast-province" className="text-xs font-semibold text-gray-500 mb-1 block">Tỉnh/Thành phố</label>
+              <label htmlFor="forecast-province" className="field-label">Tỉnh/Thành phố</label>
               <select id="forecast-province" value={province} onChange={(e) => { setProvince(e.target.value); setPicked(null); }} className={selectClass}>
                 <option value={ALL}>Tất cả</option>
                 {provinces.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -147,7 +150,7 @@ export function ForecastPage() {
             </div>
 
             <fieldset>
-              <legend className="text-xs font-semibold text-gray-500 mb-2 block">
+              <legend className="field-label mb-2">
                 Trạm quan tâm ({selected.length}/{visibleStations.length})
               </legend>
               <div className="space-y-2 mb-3 max-h-64 overflow-y-auto">
@@ -155,7 +158,7 @@ export function ForecastPage() {
                   <label key={s.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                     <input
                       type="checkbox"
-                      className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                      className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
                       checked={selectedIds.includes(s.id)}
                       onChange={() => togglePicked(s.id)}
                     />
@@ -164,22 +167,31 @@ export function ForecastPage() {
                 ))}
               </div>
               <div className="flex gap-3 text-xs font-medium">
-                <button onClick={() => setPicked(visibleStations.map((s) => s.id))} className="text-blue-500 hover:underline">Chọn tất cả</button>
+                <button onClick={() => setPicked(visibleStations.map((s) => s.id))} className="text-primary-500 hover:underline">Chọn tất cả</button>
                 <button onClick={() => setPicked([])} className="text-gray-500 hover:underline">Bỏ chọn</button>
               </div>
             </fieldset>
 
-            <button
+            {user ? (
+              <button
                 onClick={rerun}
                 disabled={rerunning || selected.length === 0}
-                className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-medium py-2 rounded-lg transition-colors text-sm shadow-sm shadow-blue-500/30"
+                className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-700 disabled:opacity-60 text-white font-medium py-2 rounded-lg transition-colors text-sm"
               >
                 <RefreshCw className={`w-4 h-4 ${rerunning ? 'animate-spin' : ''}`} />
                 {rerunning ? 'Đang chạy mô hình...' : 'Chạy lại dự báo'}
               </button>
-            <p className="text-[11px] text-gray-400">
-              Dự báo được lưu lại; trang tự chạy mô hình khi trạm chưa có dự báo hoặc dự báo đã cũ.
-            </p>
+            ) : (
+              <p className="text-xs text-gray-500">
+                <Link to="/login" state={{ from: '/forecast' }} className="font-medium text-primary hover:underline">Đăng nhập</Link>{' '}
+                để chạy lại mô hình dự báo.
+              </p>
+            )}
+            {user && (
+              <p className="text-[11px] text-gray-400">
+                Dự báo được lưu lại; trang tự chạy mô hình khi trạm chưa có dự báo hoặc dự báo đã cũ.
+              </p>
+            )}
           </div>
         </div>
       }
@@ -188,12 +200,12 @@ export function ForecastPage() {
           {/* Biểu đồ từng trạm */}
           <div className="lg:flex-1 p-4 lg:p-5 lg:overflow-y-auto bg-gray-50 flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <h2 className="font-bold text-lg text-gray-800">Dự báo độ mặn {days} ngày tới</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Dự báo độ mặn {days} ngày tới</h2>
               <p className="text-xs text-gray-500">Chọn một ngày để xem bản đồ dự báo của ngày đó</p>
             </div>
 
             {dates.length > 0 && (
-              <div className="flex gap-2 bg-white p-2 rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
+              <div className="flex gap-2 bg-white p-2 rounded-lg border border-gray-200 overflow-x-auto">
                 {dates.map((d, i) => {
                   const { weekday, label } = dayLabel(d);
                   const active = i === dayIndex;
@@ -202,10 +214,10 @@ export function ForecastPage() {
                       key={d}
                       onClick={() => setSelectedDay(i)}
                       aria-pressed={active}
-                      className={`flex-1 min-w-[56px] text-center py-2 rounded-lg ${active ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-50'}`}
+                      className={`flex-1 min-w-[56px] text-center py-2 rounded-lg ${active ? 'bg-primary-50 border border-primary-200' : 'hover:bg-gray-50'}`}
                     >
-                      <p className={`text-xs font-bold ${active ? 'text-blue-600' : 'text-gray-500'}`}>{weekday}</p>
-                      <p className={`text-[10px] ${active ? 'text-blue-400' : 'text-gray-400'}`}>{label}</p>
+                      <p className={`text-xs font-bold ${active ? 'text-primary-600' : 'text-gray-500'}`}>{weekday}</p>
+                      <p className={`text-[10px] ${active ? 'text-primary-400' : 'text-gray-400'}`}>{label}</p>
                     </button>
                   );
                 })}
@@ -220,15 +232,15 @@ export function ForecastPage() {
               {items.map(({ station, forecasts, isLoading, isError }) => {
                 const dayValue = forecasts[dayIndex]?.predictedSalinity;
                 return (
-                  <div key={station.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div key={station.id} className="card p-4">
                     <div className="flex justify-between items-start mb-4 gap-2">
                       <div className="min-w-0">
-                        <h4 className="font-bold text-gray-800 flex items-center gap-1 truncate">{station.name}</h4>
+                        <h4 className="font-semibold text-gray-900 flex items-center gap-1 truncate">{station.name}</h4>
                         <p className="text-xs text-gray-500">{station.riverName || '—'}</p>
                         <p className="text-sm mt-1 text-gray-600">
-                          Hiện tại <span className="font-bold text-gray-800">{formatNumber(station.latestSalinity)}‰</span>
+                          Hiện tại <span className="font-semibold text-gray-900">{formatNumber(station.latestSalinity)}‰</span>
                           {dayValue != null && (
-                            <> · {dayLabel(forecasts[dayIndex].forecastDate).label}: <span className="font-bold text-gray-800">{formatNumber(dayValue)}‰</span></>
+                            <> · {dayLabel(forecasts[dayIndex].forecastDate).label}: <span className="font-semibold text-gray-900">{formatNumber(dayValue)}‰</span></>
                           )}
                         </p>
                       </div>
@@ -254,7 +266,7 @@ export function ForecastPage() {
           {/* Bản đồ dự báo của ngày đang chọn */}
           <div className="w-full lg:w-[40%] lg:min-w-[320px] h-[480px] lg:h-auto shrink-0 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col">
             <div className="p-4 border-b border-gray-200">
-              <h3 className="font-bold text-gray-800">
+              <h3 className="font-semibold text-gray-900">
                 Bản đồ dự báo độ mặn {dates[dayIndex] ? `ngày ${dayLabel(dates[dayIndex]).label}` : ''}
               </h3>
             </div>
@@ -269,11 +281,11 @@ export function ForecastPage() {
                 }))}
               />
               {insights.length > 0 && (
-                <div className="absolute top-4 left-4 right-4 bg-white/95 backdrop-blur rounded-xl p-4 shadow-lg border border-gray-200 z-[1000]">
+                <div className="absolute top-4 left-4 right-4 bg-white/95 backdrop-blur rounded-lg p-4 shadow-lg border border-gray-200 z-[1000]">
                   <h4 className="font-bold text-sm text-gray-800 mb-2 flex items-center gap-2">
-                    <Info className="w-4 h-4 text-blue-500" /> Nhận xét chung
+                    Nhận xét chung
                   </h4>
-                  <ul className="text-xs text-gray-600 space-y-1 pl-4 list-disc marker:text-blue-500">
+                  <ul className="text-xs text-gray-600 space-y-1 pl-4 list-disc marker:text-primary-500">
                     {insights.map((text) => <li key={text}>{text}</li>)}
                   </ul>
                 </div>
