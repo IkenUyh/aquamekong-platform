@@ -87,9 +87,15 @@ public class UserService {
     }
 
     @Transactional
-    public UserDto updateUserStatus(Long userId, UserStatus status) {
+    public UserDto updateUserStatus(Long userId, UserStatus status, String actingUsername) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User không tồn tại với ID: " + userId));
+                .orElseThrow(() -> new EntityNotFoundException("User không tồn tại với ID: " + userId));
+        if (status != UserStatus.ACTIVE && user.getUsername().equals(actingUsername)) {
+            throw new IllegalArgumentException("Không thể tự khoá tài khoản đang đăng nhập");
+        }
+        if (status != UserStatus.ACTIVE && isAdmin(user.getId()) && countActiveAdmins() <= 1) {
+            throw new IllegalArgumentException("Không thể khoá quản trị viên cuối cùng");
+        }
 
         user.setStatus(status);
         User saved = userRepository.save(user);
@@ -115,11 +121,35 @@ public class UserService {
     }
 
     @Transactional
-    public void removeRoleFromUser(Long userId, String roleName) {
+    public void removeRoleFromUser(Long userId, String roleName, String actingUsername) {
+        if (ADMIN_ROLE.equals(roleName)) {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new EntityNotFoundException("User không tồn tại với ID: " + userId));
+            if (user.getUsername().equals(actingUsername)) {
+                throw new IllegalArgumentException("Không thể tự gỡ quyền quản trị của chính mình");
+            }
+            if (isAdmin(userId) && countActiveAdmins() <= 1) {
+                throw new IllegalArgumentException("Không thể gỡ quyền của quản trị viên cuối cùng");
+            }
+        }
         Role role = roleRepository.findByName(roleName).orElse(null);
         if (role != null) {
             userRoleRepository.deleteByUserIdAndRoleId(userId, role.getId());
         }
+    }
+
+    private static final String ADMIN_ROLE = "ROLE_ADMIN";
+
+    private boolean isAdmin(Long userId) {
+        return userRoleRepository.findByUserId(userId).stream().anyMatch(ur -> ADMIN_ROLE.equals(ur.getRole().getName()));
+    }
+
+    private long countActiveAdmins() {
+        return roleRepository.findByName(ADMIN_ROLE)
+                .map(role -> userRoleRepository.findByRoleId(role.getId()).stream()
+                        .filter(ur -> ur.getUser().getStatus() == UserStatus.ACTIVE)
+                        .count())
+                .orElse(0L);
     }
 
     public UserDto toDto(User user) {
