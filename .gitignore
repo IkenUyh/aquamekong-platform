@@ -10,8 +10,11 @@ ml-service/trained_models/
 # Documents
 *.md
 !README.md
+!CLAUDE.md
+!frontend/frontend_backend_status.md
 *.txt
 !requirements.txt
+!requirements-dev.txt
 *.docx
 
 # Python
@@ -26,4 +29,10 @@ env/
 node_modules/
 dist/
 build/
+*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+
+# Java
+target/
 .DS_Store
