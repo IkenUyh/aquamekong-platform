@@ -13,7 +13,7 @@ def main():
     print("Initialize Predictor...")
     try:
         # First let's find a valid station ID from the loaded CSV data
-        df_all = predictor.model.loader_service.load_raw_data()
+        df_all = predictor.model.loader_service.load_long_data()
         stations = df_all['station_id'].unique()
         if len(stations) == 0:
             print("No stations found in the data.")

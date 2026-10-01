@@ -1,23 +1,28 @@
 import logging
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from apscheduler.schedulers.background import BackgroundScheduler
-from app.config import get_settings
+from app.db import get_engine
 from app.pipeline.crawler import Crawler
 from app.pipeline.preprocessor import DataPreprocessor
-from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
-settings = get_settings()
 
-def get_db_engine():
-    return create_engine(settings.database_url)
+METRIC_COLUMNS = ['salinity', 'water_level', 'flow_rate']
 
-def get_station_mapping(engine) -> dict:
-    """Returns a dict mapping station_code -> station_id"""
-    query = text("SELECT id, code FROM stations")
-    df = pd.read_sql(query, engine)
-    return dict(zip(df['code'], df['id']))
+
+def get_crawler_sensor_mapping(engine) -> pd.DataFrame:
+    """Returns station_code, station_id, metric_type, sensor_id, unit of the CRAWLER sensors (seeded by Flyway V3)."""
+    query = text("""
+        SELECT st.code AS station_code, st.id AS station_id,
+               se.metric_type, se.id AS sensor_id, se.unit
+        FROM sensors se
+        JOIN devices d  ON d.id = se.device_id
+        JOIN stations st ON st.id = d.station_id
+        WHERE d.device_type = 'CRAWLER'
+    """)
+    return pd.read_sql(query, engine)
+
 
 def run_pipeline():
     """
@@ -28,39 +33,52 @@ def run_pipeline():
         # 1. Crawl raw data
         crawler = Crawler()
         raw_data = crawler.fetch_data()
-        
+
         if not raw_data:
             logger.info("No new data fetched. Pipeline job finished.")
             return
-            
-        # 2. Preprocess data
+
+        # 2. Preprocess data (no scaling: the DB stores real-unit values)
         preprocessor = DataPreprocessor()
-        clean_df = preprocessor.process(raw_data)
-        
+        clean_df = preprocessor.process(raw_data, scale=False)
+
         if clean_df.empty:
             logger.info("No data remained after preprocessing. Pipeline job finished.")
             return
-            
-        # 3. Map station_code to station_id
-        engine = get_db_engine()
-        mapping = get_station_mapping(engine)
-        
-        # Keep only records where station_code exists in our mapping
-        clean_df = clean_df[clean_df['station_code'].isin(mapping.keys())].copy()
-        clean_df['station_id'] = clean_df['station_code'].map(mapping)
-        
-        # Prepare for DB insertion
-        # We need to drop station_code as it's not in water_metrics
-        db_df = clean_df[['station_id', 'salinity', 'water_level', 'flow_rate', 'recorded_at']].copy()
-        
-        # Ensure recorded_at is properly tz-aware or tz-naive UTC based on postgres config
-        # We'll just pass it as datetime objects
-        
+
+        # 3. Wide (one column per metric) -> long (one row per metric), then attach sensor_id
+        engine = get_engine()
+        sensors = get_crawler_sensor_mapping(engine)
+
+        long_df = clean_df.melt(
+            id_vars=['station_code', 'recorded_at'],
+            value_vars=METRIC_COLUMNS,
+            var_name='metric_type',
+            value_name='value',
+        ).dropna(subset=['value'])
+        db_df = long_df.merge(sensors, on=['station_code', 'metric_type'], how='inner')
+
+        dropped = len(long_df) - len(db_df)
+        if dropped:
+            logger.warning(f"Dropped {dropped} records without a CRAWLER sensor (unknown station or metric).")
+        if db_df.empty:
+            logger.info("No records matched a CRAWLER sensor. Pipeline job finished.")
+            crawler.mark_processed(raw_data)
+            return
+
         # 4. Save to DB
-        # We use 'append' to add to existing water_metrics table
-        db_df.to_sql('water_metrics', con=engine, if_exists='append', index=False)
-        logger.info(f"Successfully inserted {len(db_df)} records into water_metrics table.")
-        
+        rows = db_df[['sensor_id', 'station_id', 'metric_type', 'value', 'unit', 'recorded_at']].to_dict('records')
+        with engine.begin() as conn:
+            conn.execute(
+                text("""
+                    INSERT INTO measurements (sensor_id, station_id, metric_type, value, unit, recorded_at)
+                    VALUES (:sensor_id, :station_id, :metric_type, :value, :unit, :recorded_at)
+                """),
+                rows,
+            )
+        logger.info(f"Successfully inserted {len(rows)} records into measurements table.")
+        crawler.mark_processed(raw_data)
+
     except Exception as e:
         logger.error(f"Error in data pipeline job: {str(e)}", exc_info=True)
 
@@ -70,11 +88,14 @@ scheduler = BackgroundScheduler()
 def start_scheduler():
     """Start the APScheduler for the data pipeline."""
     # Run every 15 minutes
-    scheduler.add_job(run_pipeline, 'interval', minutes=15, id='data_pipeline_job', replace_existing=True)
+    # max_instances=1 + coalesce: một lần chạy chậm không làm job chồng lên nhau
+    scheduler.add_job(run_pipeline, 'interval', minutes=15, id='data_pipeline_job',
+                      replace_existing=True, max_instances=1, coalesce=True)
     scheduler.start()
     logger.info("Data Pipeline Scheduler started. Job will run every 15 minutes.")
 
 def stop_scheduler():
     """Stop the scheduler."""
-    scheduler.shutdown()
+    if scheduler.running:
+        scheduler.shutdown(wait=False)
     logger.info("Data Pipeline Scheduler stopped.")

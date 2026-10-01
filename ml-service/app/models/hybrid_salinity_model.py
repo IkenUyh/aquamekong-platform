@@ -1,5 +1,6 @@
 import logging
 import os
+import threading
 from datetime import date, timedelta
 from typing import List
 
@@ -23,13 +24,28 @@ class HybridSalinityModel:
     """
 
     def __init__(self):
-        self.model_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'trained_models')
+        self.model_dir = get_settings().model_dir
         self.model_path = os.path.join(self.model_dir, "hybrid_cnn.pth")
         
         # We need the dataloader to get the historical context and scaler
         self.loader_service = DataLoaderService(lookback=14, horizon=1)
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.cnn_model = None
+        # (csv mtime, df_all, scaler) — tránh đọc CSV + fit scaler ở mỗi request
+        self._context = None
+        self._lock = threading.Lock()
+
+    def _load_context(self):
+        """CSV lịch sử + scaler đã fit, cache theo mtime file. Scaler không bị mutate giữa các request song song."""
+        from sklearn.preprocessing import MinMaxScaler
+        with self._lock:
+            path = self.loader_service._find_csv()
+            mtime = os.path.getmtime(path)
+            if self._context is None or self._context[0] != mtime:
+                df_all = self.loader_service.load_long_data()
+                scaler = MinMaxScaler().fit(df_all[self.loader_service.feature_cols])
+                self._context = (mtime, df_all, scaler)
+            return self._context[1], self._context[2]
 
     def has_trained_model(self, station_id: int = None) -> bool:
         """Check if the global trained CNN model exists."""
@@ -37,11 +53,14 @@ class HybridSalinityModel:
 
     def load_model(self):
         """Lazy load the CNN model."""
-        if self.cnn_model is None:
-            self.cnn_model = ResidualCNN(input_size=2, hidden_channels=32, output_size=1)
-            self.cnn_model.load_state_dict(torch.load(self.model_path, map_location=self.device))
-            self.cnn_model.to(self.device)
-            self.cnn_model.eval()
+        with self._lock:
+            if self.cnn_model is not None:
+                return
+            model = ResidualCNN(input_size=2, hidden_channels=32, output_size=1)
+            model.load_state_dict(torch.load(self.model_path, map_location=self.device))
+            model.to(self.device)
+            model.eval()
+            self.cnn_model = model
 
     def predict(self, station_id: int, days_ahead: int = 7) -> List[PredictionItem]:
         """
@@ -62,19 +81,14 @@ class HybridSalinityModel:
         # 1. Load historical data context using DataLoaderService
         # For a real prediction, we need the raw data of this station to scale it
         # and fit the ARIMA baseline.
-        df_all = self.loader_service.load_raw_data()
-        df_station = df_all[df_all['station_id'] == station_id].copy()
+        df_all, scaler = self._load_context()
+        df_station = df_all[df_all['station_id'] == station_id]
         
         if df_station.empty or len(df_station) < 30:
             raise ValueError(f"Insufficient historical CSV data for station {station_id}")
             
-        # We must scale the data using the SAME scaler that was trained on the whole dataset
-        # In a real production system, the scaler should be saved as a .pkl file during training.
-        # For now, we fit it on df_all to reproduce the exact state as training.
-        self.loader_service.scaler.fit(df_all[self.loader_service.feature_cols])
-        
-        # Scale the station data
-        scaled_features = self.loader_service.scaler.transform(df_station[self.loader_service.feature_cols])
+        # Scaler fit trên toàn bộ dataset giống lúc train (xem _load_context)
+        scaled_features = scaler.transform(df_station[self.loader_service.feature_cols])
         
         # Extract sequences
         wl_series = scaled_features[:, 1]  # water_level_max
@@ -119,7 +133,7 @@ class HybridSalinityModel:
             # 4. Inverse transform to get real salinity value
             dummy_pred = np.zeros((1, 4))
             dummy_pred[0, 3] = final_pred_scaled # salinity_max is index 3
-            real_salinity = self.loader_service.scaler.inverse_transform(dummy_pred)[0, 3]
+            real_salinity = scaler.inverse_transform(dummy_pred)[0, 3]
             
             predictions.append(
                 PredictionItem(
