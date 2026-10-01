@@ -26,7 +26,7 @@ export function MiniMap({ markers, center = [10.0, 105.5], zoom = 7, height = '4
   };
 
   return (
-    <div style={{ height }} className="w-full rounded-xl overflow-hidden border border-gray-200">
+    <div style={{ height }} className="w-full rounded-lg overflow-hidden border border-gray-200">
       <MapContainer 
         center={center} 
         zoom={zoom} 

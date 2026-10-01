@@ -12,6 +12,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -121,7 +122,9 @@ public class GlobalExceptionHandler {
         body.put("timestamp", OffsetDateTime.now());
         body.put("status", status.value());
         body.put("error", HttpStatus.valueOf(status.value()).getReasonPhrase());
-        body.put("message", ex instanceof HttpMessageNotReadableException ? "Request body không hợp lệ" : ex.getMessage());
+        body.put("message", ex instanceof HttpMessageNotReadableException ? "Request body không hợp lệ"
+                : ex instanceof ResponseStatusException rse && rse.getReason() != null ? rse.getReason()
+                : ex.getMessage());
         body.put("path", request.getDescription(false).replace("uri=", ""));
 
         return new ResponseEntity<>(body, status);

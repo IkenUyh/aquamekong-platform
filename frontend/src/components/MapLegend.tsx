@@ -10,7 +10,7 @@ export function MapLegend({ metric }: { metric: HeatMetric | null }) {
   const stops = scale ? Object.entries(scale.gradient).sort((a, b) => Number(a[0]) - Number(b[0])) : [];
 
   return (
-    <div className="absolute bottom-6 left-6 z-[1000] bg-white/95 backdrop-blur rounded-xl shadow-lg p-3 border border-gray-200 text-xs space-y-3">
+    <div className="absolute bottom-6 left-6 z-[1000] bg-white/95 backdrop-blur rounded-lg shadow-lg p-3 border border-gray-200 text-xs space-y-3">
       <div>
         <h4 className="font-semibold text-gray-600 mb-2">Độ mặn (marker trạm)</h4>
         <div className="space-y-1">

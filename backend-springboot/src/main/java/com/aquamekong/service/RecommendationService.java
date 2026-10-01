@@ -32,7 +32,6 @@ public class RecommendationService {
                     .priority("HIGH")
                     .message(String.format(VI, "Hạn chế lấy nước tưới tại khu vực %s (%.1f‰)",
                         stationName, m.getValue()))
-                    .icon("🚫")
                     .build());
             }
         }
@@ -43,14 +42,12 @@ public class RecommendationService {
                 .type("WATER_SAVING")
                 .priority("LOW")
                 .message("Độ mặn đang ở mức an toàn. Có thể tiến hành lấy nước ngọt.")
-                .icon("✅")
                 .build());
         } else {
              recommendations.add(RecommendationDto.builder()
                 .type("DAM_CHECK")
                 .priority("MEDIUM")
                 .message("Khuyến nghị kiểm tra hệ thống cống ngăn mặn ở hạ lưu.")
-                .icon("🔧")
                 .build());
         }
 
