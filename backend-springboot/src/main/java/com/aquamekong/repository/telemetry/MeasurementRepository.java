@@ -20,6 +20,12 @@ public interface MeasurementRepository extends JpaRepository<Measurement, Long> 
 
     List<Measurement> findByStationIdAndMetricTypeOrderByRecordedAtDesc(Long stationId, String metricType);
 
+    List<Measurement> findByStationIdAndMetricTypeOrderByRecordedAtDesc(Long stationId, String metricType, Pageable pageable);
+
+    List<Measurement> findByStationIdAndMetricTypeAndRecordedAtBetweenOrderByRecordedAtDesc(
+            Long stationId, String metricType, OffsetDateTime from, OffsetDateTime to, Pageable pageable
+    );
+
     List<Measurement> findByStationIdAndRecordedAtBetweenOrderByRecordedAtDesc(
             Long stationId, OffsetDateTime from, OffsetDateTime to, Pageable pageable
     );

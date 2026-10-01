@@ -40,10 +40,18 @@ export function SalinityHeatmap({ features, enabled }: SalinityHeatmapProps) {
       },
     });
 
-    heatLayer.addTo(map);
+    // leaflet.heat vẽ lên canvas cỡ bằng bản đồ: khi bản đồ đang có kích thước 0 (panel thu gọn,
+    // màn hình hẹp) getImageData sẽ ném lỗi -> chờ đến khi bản đồ có kích thước rồi mới thêm layer
+    const addWhenSized = () => {
+      const size = map.getSize();
+      if (size.x > 0 && size.y > 0 && !map.hasLayer(heatLayer)) heatLayer.addTo(map);
+    };
+    addWhenSized();
+    map.on('resize', addWhenSized);
 
     return () => {
-      map.removeLayer(heatLayer);
+      map.off('resize', addWhenSized);
+      if (map.hasLayer(heatLayer)) map.removeLayer(heatLayer);
     };
   }, [map, features, enabled]);
 
