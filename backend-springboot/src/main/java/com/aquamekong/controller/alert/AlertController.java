@@ -22,9 +22,9 @@ public class AlertController {
     private final AlertService alertService;
 
     @GetMapping
-    @Operation(summary = "Danh sách tất cả cảnh báo")
-    public ResponseEntity<List<AlertDto>> getAllAlerts() {
-        return ResponseEntity.ok(alertService.getAllAlerts());
+    @Operation(summary = "Danh sách cảnh báo mới nhất", description = "Mới nhất trước, tối đa `limit` dòng (≤ 1000)")
+    public ResponseEntity<List<AlertDto>> getAllAlerts(@RequestParam(defaultValue = "200") int limit) {
+        return ResponseEntity.ok(alertService.getAllAlerts(limit));
     }
 
     @GetMapping("/station/{stationId}")

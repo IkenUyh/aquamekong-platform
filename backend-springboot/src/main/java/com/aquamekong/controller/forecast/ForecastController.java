@@ -1,10 +1,12 @@
 package com.aquamekong.controller.forecast;
 
 import com.aquamekong.dto.forecast.ForecastRunDto;
+import com.aquamekong.dto.forecast.PredictRequestDto;
 import com.aquamekong.dto.forecast.SalinityForecastDto;
 import com.aquamekong.service.forecast.ForecastService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -23,9 +25,9 @@ public class ForecastController {
     private final ForecastService forecastService;
 
     @GetMapping("/runs")
-    @Operation(summary = "Danh sách các đợt chạy dự báo ML")
-    public ResponseEntity<List<ForecastRunDto>> getAllRuns() {
-        return ResponseEntity.ok(forecastService.getAllRuns());
+    @Operation(summary = "Danh sách các đợt chạy dự báo ML", description = "Mới nhất trước, tối đa `limit` dòng (≤ 1000)")
+    public ResponseEntity<List<ForecastRunDto>> getAllRuns(@RequestParam(defaultValue = "100") int limit) {
+        return ResponseEntity.ok(forecastService.getAllRuns(limit));
     }
 
     @GetMapping("/runs/{id}")
@@ -40,8 +42,15 @@ public class ForecastController {
         return ResponseEntity.status(HttpStatus.CREATED).body(forecastService.createRun(runDto));
     }
 
+    @PostMapping("/predict")
+    @Operation(summary = "Chạy dự báo độ mặn qua ML service và lưu kết quả")
+    public ResponseEntity<List<SalinityForecastDto>> predict(@Valid @RequestBody PredictRequestDto request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(forecastService.predict(request.getStationId(), request.getDaysAhead()));
+    }
+
     @GetMapping("/station/{stationId}")
-    @Operation(summary = "Kết quả dự báo theo trạm")
+    @Operation(summary = "Kết quả dự báo theo trạm (lượt chạy mới nhất)")
     public ResponseEntity<List<SalinityForecastDto>> getForecastsByStationId(@PathVariable Long stationId) {
         return ResponseEntity.ok(forecastService.getForecastsByStationId(stationId));
     }
