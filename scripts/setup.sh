@@ -20,6 +20,12 @@ else
     echo "📋 .env already exists, skipping..."
 fi
 
+# Nạp biến từ .env (để in đúng port bên dưới)
+set -a
+# shellcheck disable=SC1091
+. "$PROJECT_ROOT/.env"
+set +a
+
 # 2. Start Docker Compose
 echo ""
 echo "🐳 Starting Docker Compose services..."
@@ -43,7 +49,7 @@ echo "📍 Frontend:     http://localhost:3000"
 echo "📍 Backend API:  http://localhost:8080"
 echo "📍 Swagger UI:   http://localhost:8080/swagger-ui.html"
 echo "📍 ML Service:   http://localhost:8000/docs"
-echo "📍 PostgreSQL:   localhost:5432"
+echo "📍 PostgreSQL:   localhost:${POSTGRES_HOST_PORT:-5433}"
 echo ""
 echo "🛑 To stop: docker compose down"
 echo "======================================"

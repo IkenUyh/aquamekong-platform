@@ -18,11 +18,17 @@ RUN mvn package -DskipTests -B
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# Copy the built JAR
-COPY --from=build /app/target/*.jar app.jar
+RUN addgroup -S -g 10001 app && adduser -S -u 10001 -G app app
 
-# Expose port
+COPY --from=build --chown=app:app /app/target/*.jar app.jar
+
+USER app
 EXPOSE 8080
 
-# Run
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# JVM theo giới hạn RAM của container thay vì RAM của máy host
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError"
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD wget -qO- http://localhost:8080/actuator/health | grep -q '"status":"UP"' || exit 1
+
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]
