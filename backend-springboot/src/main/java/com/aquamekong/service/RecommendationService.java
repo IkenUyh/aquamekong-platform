@@ -8,10 +8,14 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
 public class RecommendationService {
+
+    /** Dấu phẩy thập phân như phần còn lại của giao diện (5,0‰) */
+    private static final Locale VI = Locale.forLanguageTag("vi-VN");
 
     private final MeasurementRepository measurementRepository;
 
@@ -26,7 +30,7 @@ public class RecommendationService {
                 recommendations.add(RecommendationDto.builder()
                     .type("IRRIGATION")
                     .priority("HIGH")
-                    .message(String.format("Hạn chế lấy nước tưới tại khu vực %s (%.1f‰)",
+                    .message(String.format(VI, "Hạn chế lấy nước tưới tại khu vực %s (%.1f‰)",
                         stationName, m.getValue()))
                     .icon("🚫")
                     .build());

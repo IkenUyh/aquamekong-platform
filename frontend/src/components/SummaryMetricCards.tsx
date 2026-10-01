@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MetricCard } from './MetricCard';
 import { reportApi, percentChange } from '../api/reportApi';
+import { formatNumber } from '../utils/salinity';
 
 /** Trung bình toàn vùng 24h qua, so với 24h trước đó (GET /reports/overview?days=1). */
 export function SummaryMetricCards() {
@@ -24,7 +25,7 @@ export function SummaryMetricCards() {
       <div className="grid grid-cols-1 gap-2">
         <MetricCard
           label="Độ mặn"
-          value={summary.avgSalinity.current?.toFixed(2) ?? '—'}
+          value={formatNumber(summary.avgSalinity.current)}
           unit="‰"
           icon={<span className="text-blue-500 font-bold">💧</span>}
           delta={percentChange(summary.avgSalinity) ?? undefined}
@@ -34,7 +35,7 @@ export function SummaryMetricCards() {
         />
         <MetricCard
           label="Lưu lượng"
-          value={summary.avgFlowRate.current?.toLocaleString('vi-VN', { maximumFractionDigits: 0 }) ?? '—'}
+          value={formatNumber(summary.avgFlowRate.current, 0)}
           unit="m³/s"
           icon={<span className="text-teal-500 font-bold">💨</span>}
           delta={percentChange(summary.avgFlowRate) ?? undefined}
@@ -44,7 +45,7 @@ export function SummaryMetricCards() {
         />
         <MetricCard
           label="Mực nước"
-          value={summary.avgWaterLevel.current?.toFixed(2) ?? '—'}
+          value={formatNumber(summary.avgWaterLevel.current)}
           unit="m"
           icon={<span className="text-indigo-500 font-bold">🌊</span>}
           delta={waterLevelDelta}

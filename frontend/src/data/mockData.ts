@@ -19,7 +19,7 @@ export const MOCK_STATIONS_LIST = Array.from({ length: 25 }).map((_, i) => {
     latestSalinity: parseFloat(sal.toFixed(1)),
     latestWaterLevel: parseFloat((1 + Math.random()).toFixed(2)),
     latestFlowRate: Math.floor(1000 + Math.random() * 3000),
-    salinityLevel: isHigh ? "CRITICAL" : isMed ? "WARNING" : "SAFE",
+    salinityLevel: isHigh ? "HIGH" : isMed ? "MEDIUM" : "LOW",
     status: "ACTIVE",
   } as Station;
 });

@@ -25,7 +25,7 @@ describe('toAlertDto', () => {
     expect(dto.isActive).toBe(true);
     expect(dto.province).toBe('Cần Thơ');
     expect(dto.createdAt).toBe('2026-10-01T03:00:00Z');
-    expect(dto.message).toBe('Độ mặn 5.23‰ vượt ngưỡng 4‰');
+    expect(dto.message).toBe('Độ mặn 5,23‰ vượt ngưỡng 4‰');
   });
 
   it('maps severities to UI levels', () => {
