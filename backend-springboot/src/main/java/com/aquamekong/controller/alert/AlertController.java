@@ -6,6 +6,7 @@ import com.aquamekong.entity.enums.AlertStatus;
 import com.aquamekong.service.alert.AlertService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -61,7 +62,7 @@ public class AlertController {
 
     @PostMapping("/rules")
     @Operation(summary = "Tạo hoặc cập nhật luật cảnh báo")
-    public ResponseEntity<AlertRuleDto> saveRule(@RequestBody AlertRuleDto dto) {
+    public ResponseEntity<AlertRuleDto> saveRule(@Valid @RequestBody AlertRuleDto dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(alertService.saveRule(dto));
     }
 

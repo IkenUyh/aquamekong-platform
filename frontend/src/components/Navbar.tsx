@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { Droplets, LayoutDashboard, Map, Radio, TrendingUp, AlertTriangle, FileText, Wifi, WifiOff, LogOut, UserCircle } from 'lucide-react';
+import { Droplets, LayoutDashboard, Map, Radio, TrendingUp, AlertTriangle, FileText, Wifi, WifiOff, LogOut, UserCircle, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -18,11 +18,13 @@ const NAV_ITEMS = [
   { label: 'Dự báo',          path: '/forecast',   icon: TrendingUp },
   { label: 'Cảnh báo',        path: '/alerts',     icon: AlertTriangle },
   { label: 'Báo cáo',         path: '/reports',    icon: FileText },
+  { label: 'Quản trị',        path: '/admin',      icon: Settings, roles: ['ROLE_OPERATOR', 'ROLE_ADMIN'] },
 ];
 
 export function Navbar() {
   const isOfflineMode = useSelector((state: RootState) => state.network.isOfflineMode);
-  const { user, logout } = useAuth();
+  const { user, logout, hasRole } = useAuth();
+  const navItems = NAV_ITEMS.filter((item) => !item.roles || hasRole(...item.roles));
   const roleLabel = user?.roles?.map((r) => ROLE_LABELS[r] ?? r).join(', ');
 
   return (
@@ -35,7 +37,7 @@ export function Navbar() {
         </div>
         {/* Nav tabs */}
         <nav className="flex gap-1 h-full items-end mt-2">
-          {NAV_ITEMS.map(item => (
+          {navItems.map(item => (
             <NavLink key={item.path} to={item.path}
               className={({ isActive }) =>
                 `px-4 py-2.5 rounded-t-lg text-sm font-medium transition-colors border-b-2
