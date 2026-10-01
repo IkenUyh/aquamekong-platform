@@ -14,6 +14,7 @@ import type {
   ForecastRun,
   SalinityForecast,
   User,
+  UserStatus,
 } from '../types';
 import { MOCK_STATIONS_LIST, generateMockForecasts } from '../data/mockData';
 
@@ -245,7 +246,31 @@ export const forecastApi = {
 };
 
 
+export interface CreateUserRequest {
+  username: string;
+  email: string;
+  fullName?: string;
+  password: string;
+  roles: string[];
+}
+
 export const userApi = {
   getAll: () => apiClient.get<User[]>('/users').then((r) => r.data),
   getById: (id: number) => apiClient.get<User>(`/users/${id}`).then((r) => r.data),
+  create: (data: CreateUserRequest) => apiClient.post<User>('/users', data).then((r) => r.data),
+  updateStatus: (id: number, status: UserStatus) =>
+    apiClient.put<User>(`/users/${id}/status`, null, { params: { status } }).then((r) => r.data),
+  addRole: (id: number, roleName: string) => apiClient.post(`/users/${id}/roles`, null, { params: { roleName } }),
+  removeRole: (id: number, roleName: string) => apiClient.delete(`/users/${id}/roles`, { params: { roleName } }),
 };
+
+/** Thông báo lỗi tiếng Việt từ response backend ({ message }), dùng cho form */
+export function apiErrorMessage(error: unknown, fallback = 'Có lỗi xảy ra, vui lòng thử lại.'): string {
+  if (isAxiosError(error)) {
+    const message = error.response?.data?.message;
+    if (Array.isArray(message)) return message.join('; ');
+    if (typeof message === 'string') return message;
+    if (error.response?.status === 403) return 'Bạn không có quyền thực hiện thao tác này';
+  }
+  return fallback;
+}
