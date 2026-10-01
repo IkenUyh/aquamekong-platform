@@ -60,7 +60,7 @@ export function OverviewPage() {
         </div>
       }
       centerContent={
-        <div className="h-full bg-gray-50 p-6 overflow-y-auto space-y-6">
+        <div className="h-full bg-gray-50 p-4 lg:p-6 overflow-y-auto space-y-6">
           {/* Header */}
           <div>
             <h1 className="text-xl font-bold text-gray-800">Tổng quan Hệ thống Quan trắc</h1>
@@ -70,7 +70,7 @@ export function OverviewPage() {
           </div>
 
           {/* Top Metric Cards */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
             <MetricCard
               title="Tổng số trạm quan trắc"
               value={stations.length}
@@ -111,7 +111,7 @@ export function OverviewPage() {
               <Sparkles className="w-4 h-4 text-amber-500" />
               Khuyến nghị vận hành
             </h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {recommendations.length > 0 ? (
                 recommendations.map((rec, idx) => (
                   <div key={idx} className="p-3 bg-amber-50/60 rounded-lg border border-amber-100 flex items-start gap-3">
@@ -123,7 +123,7 @@ export function OverviewPage() {
                   </div>
                 ))
               ) : (
-                <div className="col-span-2 text-xs text-gray-400 italic">Đang cập nhật khuyến nghị...</div>
+                <div className="md:col-span-2 text-xs text-gray-400 italic">Đang cập nhật khuyến nghị...</div>
               )}
             </div>
           </div>

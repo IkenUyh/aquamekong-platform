@@ -135,7 +135,7 @@ export function StationsPage() {
         </div>
       }
       centerContent={
-        <div className="h-full bg-white p-5 flex flex-col gap-4 overflow-hidden">
+        <div className="h-full bg-white p-4 lg:p-5 flex flex-col gap-4 overflow-hidden">
           <div className="flex justify-between items-center gap-4 flex-wrap">
             <div>
               <h2 className="font-bold text-lg text-gray-800">Danh sách trạm quan trắc</h2>
@@ -145,7 +145,7 @@ export function StationsPage() {
                   : `${filtered.length} / ${stationsList.length} trạm khớp bộ lọc`}
               </p>
             </div>
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="search"
@@ -153,7 +153,7 @@ export function StationsPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Tìm tên trạm, mã, sông, tỉnh..."
-                className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm w-64 focus:outline-none focus:border-blue-500"
+                className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm w-full sm:w-64 focus:outline-none focus:border-blue-500"
               />
             </div>
           </div>

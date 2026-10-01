@@ -53,9 +53,9 @@ export function ReportsPage() {
     <div className="flex flex-col h-screen w-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]">
       <Navbar />
 
-      <div className="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full">
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6 max-w-7xl mx-auto w-full">
         {/* Header */}
-        <div className="flex justify-between items-start mb-6">
+        <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
           <div>
             <div className="flex items-center gap-3 mb-1">
               <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
@@ -83,7 +83,7 @@ export function ReportsPage() {
         </div>
 
         {/* Row 1: Metrics */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <MetricCard title="Trung bình độ mặn toàn vùng" value={fmt(overview?.avgSalinity.current)} unit="‰" icon="💧"
             trend={trendOf(overview?.avgSalinity)}
             highlightColor="text-blue-600" />
@@ -99,9 +99,9 @@ export function ReportsPage() {
         </div>
 
         {/* Row 2: Charts */}
-        <div className="grid grid-cols-3 gap-6 mb-6">
-          <div className="col-span-2 bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <div className="flex justify-between items-center mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+            <div className="flex flex-wrap justify-between items-center gap-2 mb-6">
               <h3 className="font-bold text-gray-800">Xu hướng độ mặn theo thời gian</h3>
               <div className="flex gap-4 text-xs font-medium">
                 <span className="flex items-center gap-1.5"><div className="w-3 h-3 bg-blue-500 rounded-full"/> Trung bình toàn vùng</span>
