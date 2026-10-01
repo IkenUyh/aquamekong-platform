@@ -1,5 +1,4 @@
 import React from 'react';
-import { AlertTriangle, Info, CheckCircle, AlertCircle } from 'lucide-react';
 
 export type StatusLevel = 'CRITICAL' | 'WARNING' | 'INFO' | 'SAFE';
 
@@ -9,25 +8,32 @@ interface StatusBadgeProps {
   className?: string;
 }
 
-const STYLES = {
-  CRITICAL: { bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200', icon: <AlertCircle className="w-3.5 h-3.5" /> },
-  WARNING: { bg: 'bg-yellow-50', text: 'text-yellow-600', border: 'border-yellow-200', icon: <AlertTriangle className="w-3.5 h-3.5" /> },
-  INFO: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200', icon: <Info className="w-3.5 h-3.5" /> },
-  SAFE: { bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-200', icon: <CheckCircle className="w-3.5 h-3.5" /> },
+const DOT: Record<StatusLevel, string> = {
+  CRITICAL: 'bg-red-500',
+  WARNING: 'bg-yellow-500',
+  INFO: 'bg-gray-400',
+  SAFE: 'bg-green-500',
 };
 
-const DEFAULT_LABELS = {
+const TEXT: Record<StatusLevel, string> = {
+  CRITICAL: 'text-red-700',
+  WARNING: 'text-yellow-800',
+  INFO: 'text-gray-600',
+  SAFE: 'text-green-700',
+};
+
+const DEFAULT_LABELS: Record<StatusLevel, string> = {
   CRITICAL: 'Nguy hiểm',
   WARNING: 'Cảnh báo',
   INFO: 'Theo dõi',
   SAFE: 'Bình thường',
 };
 
+/** Chấm màu + chữ (không icon, không nền) — màu chỉ để phân biệt mức độ. */
 export function StatusBadge({ level, text, className = '' }: StatusBadgeProps) {
-  const style = STYLES[level];
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border ${style.bg} ${style.text} ${style.border} ${className}`}>
-      {style.icon}
+    <span className={`inline-flex items-center gap-1.5 text-xs font-medium whitespace-nowrap ${TEXT[level]} ${className}`}>
+      <span className={`dot ${DOT[level]}`} />
       {text || DEFAULT_LABELS[level]}
     </span>
   );
