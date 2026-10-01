@@ -70,11 +70,14 @@ export function Navbar() {
       {/* User + đăng xuất */}
       {user && (
         <div className="flex items-center gap-2 text-white">
-          <UserCircle className="w-5 h-5 opacity-80" />
-          <div className="leading-tight">
-            <p className="text-sm font-semibold">{user.fullName || user.username}</p>
-            {roleLabel && <p className="text-[10px] text-white/70">{roleLabel}</p>}
-          </div>
+          <NavLink to="/account" title="Tài khoản / đổi mật khẩu"
+            className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/10">
+            <UserCircle className="w-5 h-5 opacity-80" />
+            <div className="leading-tight">
+              <p className="text-sm font-semibold">{user.fullName || user.username}</p>
+              {roleLabel && <p className="text-[10px] text-white/70">{roleLabel}</p>}
+            </div>
+          </NavLink>
           <button
             onClick={() => logout()}
             title="Đăng xuất"
