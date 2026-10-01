@@ -11,7 +11,9 @@ import com.aquamekong.entity.station.Station;
 import com.aquamekong.repository.alert.AlertRepository;
 import com.aquamekong.repository.alert.AlertRuleRepository;
 import com.aquamekong.repository.station.StationRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AlertService {
+
+    /** Cảnh báo chưa xử lý xong */
+    public static final List<AlertStatus> OPEN_STATUSES = List.of(AlertStatus.ACTIVE, AlertStatus.ACKNOWLEDGED);
 
     private final AlertRuleRepository alertRuleRepository;
     private final AlertRepository alertRepository;
@@ -66,8 +71,8 @@ public class AlertService {
     }
 
     @Transactional(readOnly = true)
-    public List<AlertDto> getAllAlerts() {
-        return alertRepository.findAll().stream()
+    public List<AlertDto> getAllAlerts(int limit) {
+        return alertRepository.findAllByOrderByTriggeredAtDesc(PageRequest.of(0, Math.max(1, Math.min(limit, 1000)))).stream()
                 .map(this::toAlertDto)
                 .collect(Collectors.toList());
     }
@@ -81,7 +86,7 @@ public class AlertService {
 
     @Transactional(readOnly = true)
     public List<AlertDto> getAlertsByStatus(AlertStatus status) {
-        return alertRepository.findByStatus(status).stream()
+        return alertRepository.findByStatusOrderByTriggeredAtDesc(status).stream()
                 .map(this::toAlertDto)
                 .collect(Collectors.toList());
     }
@@ -89,12 +94,11 @@ public class AlertService {
     @Transactional
     public AlertDto updateAlertStatus(Long alertId, AlertStatus status) {
         Alert alert = alertRepository.findById(alertId)
-                .orElseThrow(() -> new IllegalArgumentException("Alert không tồn tại với ID: " + alertId));
+                .orElseThrow(() -> new EntityNotFoundException("Alert không tồn tại với ID: " + alertId));
 
         alert.setStatus(status);
-        if (status == AlertStatus.RESOLVED) {
-            alert.setResolvedAt(OffsetDateTime.now());
-        }
+        // Mở lại cảnh báo đã xử lý thì xoá thời điểm xử lý cũ
+        alert.setResolvedAt(status == AlertStatus.RESOLVED ? OffsetDateTime.now() : null);
 
         Alert saved = alertRepository.save(alert);
         return toAlertDto(saved);
@@ -121,7 +125,8 @@ public class AlertService {
                 case "==" -> triggered = val == thresh;
             }
 
-            if (triggered) {
+            // Rule đang có cảnh báo chưa xử lý (ACTIVE/ACKNOWLEDGED) thì không tạo thêm (tránh spam mỗi lần đo)
+            if (triggered && !alertRepository.existsByRuleIdAndStatusIn(rule.getId(), OPEN_STATUSES)) {
                 Alert alert = Alert.builder()
                         .station(rule.getStation())
                         .rule(rule)
@@ -162,6 +167,7 @@ public class AlertService {
                 .stationId(entity.getStation() != null ? entity.getStation().getId() : null)
                 .stationCode(entity.getStation() != null ? entity.getStation().getCode() : null)
                 .stationName(entity.getStation() != null ? entity.getStation().getName() : null)
+                .province(entity.getStation() != null ? entity.getStation().getProvince() : null)
                 .ruleId(entity.getRule() != null ? entity.getRule().getId() : null)
                 .metricType(entity.getMetricType())
                 .value(entity.getValue())

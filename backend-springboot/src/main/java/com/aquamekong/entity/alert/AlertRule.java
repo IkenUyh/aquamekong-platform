@@ -1,5 +1,6 @@
 package com.aquamekong.entity.alert;
 
+import com.aquamekong.util.MetricTypes;
 import com.aquamekong.entity.enums.AlertSeverity;
 import com.aquamekong.entity.station.Station;
 import jakarta.persistence.*;
@@ -53,12 +54,14 @@ public class AlertRule {
 
     @PrePersist
     protected void onCreate() {
+        metricType = MetricTypes.normalize(metricType);
         createdAt = OffsetDateTime.now();
         updatedAt = OffsetDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
+        metricType = MetricTypes.normalize(metricType);
         updatedAt = OffsetDateTime.now();
     }
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Droplets, Waves, Wind, CloudRain, Map, Navigation } from 'lucide-react';
+import { Droplets, Waves, Wind, Map, Navigation } from 'lucide-react';
 
 export interface MapLayer {
   id: string;
@@ -8,11 +8,12 @@ export interface MapLayer {
   enabled: boolean;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const DEFAULT_LAYERS: MapLayer[] = [
-  { id: 'salinity',    label: 'Độ mặn (‰)',    icon: <Droplets className="w-4 h-4" />,  enabled: true },
-  { id: 'waterLevel',  label: 'Mực nước',      icon: <Waves className="w-4 h-4" />,     enabled: false },
-  { id: 'flowRate',    label: 'Lưu lượng',     icon: <Wind className="w-4 h-4" />,      enabled: false },
-  { id: 'rainfall',    label: 'Lượng mưa',     icon: <CloudRain className="w-4 h-4" />, enabled: false },
+  // 3 lớp nhiệt loại trừ nhau (FilterContext.toggleLayer)
+  { id: 'salinity',    label: 'Nhiệt: Độ mặn (‰)',    icon: <Droplets className="w-4 h-4" />,  enabled: true },
+  { id: 'waterLevel',  label: 'Nhiệt: Mực nước (m)',  icon: <Waves className="w-4 h-4" />,     enabled: false },
+  { id: 'flowRate',    label: 'Nhiệt: Lưu lượng',     icon: <Wind className="w-4 h-4" />,      enabled: false },
   { id: 'provinces',   label: 'Ranh giới tỉnh', icon: <Map className="w-4 h-4" />,       enabled: true },
   { id: 'rivers',      label: 'Sông, kênh',    icon: <Navigation className="w-4 h-4" />,enabled: true },
 ];
@@ -40,6 +41,9 @@ export function MapLayerToggles({ layers, onToggle }: MapLayerTogglesProps) {
             </div>
             {/* Toggle switch */}
             <button
+              role="switch"
+              aria-checked={layer.enabled}
+              aria-label={layer.label}
               onClick={() => onToggle(layer.id)}
               className={`w-10 h-5 rounded-full transition-colors relative
                          ${layer.enabled ? 'bg-blue-500' : 'bg-gray-300'}`}

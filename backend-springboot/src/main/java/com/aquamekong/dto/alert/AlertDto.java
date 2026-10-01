@@ -17,6 +17,7 @@ public class AlertDto {
     private Long stationId;
     private String stationCode;
     private String stationName;
+    private String province;
     private Long ruleId;
 
     private String metricType;

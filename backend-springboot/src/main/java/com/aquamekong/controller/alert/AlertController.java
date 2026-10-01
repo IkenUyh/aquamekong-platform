@@ -6,6 +6,7 @@ import com.aquamekong.entity.enums.AlertStatus;
 import com.aquamekong.service.alert.AlertService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,9 +23,9 @@ public class AlertController {
     private final AlertService alertService;
 
     @GetMapping
-    @Operation(summary = "Danh sách tất cả cảnh báo")
-    public ResponseEntity<List<AlertDto>> getAllAlerts() {
-        return ResponseEntity.ok(alertService.getAllAlerts());
+    @Operation(summary = "Danh sách cảnh báo mới nhất", description = "Mới nhất trước, tối đa `limit` dòng (≤ 1000)")
+    public ResponseEntity<List<AlertDto>> getAllAlerts(@RequestParam(defaultValue = "200") int limit) {
+        return ResponseEntity.ok(alertService.getAllAlerts(limit));
     }
 
     @GetMapping("/station/{stationId}")
@@ -61,7 +62,7 @@ public class AlertController {
 
     @PostMapping("/rules")
     @Operation(summary = "Tạo hoặc cập nhật luật cảnh báo")
-    public ResponseEntity<AlertRuleDto> saveRule(@RequestBody AlertRuleDto dto) {
+    public ResponseEntity<AlertRuleDto> saveRule(@Valid @RequestBody AlertRuleDto dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(alertService.saveRule(dto));
     }
 

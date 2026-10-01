@@ -1,41 +1,55 @@
 import React from 'react';
 import { Droplets } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { MetricCompareCard } from './MetricCompareCard';
-import type { WaterMetric } from '../types';
+import { metricApi } from '../api/client';
+import { SALINITY_THRESHOLD, formatNumber } from '../utils/salinity';
 
 interface ComparisonCardsProps {
-  currentSalinity: number;
-  metrics: WaterMetric[];
+  stationId: number;
+  currentSalinity: number | null;
   threshold?: number;
 }
 
-export function ComparisonCards({ currentSalinity, metrics, threshold = 4 }: ComparisonCardsProps) {
-  // Tính delta 24h — lấy metric cách đây ~24h
-  const now = new Date();
-  const metric24hAgo = metrics.find(m => {
-    const diff = now.getTime() - new Date(m.recordedAt).getTime();
-    return diff >= 23 * 3600000 && diff <= 25 * 3600000;
+const HOUR = 3600_000;
+
+/** Độ mặn hiện tại so với ~24h trước và so với ngưỡng. */
+export function ComparisonCards({ stationId, currentSalinity, threshold = SALINITY_THRESHOLD }: ComparisonCardsProps) {
+  // Số đo độ mặn gần mốc 24h trước nhất (trong cửa sổ 23h–25h)
+  const { data: around24hAgo = [] } = useQuery({
+    queryKey: ['metrics', 'salinity-24h-ago', stationId],
+    queryFn: () => {
+      const now = Date.now();
+      return metricApi.getByStationWithDateRange(
+        stationId,
+        new Date(now - 25 * HOUR).toISOString(),
+        new Date(now - 23 * HOUR).toISOString(),
+        'salinity'
+      );
+    },
+    staleTime: 5 * 60_000,
   });
-  
-  const delta24h = metric24hAgo ? currentSalinity - (metric24hAgo.salinity ?? metric24hAgo.value ?? 0) : null;
-  const deltaThreshold = currentSalinity - threshold;
+
+  const value24hAgo = around24hAgo[0]?.value;
+  const delta24h = currentSalinity != null && value24hAgo != null ? currentSalinity - value24hAgo : null;
+  const deltaThreshold = currentSalinity != null ? currentSalinity - threshold : null;
 
   return (
     <div className="flex flex-col gap-2 p-4 h-full justify-center">
       <MetricCompareCard
         label="Độ mặn hiện tại"
-        value={`${currentSalinity}‰`}
+        value={`${formatNumber(currentSalinity)}‰`}
         icon={<Droplets size={14} />}
       />
       <MetricCompareCard
         label="So với 24h trước"
-        value={delta24h !== null ? `${delta24h > 0 ? '↑' : '↓'} ${Math.abs(delta24h).toFixed(1)}‰` : '—'}
+        value={delta24h !== null ? `${delta24h > 0 ? '↑' : '↓'} ${formatNumber(Math.abs(delta24h))}‰` : '—'}
         trend={delta24h !== null ? (delta24h > 0 ? 'up' : 'down') : 'neutral'}
       />
       <MetricCompareCard
-        label="So với ngưỡng"
-        value={`${deltaThreshold > 0 ? '↑' : '↓'} ${Math.abs(deltaThreshold).toFixed(1)}‰`}
-        trend={deltaThreshold > 0 ? 'up' : 'down'}
+        label={`So với ngưỡng ${threshold}‰`}
+        value={deltaThreshold !== null ? `${deltaThreshold > 0 ? '↑' : '↓'} ${formatNumber(Math.abs(deltaThreshold))}‰` : '—'}
+        trend={deltaThreshold !== null ? (deltaThreshold > 0 ? 'up' : 'down') : 'neutral'}
       />
     </div>
   );

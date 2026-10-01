@@ -57,7 +57,7 @@ Sau khi Docker Compose khởi chạy thành công:
 | **⚙️ Backend API** | [http://localhost:8080](http://localhost:8080) | REST API Spring Boot |
 | **📑 Swagger UI** | [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html) | Tài liệu & Đã test API Backend |
 | **🤖 ML Service Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) | Swagger UI Python FastAPI (Model AI) |
-| **🗄️ PostgreSQL Database** | `localhost:5433` (hoặc `5432`) | DB: `aquamekong`, User: `aquamekong`, Pass: `aquamekong_secret` |
+| **🗄️ PostgreSQL Database** | `localhost:5433` (đổi bằng `POSTGRES_HOST_PORT` trong `.env`) | DB: `aquamekong`, User: `aquamekong`, Pass: `aquamekong_secret` |
 
 ---
 
@@ -93,18 +93,19 @@ Nếu muốn tự chạy và sửa code từng phần mà không qua Docker:
    ```bash
    docker compose up -d postgres redis
    ```
-2. **Chạy Spring Boot Backend (Terminal 1):**
+2. **Chạy Spring Boot Backend (Terminal 1, cần JDK 21):**
    ```bash
    cd backend-springboot
-   ./mvnw spring-boot:run
+   DB_PORT=5433 ./mvnw spring-boot:run
    ```
 3. **Chạy Python ML Service (Terminal 2):**
    ```bash
    cd ml-service
    python3 -m venv venv
    source venv/bin/activate
-   pip install -r requirements.txt
-   uvicorn app.main:app --reload --port 8000
+   pip install -r requirements-dev.txt
+   DATABASE_URL=postgresql://aquamekong:aquamekong_secret@localhost:5433/aquamekong \
+     uvicorn app.main:app --reload --port 8000
    ```
 4. **Chạy React Frontend (Terminal 3):**
    ```bash
@@ -113,3 +114,13 @@ Nếu muốn tự chạy và sửa code từng phần mà không qua Docker:
    npm run dev
    ```
    *(Truy cập Dev Server tại `http://localhost:5173`)*
+
+---
+
+## 🧪 Chạy Test
+
+```bash
+cd backend-springboot && ./mvnw test        # JUnit + Mockito, không cần DB
+cd ml-service && python -m pytest tests     # pytest
+cd frontend && npm run lint && npm test     # eslint + vitest
+```

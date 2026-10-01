@@ -13,13 +13,13 @@ class DataPreprocessor:
     def __init__(self):
         self.scaler = MinMaxScaler(feature_range=(0, 1))
         
-    def process(self, raw_data: List[Dict]) -> pd.DataFrame:
+    def process(self, raw_data: List[Dict], scale: bool = True) -> pd.DataFrame:
         """
         Executes the preprocessing pipeline:
         1. Convert to DataFrame
         2. Missing values interpolation
         3. Resampling to 1H
-        4. Min-Max Scaling
+        4. Min-Max Scaling (skip with scale=False, e.g. before persisting to DB)
         """
         if not raw_data:
             return pd.DataFrame()
@@ -49,7 +49,7 @@ class DataPreprocessor:
             cleaned = interpolated.ffill().bfill()
             
             # 3. Min-Max Scaling [0,1]
-            if len(cleaned) > 0:
+            if scale and len(cleaned) > 0:
                 scaled_values = self.scaler.fit_transform(cleaned)
                 scaled_df = pd.DataFrame(
                     scaled_values, 

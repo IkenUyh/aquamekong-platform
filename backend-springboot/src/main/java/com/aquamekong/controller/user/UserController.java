@@ -1,13 +1,16 @@
 package com.aquamekong.controller.user;
 
+import com.aquamekong.dto.user.CreateUserRequest;
 import com.aquamekong.dto.user.UserDto;
 import com.aquamekong.entity.enums.UserStatus;
 import com.aquamekong.service.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -40,14 +43,14 @@ public class UserController {
 
     @PostMapping
     @Operation(summary = "Tạo người dùng mới")
-    public ResponseEntity<UserDto> createUser(@RequestBody UserDto dto, @RequestParam String password) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(dto, password));
+    public ResponseEntity<UserDto> createUser(@Valid @RequestBody CreateUserRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request));
     }
 
     @PutMapping("/{id}/status")
     @Operation(summary = "Cập nhật trạng thái người dùng (ACTIVE, INACTIVE, SUSPENDED)")
-    public ResponseEntity<UserDto> updateUserStatus(@PathVariable Long id, @RequestParam UserStatus status) {
-        return ResponseEntity.ok(userService.updateUserStatus(id, status));
+    public ResponseEntity<UserDto> updateUserStatus(@PathVariable Long id, @RequestParam UserStatus status, Authentication auth) {
+        return ResponseEntity.ok(userService.updateUserStatus(id, status, auth.getName()));
     }
 
     @PostMapping("/{id}/roles")
@@ -59,8 +62,8 @@ public class UserController {
 
     @DeleteMapping("/{id}/roles")
     @Operation(summary = "Gỡ vai trò (role) khỏi người dùng")
-    public ResponseEntity<Void> removeRoleFromUser(@PathVariable Long id, @RequestParam String roleName) {
-        userService.removeRoleFromUser(id, roleName);
+    public ResponseEntity<Void> removeRoleFromUser(@PathVariable Long id, @RequestParam String roleName, Authentication auth) {
+        userService.removeRoleFromUser(id, roleName, auth.getName());
         return ResponseEntity.noContent().build();
     }
 }

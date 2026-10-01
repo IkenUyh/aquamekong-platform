@@ -9,9 +9,11 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    start_scheduler()
+    if settings.enable_scheduler:
+        start_scheduler()
     yield
-    stop_scheduler()
+    if settings.enable_scheduler:
+        stop_scheduler()
 
 app = FastAPI(
     title="AquaMekong ML Service",
@@ -25,9 +27,9 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=[o.strip() for o in settings.cors_origins.split(",") if o.strip()],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
