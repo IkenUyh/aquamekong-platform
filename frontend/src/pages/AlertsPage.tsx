@@ -221,13 +221,13 @@ export function AlertsPage() {
         </div>
       }
       centerContent={
-        <div className="h-full bg-white p-5 flex flex-col gap-4 overflow-hidden">
+        <div className="h-full bg-white p-4 lg:p-5 flex flex-col gap-4 overflow-hidden">
           <div>
             <h2 className="font-bold text-lg text-gray-800">Danh sách cảnh báo</h2>
             <p className="text-xs text-gray-500">Cảnh báo sinh tự động khi số đo vượt ngưỡng của rule cảnh báo</p>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 mb-2">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-2">
             {LEVELS.map(({ level, label, color, icon }) => (
               <SummaryCounter key={level} count={stationsByLevel[level]} label={`Trạm ${label.toLowerCase()}`} colorClass={color} icon={icon} />
             ))}

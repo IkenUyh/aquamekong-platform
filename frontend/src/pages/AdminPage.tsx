@@ -24,17 +24,17 @@ export function AdminPage() {
   return (
     <div className="flex flex-col h-screen w-screen bg-[var(--color-bg)]">
       <Navbar />
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6">
         <div className="max-w-7xl mx-auto space-y-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Quản trị hệ thống</h1>
             <p className="text-sm text-gray-500">Cấu hình rule cảnh báo, danh mục trạm{isAdmin && ' và tài khoản người dùng'}</p>
           </div>
 
-          <div role="tablist" className="flex gap-2 border-b border-gray-200">
+          <div role="tablist" className="flex gap-2 border-b border-gray-200 overflow-x-auto">
             {tabs.map((t) => (
               <button key={t.id} role="tab" aria-selected={active === t.id} onClick={() => setActive(t.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px ${
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${
                   active === t.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
                 {t.icon}{t.label}
               </button>

@@ -184,9 +184,9 @@ export function ForecastPage() {
         </div>
       }
       centerContent={
-        <div className="h-full flex">
+        <div className="h-full flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
           {/* Biểu đồ từng trạm */}
-          <div className="flex-1 p-5 overflow-y-auto bg-gray-50 flex flex-col gap-4">
+          <div className="lg:flex-1 p-4 lg:p-5 lg:overflow-y-auto bg-gray-50 flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <h2 className="font-bold text-lg text-gray-800">Dự báo độ mặn {days} ngày tới</h2>
               <p className="text-xs text-gray-500">Chọn một ngày để xem bản đồ dự báo của ngày đó</p>
@@ -252,7 +252,7 @@ export function ForecastPage() {
           </div>
 
           {/* Bản đồ dự báo của ngày đang chọn */}
-          <div className="w-[40%] min-w-[320px] bg-white border-l border-gray-200 flex flex-col">
+          <div className="w-full lg:w-[40%] lg:min-w-[320px] h-[480px] lg:h-auto shrink-0 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col">
             <div className="p-4 border-b border-gray-200">
               <h3 className="font-bold text-gray-800">
                 Bản đồ dự báo độ mặn {dates[dayIndex] ? `ngày ${dayLabel(dates[dayIndex]).label}` : ''}

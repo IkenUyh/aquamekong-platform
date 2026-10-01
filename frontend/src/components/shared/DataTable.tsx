@@ -41,11 +41,12 @@ export function DataTable<T>({
   return (
     <div className="flex flex-col h-full bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
       <div className="flex-1 overflow-auto">
-        <table className="w-full text-left text-sm text-gray-600">
+        {/* < md: giữ nguyên độ rộng cột và cuộn ngang thay vì bóp chữ xuống từng dòng */}
+        <table className="w-full min-w-max md:min-w-0 text-left text-sm text-gray-600">
           <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 text-xs text-gray-500 uppercase tracking-wider font-semibold">
             <tr>
               {columns.map((col) => (
-                <th key={col.key} className={`px-4 py-3 ${alignClass(col.align)}`} style={{ width: col.width }}>
+                <th key={col.key} className={`px-4 py-3 whitespace-nowrap ${alignClass(col.align)}`} style={{ width: col.width }}>
                   {col.header}
                 </th>
               ))}
@@ -62,7 +63,7 @@ export function DataTable<T>({
                   onClick={() => onRowClick?.(row)}
                 >
                   {columns.map((col) => (
-                    <td key={col.key} className={`px-4 py-3 ${alignClass(col.align)}`}>
+                    <td key={col.key} className={`px-4 py-3 whitespace-nowrap md:whitespace-normal ${alignClass(col.align)}`}>
                       {col.render(row)}
                     </td>
                   ))}
