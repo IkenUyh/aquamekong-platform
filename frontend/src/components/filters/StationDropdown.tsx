@@ -21,7 +21,7 @@ export function StationDropdown({ stations, selectedId, onChange }: StationDropd
 
   return (
     <div className="space-y-2">
-      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+      <label className="text-xs font-semibold text-gray-500">
         Chọn trạm
       </label>
       <div className="relative">
@@ -29,7 +29,7 @@ export function StationDropdown({ stations, selectedId, onChange }: StationDropd
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="w-full flex items-center justify-between bg-white border border-gray-300
-                     rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:border-blue-400 transition"
+                     rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:border-primary-400 transition"
         >
           <span>{selected ? selected.name : 'Tất cả trạm'}</span>
           <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -46,15 +46,15 @@ export function StationDropdown({ stations, selectedId, onChange }: StationDropd
                 placeholder="Tìm trạm..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-blue-400"
+                className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-primary-400"
               />
             </div>
 
             {/* "All stations" option */}
             <button
               onClick={() => { onChange(null); setIsOpen(false); }}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50
-                         ${selectedId === null ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'}`}
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-primary-50
+                         ${selectedId === null ? 'bg-primary-50 text-primary-600 font-medium' : 'text-gray-700'}`}
             >
               Tất cả trạm
             </button>
@@ -64,8 +64,8 @@ export function StationDropdown({ stations, selectedId, onChange }: StationDropd
               <button
                 key={station.id}
                 onClick={() => { onChange(station.id); setIsOpen(false); }}
-                className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 flex items-center gap-2
-                           ${selectedId === station.id ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'}`}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-primary-50 flex items-center gap-2
+                           ${selectedId === station.id ? 'bg-primary-50 text-primary-600 font-medium' : 'text-gray-700'}`}
               >
                 <div className={`w-2 h-2 rounded-full ${station.salinityLevel === 'HIGH' ? 'bg-red-500' : station.salinityLevel === 'MEDIUM' ? 'bg-yellow-500' : 'bg-green-500'}`} />
                 <span>{station.name}</span>

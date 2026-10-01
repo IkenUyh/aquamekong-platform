@@ -1,21 +1,19 @@
 import React from 'react';
-import { Droplets, Waves, Wind, Map, Navigation } from 'lucide-react';
 
 export interface MapLayer {
   id: string;
   label: string;
-  icon: React.ReactNode;
   enabled: boolean;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const DEFAULT_LAYERS: MapLayer[] = [
   // 3 lớp nhiệt loại trừ nhau (FilterContext.toggleLayer)
-  { id: 'salinity',    label: 'Nhiệt: Độ mặn (‰)',    icon: <Droplets className="w-4 h-4" />,  enabled: true },
-  { id: 'waterLevel',  label: 'Nhiệt: Mực nước (m)',  icon: <Waves className="w-4 h-4" />,     enabled: false },
-  { id: 'flowRate',    label: 'Nhiệt: Lưu lượng',     icon: <Wind className="w-4 h-4" />,      enabled: false },
-  { id: 'provinces',   label: 'Ranh giới tỉnh', icon: <Map className="w-4 h-4" />,       enabled: true },
-  { id: 'rivers',      label: 'Sông, kênh',    icon: <Navigation className="w-4 h-4" />,enabled: true },
+  { id: 'salinity',    label: 'Nhiệt: Độ mặn (‰)', enabled: true },
+  { id: 'waterLevel',  label: 'Nhiệt: Mực nước (m)', enabled: false },
+  { id: 'flowRate',    label: 'Nhiệt: Lưu lượng', enabled: false },
+  { id: 'provinces',   label: 'Ranh giới tỉnh', enabled: true },
+  { id: 'rivers',      label: 'Sông, kênh', enabled: true },
 ];
 
 interface MapLayerTogglesProps {
@@ -26,19 +24,12 @@ interface MapLayerTogglesProps {
 export function MapLayerToggles({ layers, onToggle }: MapLayerTogglesProps) {
   return (
     <div className="space-y-2">
-      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-        Lớp bản đồ
-      </label>
+      <p className="field-label">Lớp bản đồ</p>
       <div className="space-y-1">
         {layers.map(layer => (
           <div key={layer.id}
                className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-gray-50">
-            <div className="flex items-center gap-2">
-              <div className={layer.enabled ? 'text-blue-500' : 'text-gray-400'}>
-                {layer.icon}
-              </div>
-              <span className="text-sm text-gray-700">{layer.label}</span>
-            </div>
+            <span className="text-sm text-gray-700">{layer.label}</span>
             {/* Toggle switch */}
             <button
               role="switch"
@@ -46,7 +37,7 @@ export function MapLayerToggles({ layers, onToggle }: MapLayerTogglesProps) {
               aria-label={layer.label}
               onClick={() => onToggle(layer.id)}
               className={`w-10 h-5 rounded-full transition-colors relative
-                         ${layer.enabled ? 'bg-blue-500' : 'bg-gray-300'}`}
+                         ${layer.enabled ? 'bg-primary' : 'bg-gray-300'}`}
             >
               <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform
                               ${layer.enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />

@@ -25,9 +25,9 @@ export const MOCK_STATIONS_LIST = Array.from({ length: 25 }).map((_, i) => {
 });
 
 export const MOCK_RECOMMENDATIONS = [
-  { type: 'IRRIGATION', priority: 'HIGH', message: 'Hạn chế lấy nước ngọt tại trạm Vàm Cỏ (Độ mặn 4.8‰)', icon: '🚫' },
-  { type: 'DAM_CHECK', priority: 'MEDIUM', message: 'Khuyến nghị kiểm tra hệ thống cống ngăn mặn ở hạ lưu.', icon: '🔧' },
-  { type: 'WATER_SAVING', priority: 'LOW', message: 'Lên lịch tưới tiêu tiết kiệm cho vùng chuyên canh.', icon: '💧' }
+  { type: 'IRRIGATION', priority: 'HIGH', message: 'Hạn chế lấy nước ngọt tại trạm Vàm Cỏ (Độ mặn 4,8‰)' },
+  { type: 'DAM_CHECK', priority: 'MEDIUM', message: 'Khuyến nghị kiểm tra hệ thống cống ngăn mặn ở hạ lưu.' },
+  { type: 'WATER_SAVING', priority: 'LOW', message: 'Lên lịch tưới tiêu tiết kiệm cho vùng chuyên canh.' }
 ];
 
 export const MOCK_ALERTS: AlertDto[] = [

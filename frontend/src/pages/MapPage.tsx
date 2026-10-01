@@ -49,7 +49,7 @@ function MapPageContent() {
               {stationsList?.map((station) => (
                 <div 
                   key={station.id} 
-                  className={`p-3 rounded-lg border cursor-pointer ${selectedStationId === station.id ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200 hover:border-blue-300'}`}
+                  className={`p-3 rounded-lg border cursor-pointer ${selectedStationId === station.id ? 'bg-primary-50 border-primary-200' : 'bg-white border-gray-200 hover:border-primary-300'}`}
                   onClick={() => setSelectedStation(station.id)}
                 >
                   <div className="font-medium text-sm">{station.name}</div>

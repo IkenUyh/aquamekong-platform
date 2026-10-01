@@ -5,7 +5,6 @@ export interface RecommendationDto {
   type: string;
   priority: 'HIGH' | 'MEDIUM' | 'LOW';
   message: string;
-  icon: string;
 }
 
 export const recommendationApi = {

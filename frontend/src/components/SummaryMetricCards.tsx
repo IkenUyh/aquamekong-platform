@@ -14,45 +14,24 @@ export function SummaryMetricCards() {
 
   if (!summary) return null;
 
+  const salinityChange = percentChange(summary.avgSalinity);
+  const flowChange = percentChange(summary.avgFlowRate);
   const waterLevelDelta =
     summary.avgWaterLevel.current != null && summary.avgWaterLevel.previous != null
-      ? Math.round((summary.avgWaterLevel.current - summary.avgWaterLevel.previous) * 100) / 100
-      : undefined;
+      ? summary.avgWaterLevel.current - summary.avgWaterLevel.previous
+      : null;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm mb-4">
-      <h3 className="font-semibold text-gray-800 text-sm mb-3">Thông số tổng hợp (24 giờ qua)</h3>
+    <div className="card p-4">
+      <h3 className="text-sm font-semibold text-gray-900">Trung bình toàn vùng</h3>
+      <p className="text-xs text-gray-500 mb-3">24 giờ qua, so với 24 giờ trước đó</p>
       <div className="grid grid-cols-1 gap-2">
-        <MetricCard
-          label="Độ mặn"
-          value={formatNumber(summary.avgSalinity.current)}
-          unit="‰"
-          icon={<span className="text-blue-500 font-bold">💧</span>}
-          delta={percentChange(summary.avgSalinity) ?? undefined}
-          deltaType="percent"
-          deltaLabel="24h"
-          subtitle="Trung bình toàn vùng"
-        />
-        <MetricCard
-          label="Lưu lượng"
-          value={formatNumber(summary.avgFlowRate.current, 0)}
-          unit="m³/s"
-          icon={<span className="text-teal-500 font-bold">💨</span>}
-          delta={percentChange(summary.avgFlowRate) ?? undefined}
-          deltaType="percent"
-          deltaLabel="24h"
-          subtitle="Trung bình toàn vùng"
-        />
-        <MetricCard
-          label="Mực nước"
-          value={formatNumber(summary.avgWaterLevel.current)}
-          unit="m"
-          icon={<span className="text-indigo-500 font-bold">🌊</span>}
-          delta={waterLevelDelta}
-          deltaType="absolute"
-          deltaLabel="24h"
-          subtitle="Trung bình toàn vùng"
-        />
+        <MetricCard label="Độ mặn" value={formatNumber(summary.avgSalinity.current)} unit="‰"
+          change={salinityChange != null ? { value: salinityChange, kind: '%', upIsBad: true } : undefined} />
+        <MetricCard label="Lưu lượng" value={formatNumber(summary.avgFlowRate.current, 0)} unit="m³/s"
+          change={flowChange != null ? { value: flowChange, kind: '%' } : undefined} />
+        <MetricCard label="Mực nước" value={formatNumber(summary.avgWaterLevel.current)} unit="m"
+          change={waterLevelDelta != null ? { value: waterLevelDelta, kind: 'abs' } : undefined} />
       </div>
     </div>
   );

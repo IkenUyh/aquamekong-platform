@@ -1,5 +1,4 @@
 import React from 'react';
-import { Droplets } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { MetricCompareCard } from './MetricCompareCard';
 import { metricApi } from '../api/client';
@@ -39,7 +38,6 @@ export function ComparisonCards({ stationId, currentSalinity, threshold = SALINI
       <MetricCompareCard
         label="Độ mặn hiện tại"
         value={`${formatNumber(currentSalinity)}‰`}
-        icon={<Droplets size={14} />}
       />
       <MetricCompareCard
         label="So với 24h trước"
