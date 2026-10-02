@@ -28,16 +28,20 @@ const apiClient = axios.create({
   timeout: 10000,
 });
 
+// Các API đăng nhập công khai: không gửi token cũ (token hết hạn sẽ bị backend trả 401)
+const PUBLIC_AUTH_URLS = ['/auth/config', '/auth/login', '/auth/register', '/auth/google', '/auth/zalo'];
+
 // Gắn access token vào mọi request
 apiClient.interceptors.request.use((config) => {
   const token = getToken();
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token && !PUBLIC_AUTH_URLS.includes(config.url ?? '')) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// 401 (token hết hạn / không hợp lệ) -> xoá token, AuthContext chuyển về trang đăng nhập
+// 401 khi đã gửi token (token hết hạn / không hợp lệ) -> xoá token, AuthContext đăng xuất.
+// Người chưa đăng nhập gặp 401 (vd. sai mật khẩu, bấm nút cần đăng nhập) thì không có phiên nào để huỷ.
 apiClient.interceptors.response.use(undefined, (error) => {
-  if (isAxiosError(error) && error.response?.status === 401 && !error.config?.url?.startsWith('/auth/login')) {
+  if (isAxiosError(error) && error.response?.status === 401 && error.config?.headers?.Authorization) {
     clearToken();
     window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
   }
@@ -221,7 +225,8 @@ export const forecastApi = {
       apiClient.get<SalinityForecast[]>(`/forecasts/station/${stationId}`).then(async (r) => {
         const fromTomorrow = r.data.filter((f) => f.forecastDate > todayIso());
         const usable = fromTomorrow.length >= daysAhead && r.data[0]?.forecastDate === tomorrowIso();
-        const forecasts = usable ? fromTomorrow : await forecastApi.predict(stationId, daysAhead);
+        // Chạy mô hình cần đăng nhập; người chưa đăng nhập xem lượt dự báo đã lưu
+        const forecasts = usable || !getToken() ? fromTomorrow : await forecastApi.predict(stationId, daysAhead);
         return forecasts.slice(0, daysAhead);
       }),
       generateMockForecasts(stationId)
