@@ -85,8 +85,8 @@ export function UsersTab() {
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 h-full">
-      <form onSubmit={submit} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4 self-start">
-        <h3 className="font-bold text-gray-800">Thêm người dùng</h3>
+      <form onSubmit={submit} className="card p-5 space-y-4 self-start">
+        <h3 className="font-semibold text-gray-900">Thêm người dùng</h3>
         <div>
           <label htmlFor="u-username" className={labelClass}>Tên đăng nhập</label>
           <input id="u-username" required autoComplete="off" value={form.username}

@@ -39,11 +39,11 @@ export function DataTable<T>({
   const pageButtons = Array.from({ length: Math.min(MAX_PAGE_BUTTONS, totalPages) }, (_, i) => firstButton + i);
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+    <div className="flex flex-col h-full card overflow-hidden">
       <div className="flex-1 overflow-auto">
         {/* < md: giữ nguyên độ rộng cột và cuộn ngang thay vì bóp chữ xuống từng dòng */}
         <table className="w-full min-w-max md:min-w-0 text-left text-sm text-gray-600">
-          <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 text-xs text-gray-500 uppercase tracking-wider font-semibold">
+          <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 text-xs text-gray-500 font-semibold">
             <tr>
               {columns.map((col) => (
                 <th key={col.key} className={`px-4 py-3 whitespace-nowrap ${alignClass(col.align)}`} style={{ width: col.width }}>
@@ -59,7 +59,7 @@ export function DataTable<T>({
               return (
                 <tr
                   key={rowKey}
-                  className={`hover:bg-blue-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50' : ''}`}
+                  className={`hover:bg-primary-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${isSelected ? 'bg-primary-50' : ''}`}
                   onClick={() => onRowClick?.(row)}
                 >
                   {columns.map((col) => (
@@ -110,7 +110,7 @@ export function DataTable<T>({
                 onClick={() => setPage(p)}
                 aria-current={page === p ? 'page' : undefined}
                 className={`w-7 h-7 rounded text-xs font-medium flex items-center justify-center
-                  ${page === p ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-200'}`}
+                  ${page === p ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}
               >
                 {p}
               </button>

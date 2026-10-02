@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Navbar } from '../components/Navbar';
-import { MetricCard } from '../components/MetricCard';
+import { MetricCard, type MetricChange } from '../components/MetricCard';
 import { DonutChart } from '../components/shared/DonutChart';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
-import { FileText } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { reportApi, percentChange, type PeriodValue } from '../api/reportApi';
 import { formatNumber, SALINITY_CLASS_COLORS } from '../utils/salinity';
@@ -17,12 +16,11 @@ const PERIODS = [
 
 const fmt = formatNumber;
 
-/** trend cho MetricCard: isPositive = tăng (MetricCard tô đỏ khi tăng) */
-function trendOf(v: PeriodValue | undefined) {
+/** % thay đổi so với kỳ trước cho MetricCard (độ mặn: tăng là xấu) */
+function changeOf(v: PeriodValue | undefined, upIsBad = false): MetricChange | undefined {
   const pct = v ? percentChange(v) : null;
-  return pct == null ? undefined : { value: Math.abs(pct), isPositive: pct > 0 };
+  return pct == null ? undefined : { value: pct, kind: '%', label: 'so với kỳ trước', upIsBad };
 }
-
 export function ReportsPage() {
   const [days, setDays] = useState(7);
 
@@ -57,13 +55,8 @@ export function ReportsPage() {
         {/* Header */}
         <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
           <div>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
-                <FileText className="w-6 h-6" />
-              </div>
-              <h1 className="text-2xl font-bold text-gray-800">Báo cáo tổng quan</h1>
-            </div>
-            <p className="text-sm text-gray-500 ml-11">
+            <h1 className="text-2xl font-semibold text-gray-900">Báo cáo</h1>
+            <p className="text-sm text-gray-500 mt-1">
               Tổng hợp tình hình độ mặn và các chỉ số quan trọng, so với {days} ngày liền trước
             </p>
           </div>
@@ -73,7 +66,7 @@ export function ReportsPage() {
             <select
               value={days}
               onChange={(e) => setDays(Number(e.target.value))}
-              className="border border-gray-300 rounded-lg px-4 py-2 text-sm bg-white focus:outline-none focus:border-blue-500 font-medium"
+              className="field w-auto"
             >
               {PERIODS.map((p) => (
                 <option key={p.days} value={p.days}>{p.label}</option>
@@ -84,27 +77,24 @@ export function ReportsPage() {
 
         {/* Row 1: Metrics */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <MetricCard title="Trung bình độ mặn toàn vùng" value={fmt(overview?.avgSalinity.current)} unit="‰" icon="💧"
-            trend={trendOf(overview?.avgSalinity)}
-            highlightColor="text-blue-600" />
-          <MetricCard title={`Trạm vượt ngưỡng ${overview?.salinityThreshold ?? 4}‰`}
-            value={overview ? `${overview.stationsAboveThreshold}/${overview.totalStations}` : '—'} unit="" icon="⚠️"
-            highlightColor="text-red-500" />
-          <MetricCard title="Mực nước trung bình" value={fmt(overview?.avgWaterLevel.current)} unit="m" icon="📏"
-            trend={trendOf(overview?.avgWaterLevel)}
-            highlightColor="text-indigo-500" />
-          <MetricCard title="Lưu lượng trung bình" value={fmt(overview?.avgFlowRate.current, 0)} unit="m³/s" icon="🌊"
-            trend={trendOf(overview?.avgFlowRate)}
-            highlightColor="text-teal-500" />
+          <MetricCard label="Độ mặn trung bình toàn vùng" value={fmt(overview?.avgSalinity.current)} unit="‰"
+            change={changeOf(overview?.avgSalinity, true)} />
+          <MetricCard label={`Trạm vượt ngưỡng ${overview?.salinityThreshold ?? 4}‰`}
+            value={overview ? `${overview.stationsAboveThreshold} / ${overview.totalStations}` : '—'}
+            tone={(overview?.stationsAboveThreshold ?? 0) > 0 ? 'danger' : 'default'} hint="theo số đo mới nhất" />
+          <MetricCard label="Mực nước trung bình" value={fmt(overview?.avgWaterLevel.current)} unit="m"
+            change={changeOf(overview?.avgWaterLevel)} />
+          <MetricCard label="Lưu lượng trung bình" value={fmt(overview?.avgFlowRate.current, 0)} unit="m³/s"
+            change={changeOf(overview?.avgFlowRate)} />
         </div>
 
         {/* Row 2: Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+          <div className="lg:col-span-2 card p-5">
             <div className="flex flex-wrap justify-between items-center gap-2 mb-6">
-              <h3 className="font-bold text-gray-800">Xu hướng độ mặn theo thời gian</h3>
+              <h3 className="font-semibold text-gray-900">Xu hướng độ mặn theo thời gian</h3>
               <div className="flex gap-4 text-xs font-medium">
-                <span className="flex items-center gap-1.5"><div className="w-3 h-3 bg-blue-500 rounded-full"/> Trung bình toàn vùng</span>
+                <span className="flex items-center gap-1.5"><div className="w-3 h-3 bg-primary-500 rounded-full"/> Trung bình toàn vùng</span>
                 <span className="flex items-center gap-1.5"><div className="w-3 h-3 bg-gray-300 rounded-full"/> Kỳ trước</span>
                 <span className="flex items-center gap-1.5"><div className="w-3 h-1 border-b-2 border-red-500 border-dashed"/> Ngưỡng 4‰</span>
               </div>
@@ -128,8 +118,8 @@ export function ReportsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex flex-col">
-            <h3 className="font-bold text-gray-800 mb-6">Tỷ lệ trạm theo mức độ mặn</h3>
+          <div className="card p-5 flex flex-col">
+            <h3 className="font-semibold text-gray-900 mb-6">Tỷ lệ trạm theo mức độ mặn</h3>
             <div className="flex-1">
               <DonutChart
                 data={distribution.map((d) => ({ name: d.label, value: d.count, color: SALINITY_CLASS_COLORS[d.level] }))}
@@ -151,8 +141,8 @@ export function ReportsPage() {
         </div>
 
         {/* Row 3: Top Stations Table */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <h3 className="font-bold text-gray-800 mb-4">Top {topStations.length || 5} trạm có độ mặn trung bình cao nhất</h3>
+        <div className="card p-5">
+          <h3 className="font-semibold text-gray-900 mb-4">Top {topStations.length || 5} trạm có độ mặn trung bình cao nhất</h3>
           <div className="overflow-hidden rounded-lg border border-gray-100">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-gray-500 font-semibold border-b border-gray-100">

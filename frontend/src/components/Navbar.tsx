@@ -124,7 +124,7 @@ export function Navbar() {
             {navItems.map((item) => (
               <NavLink key={item.path} to={item.path} end={item.path === '/'}
                 className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}>
+                  `flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium ${isActive ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-50'}`}>
                 <item.icon className="w-4 h-4" />
                 {item.label}
               </NavLink>

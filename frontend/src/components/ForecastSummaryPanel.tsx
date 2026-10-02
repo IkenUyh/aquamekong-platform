@@ -30,10 +30,10 @@ export function ForecastSummaryPanel({ forecasts }: ForecastSummaryPanelProps) {
     : '';
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
+    <div className="card p-4">
       <div className="flex justify-between items-start mb-3">
         <h3 className="font-semibold text-gray-800">Dự báo những ngày tới</h3>
-        <Link to="/forecast" className="text-blue-500 text-xs hover:underline">Xem chi tiết &gt;</Link>
+        <Link to="/forecast" className="text-primary-500 text-xs hover:underline">Xem chi tiết &gt;</Link>
       </div>
 
       {/* Overall risk */}

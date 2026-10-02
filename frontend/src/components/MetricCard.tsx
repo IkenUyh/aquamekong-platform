@@ -1,53 +1,52 @@
 import React from 'react';
+import { formatNumber } from '../utils/salinity';
 
-export interface MetricCardProps {
+export interface MetricChange {
+  /** Mức thay đổi so với kỳ trước */
+  value: number;
+  /** '%' = phần trăm, 'abs' = cùng đơn vị với giá trị */
+  kind: '%' | 'abs';
+  /** vd. "so với 24h trước" */
   label?: string;
-  title?: string;
-  value: string | number;
-  unit?: string;
-  icon: React.ReactNode;
-  color?: string;
-  highlightColor?: string;
-  delta?: number;
-  deltaLabel?: string;
-  deltaType?: 'percent' | 'absolute';
-  subtitle?: string;
-  trend?: { value: number; isPositive: boolean };
+  /** true: tăng là xấu (độ mặn) -> đỏ; mặc định trung tính */
+  upIsBad?: boolean;
 }
 
-export function MetricCard({
-  label, title, value, unit, icon, color, highlightColor, delta, deltaLabel, deltaType, subtitle, trend
-}: MetricCardProps) {
-  const cardTitle = label || title || '';
-  const cardColor = color || highlightColor || 'text-gray-800';
-  
-  const hasTrend = trend !== undefined || delta !== undefined;
-  const isPositive = trend ? trend.isPositive : (delta !== undefined && delta > 0);
-  const deltaValue = trend ? trend.value : (delta !== undefined ? Math.abs(delta) : 0);
-  const deltaColor = isPositive ? 'text-red-500' : 'text-green-500';
-  const deltaIcon = isPositive ? '↑' : '↓';
+export interface MetricCardProps {
+  label: string;
+  value: string | number;
+  unit?: string;
+  /** Dòng chú thích nhỏ dưới số */
+  hint?: string;
+  change?: MetricChange;
+  /** Nhấn mạnh con số (vd. số trạm vượt ngưỡng > 0) */
+  tone?: 'default' | 'danger';
+}
+
+/** Thẻ chỉ số: nhãn -> số lớn -> chú thích/thay đổi. Không icon trang trí. */
+export function MetricCard({ label, value, unit, hint, change, tone = 'default' }: MetricCardProps) {
+  let changeText: string | null = null;
+  let changeClass = 'text-gray-500';
+  if (change) {
+    const sign = change.value > 0 ? '+' : change.value < 0 ? '−' : '±';
+    changeText = `${sign}${formatNumber(Math.abs(change.value), 1)}${change.kind === '%' ? '%' : unit ? ` ${unit}` : ''}`;
+    if (change.upIsBad && change.value > 0) changeClass = 'text-red-600';
+    else if (change.upIsBad && change.value < 0) changeClass = 'text-green-700';
+  }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm h-full">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-          {icon}
-        </div>
-        <span className="text-xs text-gray-500 font-medium line-clamp-1">{cardTitle}</span>
-      </div>
-
-      <p className={`text-xl font-bold ${cardColor}`}>
+    <div className="card p-4 h-full">
+      <p className="text-xs font-medium text-gray-500 line-clamp-1">{label}</p>
+      <p className={`mt-1 text-2xl font-semibold num ${tone === 'danger' ? 'text-red-600' : 'text-gray-900'}`}>
         {value}
-        {unit && <span className="text-xs text-gray-400 ml-1 font-normal">{unit}</span>}
+        {unit && <span className="ml-1 text-sm font-normal text-gray-500">{unit}</span>}
       </p>
-
-      {subtitle && (
-        <p className="text-[10px] text-gray-400 mt-1 line-clamp-1">{subtitle}</p>
-      )}
-
-      {hasTrend && (
-        <p className={`text-[10px] mt-1.5 font-medium ${deltaColor}`}>
-          {deltaIcon} {deltaValue}{deltaType === 'percent' || trend ? '%' : ''} {deltaLabel || ''}
+      {(changeText || hint) && (
+        <p className="mt-1 text-xs text-gray-500 line-clamp-1">
+          {changeText && <span className={`font-medium num ${changeClass}`}>{changeText}</span>}
+          {changeText && change?.label && <span> {change.label}</span>}
+          {changeText && hint && <span> · </span>}
+          {hint}
         </p>
       )}
     </div>

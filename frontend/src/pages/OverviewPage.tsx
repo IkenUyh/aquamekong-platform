@@ -1,6 +1,6 @@
 import React from 'react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
-import { Radio, Database, ShieldAlert, Sparkles, CheckCircle, Layers, MapPin } from 'lucide-react';
+import { Database, Sparkles, Layers, MapPin } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { stationApi } from '../api/client';
 import { recommendationApi } from '../api/recommendationApi';
@@ -9,6 +9,7 @@ import { formatNumber, isReporting, SALINITY_THRESHOLD } from '../utils/salinity
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
 import { Link } from 'react-router-dom';
 import { MetricCard } from '../components/MetricCard';
+import { RecommendationList } from '../components/RecommendationList';
 
 export function OverviewPage() {
   const { data: stations = [] } = useQuery({
@@ -34,18 +35,18 @@ export function OverviewPage() {
       leftPanel={
         <div className="p-5 space-y-6">
           <div>
-            <h2 className="font-bold text-gray-800 text-lg mb-1">AquaMekong System</h2>
+            <h2 className="font-semibold text-gray-900 text-lg mb-1">AquaMekong System</h2>
             <p className="text-xs text-gray-500">Giám sát & Dự báo Thủy văn ĐBSCL</p>
           </div>
 
-          <div className="space-y-3 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-            <h3 className="text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
-              <Database className="w-4 h-4 text-blue-600" /> Tình trạng hệ thống
+          <div className="space-y-3 bg-primary-50/50 p-4 rounded-lg border border-primary-100">
+            <h3 className="text-xs font-bold text-primary-900 flex items-center gap-1.5">
+              <Database className="w-4 h-4 text-primary-600" /> Tình trạng hệ thống
             </h3>
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-gray-600">Số trạm hiện có:</span>
-                <span className="font-bold text-gray-800">{stations.length} trạm</span>
+                <span className="font-semibold text-gray-900">{stations.length} trạm</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Trạm đang hoạt động:</span>
@@ -63,7 +64,7 @@ export function OverviewPage() {
         <div className="h-full bg-gray-50 p-4 lg:p-6 overflow-y-auto space-y-6">
           {/* Header */}
           <div>
-            <h1 className="text-xl font-bold text-gray-800">Tổng quan Hệ thống Quan trắc</h1>
+            <h1 className="text-xl font-semibold text-gray-900">Tổng quan Hệ thống Quan trắc</h1>
             <p className="text-xs text-gray-500 mt-1">
               Số liệu quan trắc mới nhất và khuyến nghị vận hành theo ngưỡng độ mặn
             </p>
@@ -72,66 +73,45 @@ export function OverviewPage() {
           {/* Top Metric Cards */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
             <MetricCard
-              title="Tổng số trạm quan trắc"
+              label="Tổng số trạm quan trắc"
               value={stations.length}
               unit="trạm"
-              icon={<Radio className="w-5 h-5 text-blue-600" />}
-              color="text-blue-600"
-              subtitle="Đang quản lý trên hệ thống"
+              hint="Đang quản lý trên hệ thống"
             />
             <MetricCard
-              title="Trạm đang truyền dữ liệu"
+              label="Trạm đang truyền dữ liệu"
               value={reportingCount}
               unit={`/ ${activeStationsCount} trạm`}
-              icon={<CheckCircle className="w-5 h-5 text-green-600" />}
-              color="text-green-600"
-              subtitle="Có số đo trong 2 giờ qua"
+              hint="Có số đo trong 2 giờ qua"
             />
             <MetricCard
-              title="Trạm cảnh báo mặn"
+              label="Trạm cảnh báo mặn"
               value={stationsAboveThreshold}
+              tone={stationsAboveThreshold > 0 ? 'danger' : 'default'}
               unit="trạm"
-              icon={<ShieldAlert className="w-5 h-5 text-red-500" />}
-              color="text-red-500"
-              subtitle={`Vượt ngưỡng ${SALINITY_THRESHOLD}‰`}
+              hint={`Vượt ngưỡng ${SALINITY_THRESHOLD}‰`}
             />
             <MetricCard
-              title="Khuyến nghị"
+              label="Khuyến nghị"
               value={recommendations.length}
               unit="gợi ý"
-              icon={<Sparkles className="w-5 h-5 text-amber-500" />}
-              color="text-amber-600"
-              subtitle="Theo độ mặn hiện tại"
+              hint="Theo độ mặn hiện tại"
             />
           </div>
 
           {/* Recommendations List */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
-            <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+          <div className="card p-5 space-y-4">
+            <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500" />
               Khuyến nghị vận hành
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {recommendations.length > 0 ? (
-                recommendations.map((rec, idx) => (
-                  <div key={idx} className="p-3 bg-amber-50/60 rounded-lg border border-amber-100 flex items-start gap-3">
-                    <span className="text-xl">{rec.icon || '💡'}</span>
-                    <div>
-                      <p className="text-xs font-bold text-amber-900">{rec.priority === 'HIGH' ? 'Ưu tiên cao' : 'Khuyến nghị'}</p>
-                      <p className="text-xs text-amber-800 mt-0.5">{rec.message}</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="md:col-span-2 text-xs text-gray-400 italic">Đang cập nhật khuyến nghị...</div>
-              )}
-            </div>
+            <RecommendationList items={recommendations} />
           </div>
 
           {/* Stations Quick View Table */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <h3 className="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-blue-500" />
+          <div className="card p-5">
+            <h3 className="font-semibold text-gray-900 text-sm mb-3 flex items-center gap-2">
+              <Layers className="w-4 h-4 text-primary-500" />
               Trạm có độ mặn cao nhất
             </h3>
             <div className="overflow-x-auto">
@@ -152,7 +132,7 @@ export function OverviewPage() {
                     .slice(0, 8)
                     .map((s) => (
                     <tr key={s.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-2 font-mono font-bold text-blue-600">{s.code}</td>
+                      <td className="px-3 py-2 font-mono font-bold text-primary-600">{s.code}</td>
                       <td className="px-3 py-2 font-semibold text-gray-800">{s.name}</td>
                       <td className="px-3 py-2 text-gray-600">{s.province}</td>
                       <td className="px-3 py-2 text-gray-600">{s.riverName || 'N/A'}</td>
@@ -178,8 +158,8 @@ export function OverviewPage() {
       }
       rightPanel={
         <div className="p-4 space-y-4">
-          <h3 className="font-bold text-gray-800 text-sm flex items-center gap-1.5">
-            <MapPin className="w-4 h-4 text-blue-500" />
+          <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-1.5">
+            <MapPin className="w-4 h-4 text-primary-500" />
             Bản đồ rút gọn
           </h3>
           <div className="h-[420px]">
@@ -187,7 +167,7 @@ export function OverviewPage() {
               stations={stations.map((s) => ({ id: s.id, name: s.name, latitude: s.latitude, longitude: s.longitude, salinity: s.latestSalinity }))}
             />
           </div>
-          <Link to="/map" className="block text-center text-xs font-medium text-blue-600 hover:underline">
+          <Link to="/map" className="block text-center text-xs font-medium text-primary-600 hover:underline">
             Mở bản đồ độ mặn chi tiết &gt;
           </Link>
         </div>

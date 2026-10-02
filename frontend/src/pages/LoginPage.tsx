@@ -34,10 +34,10 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <form onSubmit={onSubmit} className="w-full max-w-sm bg-white rounded-2xl border border-gray-200 shadow-sm p-8 space-y-5">
+      <form onSubmit={onSubmit} className="w-full max-w-sm card p-8 space-y-5">
         <div className="flex flex-col items-center gap-2 text-primary">
           <Droplets className="w-10 h-10" />
-          <h1 className="text-xl font-bold text-gray-800">AquaMekong</h1>
+          <h1 className="text-xl font-semibold text-gray-900">AquaMekong</h1>
           <p className="text-sm text-gray-500">Đăng nhập hệ thống giám sát xâm nhập mặn</p>
         </div>
 
@@ -50,7 +50,7 @@ export function LoginPage() {
             required
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            className="field"
           />
         </div>
 
@@ -63,7 +63,7 @@ export function LoginPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            className="field"
           />
         </div>
 
@@ -74,7 +74,7 @@ export function LoginPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg transition-colors text-sm"
+          className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-700 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg transition-colors text-sm"
         >
           <LogIn className="w-4 h-4" />
           {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}

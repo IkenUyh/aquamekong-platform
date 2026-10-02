@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { isAxiosError } from 'axios';
-import { KeyRound, UserCircle } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { useAuth } from '../contexts/AuthContext';
 import { authApi } from '../api/authApi';
@@ -43,25 +42,24 @@ export function AccountPage() {
     }
   };
 
-  const inputClass = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500';
+  const inputClass = 'field';
 
   return (
     <div className="flex flex-col h-screen w-screen bg-[var(--color-bg)]">
       <Navbar />
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-lg mx-auto space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex items-center gap-4">
-            <UserCircle className="w-12 h-12 text-blue-500" />
+          <div className="card p-5 flex items-center gap-4">
             <div>
-              <p className="font-bold text-gray-800">{user?.fullName || user?.username}</p>
+              <p className="font-semibold text-gray-900">{user?.fullName || user?.username}</p>
               <p className="text-sm text-gray-500">{user?.username} · {user?.email}</p>
               <p className="text-xs text-gray-400 mt-1">{user?.roles?.join(', ')}</p>
             </div>
           </div>
 
-          <form onSubmit={onSubmit} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
-            <h2 className="font-bold text-gray-800 flex items-center gap-2">
-              <KeyRound className="w-4 h-4" /> Đổi mật khẩu
+          <form onSubmit={onSubmit} className="card p-5 space-y-4">
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+              Đổi mật khẩu
             </h2>
 
             <div className="space-y-1">
@@ -84,7 +82,7 @@ export function AccountPage() {
             {success && <p role="status" className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">Đã đổi mật khẩu.</p>}
 
             <button type="submit" disabled={submitting}
-              className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg transition-colors text-sm">
+              className="w-full bg-primary hover:bg-primary-700 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg transition-colors text-sm">
               {submitting ? 'Đang lưu...' : 'Đổi mật khẩu'}
             </button>
           </form>

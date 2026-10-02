@@ -16,7 +16,7 @@ export function RightPanel({ stationId }: { stationId: number | null }) {
       <AlertPanel />
 
       {stationId === null ? (
-        <div className="bg-white rounded-xl border border-dashed border-gray-300 p-4 text-sm text-gray-500 text-center">
+        <div className="bg-white rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500 text-center">
           Chọn một trạm trên bản đồ để xem dự báo
         </div>
       ) : isLoading ? (
@@ -24,7 +24,7 @@ export function RightPanel({ stationId }: { stationId: number | null }) {
       ) : forecasts.length > 0 ? (
         <>
           <ForecastSummaryPanel forecasts={forecasts} />
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm mb-4">
+          <div className="card p-4 mb-4">
             <h3 className="font-semibold text-gray-800 text-sm mb-3">Dự báo độ mặn</h3>
             <ForecastChart forecasts={forecasts} />
           </div>
