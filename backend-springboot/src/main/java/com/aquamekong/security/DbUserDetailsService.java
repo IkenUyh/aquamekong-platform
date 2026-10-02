@@ -28,7 +28,8 @@ public class DbUserDetailsService implements UserDetailsService {
                 .map(ur -> new SimpleGrantedAuthority(ur.getRole().getName()))
                 .toList();
         return User.withUsername(user.getUsername())
-                .password(user.getPasswordHash())
+                // Chưa đặt mật khẩu (tạo bằng Google) -> chuỗi rỗng, BCrypt không bao giờ khớp
+                .password(user.getPasswordHash() == null ? "" : user.getPasswordHash())
                 .authorities(authorities)
                 .disabled(user.getStatus() != UserStatus.ACTIVE)
                 .build();

@@ -19,6 +19,8 @@ public class UserDto {
     private String fullName;
     private UserStatus status;
     private List<String> roles;
+    /** false = tài khoản tạo bằng Google, chưa đặt mật khẩu */
+    private boolean hasPassword;
 
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;

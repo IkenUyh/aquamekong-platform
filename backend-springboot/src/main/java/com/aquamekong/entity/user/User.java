@@ -24,10 +24,12 @@ public class User {
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
-    @Column(nullable = false, unique = true, length = 100)
+    /** null = tài khoản tạo bằng Zalo (Zalo không cung cấp email) */
+    @Column(unique = true, length = 100)
     private String email;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
+    /** null = tài khoản tạo bằng Google/Zalo, chưa đặt mật khẩu */
+    @Column(name = "password_hash", length = 255)
     private String passwordHash;
 
     @Column(name = "full_name", length = 255)
