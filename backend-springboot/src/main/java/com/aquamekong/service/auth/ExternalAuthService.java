@@ -40,6 +40,7 @@ public class ExternalAuthService {
     private final UserRepository userRepository;
     private final UserService userService;
     private final AuthService authService;
+    private final LoginMethodGuard loginMethodGuard;
 
     @Transactional
     public LoginResponse loginWithGoogle(String idToken) {
@@ -74,10 +75,7 @@ public class ExternalAuthService {
         if (!identityRepository.existsByUserIdAndProvider(user.getId(), provider)) {
             throw new EntityNotFoundException("Chưa liên kết tài khoản " + label(provider));
         }
-        // Không để user mất hết cách đăng nhập
-        if (user.getPasswordHash() == null && identityRepository.countByUserId(user.getId()) <= 1) {
-            throw new IllegalArgumentException("Hãy đặt mật khẩu trước khi huỷ liên kết, nếu không bạn sẽ không đăng nhập được nữa");
-        }
+        loginMethodGuard.requireAnotherMethod(user);
         identityRepository.deleteByUserIdAndProvider(user.getId(), provider);
     }
 

@@ -30,6 +30,8 @@ public class AuthService {
     private final ZaloOAuthClient zaloClient;
     private final boolean publicRead;
     private final boolean registrationEnabled;
+    // Đọc thẳng cấu hình thay vì hỏi PasskeyService (PasskeyService đã phụ thuộc AuthService)
+    private final boolean passkeyEnabled;
 
     public AuthService(AuthenticationManager authenticationManager,
                        JwtService jwtService,
@@ -38,7 +40,8 @@ public class AuthService {
                        GoogleIdTokenVerifier googleVerifier,
                        ZaloOAuthClient zaloClient,
                        @Value("${app.security.public-read:true}") boolean publicRead,
-                       @Value("${app.security.registration-enabled:true}") boolean registrationEnabled) {
+                       @Value("${app.security.registration-enabled:true}") boolean registrationEnabled,
+                       @Value("${app.security.webauthn.rp-id:}") String webauthnRpId) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.userService = userService;
@@ -47,6 +50,7 @@ public class AuthService {
         this.zaloClient = zaloClient;
         this.publicRead = publicRead;
         this.registrationEnabled = registrationEnabled;
+        this.passkeyEnabled = webauthnRpId != null && !webauthnRpId.isBlank();
     }
 
     public LoginResponse login(String username, String password, String clientIp) {
@@ -72,7 +76,7 @@ public class AuthService {
     }
 
     public AuthConfigDto config() {
-        return new AuthConfigDto(publicRead, registrationEnabled, googleVerifier.getClientId(), zaloClient.getAppId());
+        return new AuthConfigDto(publicRead, registrationEnabled, googleVerifier.getClientId(), zaloClient.getAppId(), passkeyEnabled);
     }
 
     void requireRegistrationEnabled() {

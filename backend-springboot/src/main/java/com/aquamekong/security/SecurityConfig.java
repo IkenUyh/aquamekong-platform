@@ -58,7 +58,8 @@ public class SecurityConfig {
                     auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/", "/error", "/actuator/health", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/google", "/api/v1/auth/zalo").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/google", "/api/v1/auth/zalo",
+                                "/api/v1/auth/passkeys/login/start", "/api/v1/auth/passkeys/login/finish").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/auth/config").permitAll();
                     if (publicRead) {
                         auth.requestMatchers(HttpMethod.GET, PUBLIC_READ_PATHS).permitAll();
