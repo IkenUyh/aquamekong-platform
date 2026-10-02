@@ -4,9 +4,10 @@ import { apiErrorMessage } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthLayout } from '../components/AuthLayout';
 import { SocialLogin } from '../components/SocialLogin';
+import { passkeyErrorMessage, passkeySupported } from '../auth/passkey';
 
 export function LoginPage() {
-  const { login, loginWithGoogle, status, config } = useAuth();
+  const { login, loginWithGoogle, loginWithPasskey, status, config } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from || '/';
@@ -26,7 +27,7 @@ export function LoginPage() {
       await action();
       navigate(from, { replace: true });
     } catch (err) {
-      setError(apiErrorMessage(err, 'Không kết nối được máy chủ, vui lòng thử lại.'));
+      setError(passkeyErrorMessage(err) ?? apiErrorMessage(err, 'Không kết nối được máy chủ, vui lòng thử lại.'));
     } finally {
       setSubmitting(false);
     }
@@ -79,6 +80,12 @@ export function LoginPage() {
             {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
         </form>
+
+        {config?.passkeyEnabled && passkeySupported() && (
+          <button type="button" disabled={submitting} onClick={() => void run(loginWithPasskey)} className="btn-secondary w-full py-2.5">
+            Đăng nhập bằng passkey
+          </button>
+        )}
 
         {config?.registrationEnabled && (
           <p className="text-center text-sm text-gray-500">

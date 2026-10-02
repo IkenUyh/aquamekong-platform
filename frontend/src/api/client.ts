@@ -29,7 +29,8 @@ const apiClient = axios.create({
 });
 
 // Các API đăng nhập công khai: không gửi token cũ (token hết hạn sẽ bị backend trả 401)
-const PUBLIC_AUTH_URLS = ['/auth/config', '/auth/login', '/auth/register', '/auth/google', '/auth/zalo'];
+const PUBLIC_AUTH_URLS = ['/auth/config', '/auth/login', '/auth/register', '/auth/google', '/auth/zalo',
+  '/auth/passkeys/login/start', '/auth/passkeys/login/finish'];
 
 // Gắn access token vào mọi request
 apiClient.interceptors.request.use((config) => {

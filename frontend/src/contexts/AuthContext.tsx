@@ -2,12 +2,13 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi, type AuthConfig, type LoginResponse, type RegisterRequest } from '../api/authApi';
 import { clearToken, getToken, setToken, UNAUTHORIZED_EVENT } from '../auth/tokenStorage';
+import { getPasskey } from '../auth/passkey';
 import type { User } from '../types';
 
 type AuthStatus = 'loading' | 'authenticated' | 'anonymous';
 
 /** Backend không trả lời được /auth/config: vẫn cho xem trang (các API sẽ tự báo lỗi), chỉ ẩn đăng ký/Google */
-const FALLBACK_CONFIG: AuthConfig = { publicRead: true, registrationEnabled: false, googleClientId: null, zaloAppId: null };
+const FALLBACK_CONFIG: AuthConfig = { publicRead: true, registrationEnabled: false, googleClientId: null, zaloAppId: null, passkeyEnabled: false };
 
 interface AuthContextValue {
   user: User | null;
@@ -18,6 +19,8 @@ interface AuthContextValue {
   register: (req: RegisterRequest) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
   loginWithZalo: (code: string, codeVerifier: string) => Promise<void>;
+  /** Mở hộp thoại passkey của trình duyệt; lỗi WebAuthn ném nguyên dạng DOMException */
+  loginWithPasskey: () => Promise<void>;
   logout: () => Promise<void>;
   /** Tải lại thông tin user (vd. sau khi đặt mật khẩu lần đầu) */
   refreshUser: () => Promise<void>;
@@ -84,6 +87,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [startSession]
   );
 
+  const loginWithPasskey = useCallback(async () => {
+    const options = await authApi.passkeyLoginStart();
+    const credential = await getPasskey(options.publicKey);
+    startSession(await authApi.passkeyLoginFinish(options.requestId, credential));
+  }, [startSession]);
+
   const logout = useCallback(async () => {
     try {
       await authApi.logout();
@@ -98,8 +107,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasRole = useCallback((...roles: string[]) => !!user?.roles?.some((r) => roles.includes(r)), [user]);
 
   const value = useMemo(
-    () => ({ user, status, config, login, register, loginWithGoogle, loginWithZalo, logout, refreshUser, hasRole }),
-    [user, status, config, login, register, loginWithGoogle, loginWithZalo, logout, refreshUser, hasRole]
+    () => ({ user, status, config, login, register, loginWithGoogle, loginWithZalo, loginWithPasskey, logout, refreshUser, hasRole }),
+    [user, status, config, login, register, loginWithGoogle, loginWithZalo, loginWithPasskey, logout, refreshUser, hasRole]
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
