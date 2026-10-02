@@ -1,5 +1,7 @@
+import { Link } from 'react-router-dom';
 import React from 'react';
 import type { SalinityForecast } from '../types';
+import { classifySalinity, SALINITY_CLASS_COLORS, SALINITY_CLASS_SHORT_LABELS } from '../utils/salinity';
 
 interface ForecastSummaryPanelProps {
   forecasts: SalinityForecast[];
@@ -7,9 +9,8 @@ interface ForecastSummaryPanelProps {
 
 // Classify risk từ predicted salinity
 function classifyRisk(salinity: number): { level: string; color: string } {
-  if (salinity >= 4) return { level: 'Cao', color: '#ef4444' };
-  if (salinity >= 1) return { level: 'TB', color: '#eab308' };
-  return { level: 'Thấp', color: '#22c55e' };
+  const c = classifySalinity(salinity);
+  return { level: c === 'MEDIUM' ? 'TB' : SALINITY_CLASS_SHORT_LABELS[c], color: SALINITY_CLASS_COLORS[c] };
 }
 
 const DAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
@@ -32,7 +33,7 @@ export function ForecastSummaryPanel({ forecasts }: ForecastSummaryPanelProps) {
     <div className="bg-white rounded-xl border border-gray-200 p-4">
       <div className="flex justify-between items-start mb-3">
         <h3 className="font-semibold text-gray-800">Dự báo những ngày tới</h3>
-        <a href="/forecast" className="text-blue-500 text-xs">Xem chi tiết &gt;</a>
+        <Link to="/forecast" className="text-blue-500 text-xs hover:underline">Xem chi tiết &gt;</Link>
       </div>
 
       {/* Overall risk */}

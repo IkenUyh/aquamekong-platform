@@ -1,11 +1,11 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { MapView } from '../components/MapView';
 import { useStations, useStationsList } from '../hooks/useStations';
 import { useTelemetrySSE } from '../hooks/useTelemetrySSE';
 import { HistorySection } from '../components/HistorySection';
 import { RightPanel } from '../components/RightPanel';
-import { queryClient } from '../App';
+import { useQueryClient } from '@tanstack/react-query';
 import type { GeoJsonFeature } from '../types';
 import { FilterProvider, useFilters } from '../contexts/FilterContext';
 import { FilterPanel } from '../components/filters/FilterPanel';
@@ -15,17 +15,27 @@ function MapPageContent() {
   const { data: geoJson } = useStations();
   const { data: stationsList } = useStationsList();
 
+  const queryClient = useQueryClient();
+  // Pipeline ghi nhiều dòng một lúc -> gộp các event, refetch tối đa 1 lần / 2s
+  const refreshTimer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => () => clearTimeout(refreshTimer.current), []);
+
   const { isConnected } = useTelemetrySSE({
-    onTelemetry: useCallback((_data: any) => {
-      queryClient.invalidateQueries({ queryKey: ['stations'] });
-      queryClient.invalidateQueries({ queryKey: ['metrics'] });
-    }, []),
+    onTelemetry: useCallback(() => {
+      if (refreshTimer.current) return;
+      refreshTimer.current = setTimeout(() => {
+        refreshTimer.current = undefined;
+        queryClient.invalidateQueries({ queryKey: ['stations'] });
+        queryClient.invalidateQueries({ queryKey: ['metrics'] });
+      }, 2000);
+    }, [queryClient]),
   });
 
   const features: GeoJsonFeature[] = geoJson?.features ?? [];
 
   return (
     <DashboardLayout
+      mobileCenterHeight="h-[60vh]"
       leftPanel={
         <div className="h-full flex flex-col bg-white">
           <FilterPanel />
@@ -36,7 +46,7 @@ function MapPageContent() {
               <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
             </div>
             <div className="space-y-2">
-              {stationsList?.map((station: any) => (
+              {stationsList?.map((station) => (
                 <div 
                   key={station.id} 
                   className={`p-3 rounded-lg border cursor-pointer ${selectedStationId === station.id ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200 hover:border-blue-300'}`}

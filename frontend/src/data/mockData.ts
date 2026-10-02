@@ -1,4 +1,5 @@
-import type { Station, WaterMetric, SalinityForecast, AlertDto } from '../types';
+import type { Station, SalinityForecast, AlertDto } from '../types';
+import type { ReportOverview, TopStation, TrendPoint } from '../api/reportApi';
 
 export const MOCK_STATIONS_LIST = Array.from({ length: 25 }).map((_, i) => {
   const isHigh = i < 5;
@@ -18,7 +19,7 @@ export const MOCK_STATIONS_LIST = Array.from({ length: 25 }).map((_, i) => {
     latestSalinity: parseFloat(sal.toFixed(1)),
     latestWaterLevel: parseFloat((1 + Math.random()).toFixed(2)),
     latestFlowRate: Math.floor(1000 + Math.random() * 3000),
-    salinityLevel: isHigh ? "CRITICAL" : isMed ? "WARNING" : "SAFE",
+    salinityLevel: isHigh ? "HIGH" : isMed ? "MEDIUM" : "LOW",
     status: "ACTIVE",
   } as Station;
 });
@@ -68,36 +69,51 @@ export const MOCK_ALERTS: AlertDto[] = [
   }
 ];
 
-export const MOCK_TREND_DATA = [
-  { month: 'T1', salinity: 1.2, waterLevel: 2.1 },
-  { month: 'T2', salinity: 2.5, waterLevel: 1.8 },
-  { month: 'T3', salinity: 3.8, waterLevel: 1.5 },
-  { month: 'T4', salinity: 4.5, waterLevel: 1.2 },
-  { month: 'T5', salinity: 2.1, waterLevel: 1.9 },
-  { month: 'T6', salinity: 0.8, waterLevel: 2.5 },
+// Mock cho trang Báo cáo (chỉ dùng ở chế độ dev khi API lỗi) — cùng shape với /api/v1/reports
+export const MOCK_TREND_DATA: TrendPoint[] = Array.from({ length: 7 }).map((_, i) => {
+  const d = new Date();
+  d.setDate(d.getDate() - 6 + i);
+  return { date: d.toISOString().slice(0, 10), current: 2.4 + i * 0.2, previous: 2.1 + i * 0.15 };
+});
+
+export const MOCK_TOP_STATIONS: TopStation[] = [
+  { rank: 1, stationId: 6, name: 'Trạm Cà Mau', province: 'Cà Mau', salinity: 8.9, previous: 8.1, diff: 0.8 },
+  { rank: 2, stationId: 3, name: 'Trạm Bến Tre', province: 'Bến Tre', salinity: 5.6, previous: 5.9, diff: -0.3 },
+  { rank: 3, stationId: 5, name: 'Trạm Sóc Trăng', province: 'Sóc Trăng', salinity: 5.1, previous: 4.6, diff: 0.5 },
 ];
 
-export const MOCK_TOP_STATIONS = [
-  { name: 'Trạm Vàm Cỏ Đông', value: 4.8 },
-  { name: 'Trạm Ba Lai', value: 4.2 },
-  { name: 'Trạm Trần Đề', value: 3.9 },
-  { name: 'Trạm Cổ Chiên', value: 3.5 },
-  { name: 'Trạm Hàm Luông', value: 3.1 },
-];
+export const MOCK_REPORT_OVERVIEW: ReportOverview = {
+  days: 7,
+  avgSalinity: { current: 3.2, previous: 2.9 },
+  avgWaterLevel: { current: 1.05, previous: 1.1 },
+  avgFlowRate: { current: 2980, previous: 3050 },
+  stationsAboveThreshold: 3,
+  totalStations: 6,
+  salinityThreshold: 4,
+  levelDistribution: [
+    { level: 'HIGH', label: 'Cao (> 4‰)', count: 3 },
+    { level: 'MEDIUM', label: 'Trung bình (1 - 4‰)', count: 2 },
+    { level: 'LOW', label: 'Thấp (< 1‰)', count: 1 },
+    { level: 'UNKNOWN', label: 'Chưa có dữ liệu', count: 0 },
+  ],
+};
 
 export const generateMockForecasts = (stationId: number): SalinityForecast[] => {
   const today = new Date();
-  return Array.from({length: 7}).map((_, i) => {
+  return Array.from({ length: 7 }).map((_, i) => {
     const d = new Date(today);
-    d.setDate(d.getDate() + i);
+    d.setDate(d.getDate() + i + 1); // dự báo bắt đầu từ ngày mai, như backend
+    const predicted = Math.round((3.5 + Math.random() * 2) * 10) / 10;
     return {
       id: i,
       stationId,
-      forecastDate: d.toISOString(),
-      predictedSalinity: Math.round((3.5 + Math.random() * 2) * 10) / 10,
-      confidenceScore: 85 - i * 2,
-      modelName: "AI_LSTM_V1",
-      createdAt: today.toISOString()
-    };
+      forecastDate: d.toISOString().slice(0, 10),
+      predictedSalinity: predicted,
+      lowerBound: Math.round((predicted - 0.5) * 10) / 10,
+      upperBound: Math.round((predicted + 0.5) * 10) / 10,
+      confidenceLevel: 0.9,
+      modelVersion: 'mock',
+      createdAt: today.toISOString(),
+    } satisfies SalinityForecast;
   });
 };

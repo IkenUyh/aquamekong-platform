@@ -69,7 +69,7 @@ public class StationService {
     public StationDto getStationById(Long id) {
         Station station = stationRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Station not found: " + id));
-        List<Measurement> measurements = measurementRepository.findByStationIdOrderByRecordedAtDesc(id);
+        List<Measurement> measurements = measurementRepository.findLatestPerMetricByStationId(id);
         return toDto(station, measurements);
     }
 
@@ -78,15 +78,20 @@ public class StationService {
      */
     @Transactional
     public StationDto createStation(StationDto dto) {
-        River river = null;
-        if (dto.getRiverId() != null) {
-            river = riverRepository.findById(dto.getRiverId())
-                    .orElseThrow(() -> new EntityNotFoundException("River not found: " + dto.getRiverId()));
+        // Các cột NOT NULL của bảng stations: báo lỗi 400 rõ ràng thay vì NPE / lỗi ràng buộc DB
+        if (dto.getCode() == null || dto.getCode().isBlank()) throw new IllegalArgumentException("Chưa nhập mã trạm");
+        if (dto.getName() == null || dto.getName().isBlank()) throw new IllegalArgumentException("Chưa nhập tên trạm");
+        if (dto.getRiverId() == null) throw new IllegalArgumentException("Chưa chọn sông");
+        validateCoordinates(dto.getLongitude(), dto.getLatitude());
+        if (stationRepository.findByCode(dto.getCode().trim()).isPresent()) {
+            throw new IllegalArgumentException("Mã trạm đã tồn tại: " + dto.getCode());
         }
+        River river = riverRepository.findById(dto.getRiverId())
+                .orElseThrow(() -> new EntityNotFoundException("River not found: " + dto.getRiverId()));
 
         Station station = Station.builder()
-                .code(dto.getCode())
-                .name(dto.getName())
+                .code(dto.getCode().trim())
+                .name(dto.getName().trim())
                 .river(river)
                 .location(geometryFactory.createPoint(
                         new Coordinate(dto.getLongitude(), dto.getLatitude())))
@@ -114,13 +119,14 @@ public class StationService {
         if (dto.getName() != null) station.setName(dto.getName());
         if (dto.getProvince() != null) station.setProvince(dto.getProvince());
         if (dto.getStatus() != null) station.setStatus(dto.getStatus());
-        if (dto.getLongitude() != null && dto.getLatitude() != null) {
+        if (dto.getLongitude() != null || dto.getLatitude() != null) {
+            validateCoordinates(dto.getLongitude(), dto.getLatitude());
             station.setLocation(geometryFactory.createPoint(
                     new Coordinate(dto.getLongitude(), dto.getLatitude())));
         }
 
         Station saved = stationRepository.save(station);
-        List<Measurement> measurements = measurementRepository.findByStationIdOrderByRecordedAtDesc(id);
+        List<Measurement> measurements = measurementRepository.findLatestPerMetricByStationId(id);
         return toDto(saved, measurements);
     }
 
@@ -159,6 +165,13 @@ public class StationService {
 
     // ===== Helpers =====
 
+    private static void validateCoordinates(Double longitude, Double latitude) {
+        if (longitude == null || latitude == null) throw new IllegalArgumentException("Chưa nhập đủ kinh độ / vĩ độ");
+        if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+            throw new IllegalArgumentException("Toạ độ không hợp lệ");
+        }
+    }
+
     private StationDto toDto(Station station, List<Measurement> measurements) {
         StationDto.StationDtoBuilder builder = StationDto.builder()
                 .id(station.getId())
@@ -174,6 +187,11 @@ public class StationService {
                 .updatedAt(station.getUpdatedAt());
 
         if (measurements != null && !measurements.isEmpty()) {
+            builder.lastMeasuredAt(measurements.stream()
+                    .map(Measurement::getRecordedAt)
+                    .max(Comparator.naturalOrder())
+                    .orElse(null));
+            builder.metricTypes(measurements.stream().map(Measurement::getMetricType).distinct().sorted().toList());
             for (Measurement m : measurements) {
                 if ("SALINITY".equalsIgnoreCase(m.getMetricType())) {
                     builder.latestSalinity(m.getValue());
@@ -202,6 +220,9 @@ public class StationService {
         properties.put("latestWaterLevel", dto.getLatestWaterLevel());
         properties.put("latestFlowRate", dto.getLatestFlowRate());
         properties.put("salinityLevel", dto.getSalinityLevel());
+        properties.put("lastMeasuredAt", dto.getLastMeasuredAt());
+        properties.put("metricTypes", dto.getMetricTypes());
+        properties.put("updatedAt", dto.getUpdatedAt());
 
         return GeoJsonResponse.Feature.builder()
                 .type("Feature")

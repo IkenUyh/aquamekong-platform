@@ -1,5 +1,6 @@
 package com.aquamekong.entity.device;
 
+import com.aquamekong.util.MetricTypes;
 import com.aquamekong.entity.enums.SensorStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -54,12 +55,14 @@ public class Sensor {
 
     @PrePersist
     protected void onCreate() {
+        metricType = MetricTypes.normalize(metricType);
         createdAt = OffsetDateTime.now();
         updatedAt = OffsetDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
+        metricType = MetricTypes.normalize(metricType);
         updatedAt = OffsetDateTime.now();
     }
 }

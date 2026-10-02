@@ -12,20 +12,8 @@ export type AlertSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type AlertStatus = 'ACTIVE' | 'ACKNOWLEDGED' | 'RESOLVED';
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
-export type SalinityLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'WARNING' | 'SAFE' | 'UNKNOWN';
-
-export interface WaterMetric {
-  id?: number;
-  stationId?: number;
-  stationCode?: string;
-  stationName?: string;
-  salinity?: number;
-  value?: number;
-  waterLevel?: number;
-  flowRate?: number;
-  recordedAt: string;
-  salinityLevel?: SalinityLevel;
-}
+/** Phân loại độ mặn do backend trả về (StationService.classifySalinity) */
+export type SalinityLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'UNKNOWN';
 
 // --- Domain: Station & River ---
 export interface River {
@@ -50,6 +38,10 @@ export interface Station {
   latestWaterLevel?: number | null;
   latestFlowRate?: number | null;
   salinityLevel?: SalinityLevel;
+  /** Thời điểm số đo mới nhất (mọi chỉ số) */
+  lastMeasuredAt?: string | null;
+  /** Các chỉ số trạm đang có số đo */
+  metricTypes?: string[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -87,6 +79,8 @@ export interface Sensor {
 }
 
 // --- Domain: Telemetry & Measurement ---
+export type MetricType = 'salinity' | 'water_level' | 'flow_rate';
+
 export interface Measurement {
   id: number;
   sensorId: number;
@@ -153,11 +147,13 @@ export interface AlertRule {
   updatedAt?: string;
 }
 
+/** Cảnh báo đúng như backend trả về (GET /api/v1/alerts) */
 export interface Alert {
   id: number;
   stationId: number;
   stationCode?: string;
   stationName?: string;
+  province?: string;
   ruleId?: number;
   metricType: string;
   value: number;
@@ -169,11 +165,15 @@ export interface Alert {
   createdAt?: string;
 }
 
+/** Cảnh báo dạng hiển thị cho UI (map từ Alert trong api/alertApi.ts) */
 export interface AlertDto {
   id: number;
   stationId: number;
   stationName?: string;
   stationCode?: string;
+  province?: string;
+  status?: AlertStatus;
+  resolvedAt?: string;
   metricType?: string;
   alertType?: string;
   severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'WARNING' | 'INFO';
@@ -215,14 +215,5 @@ export interface GeoJsonFeature {
 }
 
 // SSE Event types
-export interface TelemetryEvent {
-  stationId: number;
-  stationCode: string;
-  stationName: string;
-  salinity?: number;
-  waterLevel?: number;
-  flowRate?: number;
-  rainfall?: number;
-  recordedAt: string;
-  salinityLevel?: SalinityLevel;
-}
+/** Event SSE "telemetry"/"init" — chính là MeasurementDto của backend */
+export type TelemetryEvent = Measurement;

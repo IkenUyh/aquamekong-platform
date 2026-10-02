@@ -25,6 +25,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        # Gộp các lazy-load (station, sensor, run...) thành batch IN (...) để tránh N+1
+        default_batch_fetch_size: 100
         jdbc:
           time_zone: Asia/Ho_Chi_Minh
 
@@ -37,9 +39,19 @@ spring:
 # --- Logging ---
 logging:
   level:
-    com.aquamekong: DEBUG
+    com.aquamekong: ${LOG_LEVEL:INFO}
     org.hibernate.SQL: INFO
     org.flywaydb: INFO
+
+# --- Actuator: chỉ health cho Docker healthcheck ---
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
 
 # --- OpenAPI / Swagger ---
 springdoc:
@@ -58,3 +70,15 @@ app:
     base-url: ${ML_SERVICE_URL:http://localhost:8000}
   telemetry:
     broadcast-interval-ms: ${TELEMETRY_INTERVAL:10000}
+  security:
+    jwt:
+      # >= 32 ký tự. Để trống: sinh ngẫu nhiên mỗi lần khởi động (token mất hiệu lực khi restart)
+      secret: ${JWT_SECRET:}
+      expiration: ${JWT_EXPIRATION:8h}
+    # Header X-API-Key cho thiết bị IoT gọi /measurements/ingest. Để trống = tắt
+    ingest-api-key: ${INGEST_API_KEY:}
+    bootstrap-admin:
+      username: ${ADMIN_USERNAME:admin}
+      email: ${ADMIN_EMAIL:admin@aquamekong.local}
+      # Để trống: sinh mật khẩu ngẫu nhiên và in ra log một lần khi tạo admin
+      password: ${ADMIN_PASSWORD:}

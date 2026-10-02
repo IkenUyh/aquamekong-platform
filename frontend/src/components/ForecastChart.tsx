@@ -4,6 +4,7 @@ import {
   ResponsiveContainer, Area, AreaChart
 } from 'recharts';
 import type { SalinityForecast } from '../types';
+import { formatNumber } from '../utils/salinity';
 
 interface ForecastChartProps {
   forecasts: SalinityForecast[];
@@ -63,7 +64,7 @@ export function ForecastChart({ forecasts }: ForecastChartProps) {
                 upper: 'Cận trên',
                 lower: 'Cận dưới',
               };
-              return [`${value}‰`, labels[name] || name];
+              return [`${formatNumber(value)}‰`, labels[name] || name];
             }}
           />
           {/* Confidence band */}

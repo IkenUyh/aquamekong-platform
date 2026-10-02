@@ -3,9 +3,14 @@ import { StationMarker } from './StationMarker';
 import { MapLegend } from './MapLegend';
 import { MapFlyToStation } from '../hooks/useMapFlyTo';
 import type { GeoJsonFeature } from '../types';
-import { SalinityHeatmap } from './map/SalinityHeatmap';
-import provincesGeoJson from '../data/mekong-provinces.json';
-import riversGeoJson from '../data/mekong-rivers.json';
+import { MetricHeatmap } from './map/MetricHeatmap';
+import type { HeatMetric } from '../utils/heatScales';
+import type { GeoJsonObject } from 'geojson';
+import provincesData from '../data/mekong-provinces.json';
+import riversData from '../data/mekong-rivers.json';
+
+const provincesGeoJson = provincesData as GeoJsonObject;
+const riversGeoJson = riversData as GeoJsonObject;
 
 interface MapViewProps {
   features: GeoJsonFeature[];
@@ -22,7 +27,10 @@ const DEFAULT_ZOOM = 9;
 const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
+const HEAT_METRICS: HeatMetric[] = ['salinity', 'waterLevel', 'flowRate'];
+
 export function MapView({ features, selectedStationId, onSelectStation, activeLayers }: MapViewProps) {
+  const heatMetric = HEAT_METRICS.find((m) => activeLayers[m]) ?? null;
   const selectedFeature = features.find(f => f.properties.id === selectedStationId);
   const flyToCenter: [number, number] | null = selectedFeature 
     ? [selectedFeature.geometry.coordinates[1], selectedFeature.geometry.coordinates[0]] // Leaflet takes [lat, lng]
@@ -38,11 +46,11 @@ export function MapView({ features, selectedStationId, onSelectStation, activeLa
     >
       <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
 
-      {activeLayers.salinity && <SalinityHeatmap features={features} enabled={true} />}
+      {heatMetric && <MetricHeatmap features={features} metric={heatMetric} />}
 
       {activeLayers.provinces && (
         <GeoJSON
-          data={provincesGeoJson as any}
+          data={provincesGeoJson}
           style={{
             color: '#94a3b8',
             weight: 1.5,
@@ -54,7 +62,7 @@ export function MapView({ features, selectedStationId, onSelectStation, activeLa
 
       {activeLayers.rivers && (
         <GeoJSON
-          data={riversGeoJson as any}
+          data={riversGeoJson}
           style={{
             color: '#60a5fa',
             weight: 2,
@@ -63,7 +71,7 @@ export function MapView({ features, selectedStationId, onSelectStation, activeLa
         />
       )}
 
-      {activeLayers.salinity && features.map((feature) => (
+      {features.map((feature) => (
         <StationMarker
           key={feature.properties.id}
           feature={feature}
@@ -73,7 +81,7 @@ export function MapView({ features, selectedStationId, onSelectStation, activeLa
       ))}
 
       <MapFlyToStation center={flyToCenter} />
-      <MapLegend />
+      <MapLegend metric={heatMetric} />
     </MapContainer>
   );
 }
