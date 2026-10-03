@@ -35,7 +35,7 @@ export function DonutChart({ data, totalLabel, totalValue }: DonutChartProps) {
       
       {totalValue && (
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-2xl font-bold text-gray-800 leading-none">{totalValue}</span>
+          <span className="text-2xl font-semibold text-gray-900 leading-none">{totalValue}</span>
           <span className="text-xs text-gray-500 mt-1">{totalLabel}</span>
         </div>
       )}

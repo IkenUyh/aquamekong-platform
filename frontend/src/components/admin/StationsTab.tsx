@@ -53,7 +53,7 @@ export function StationsTab() {
   };
 
   const columns: Column<Station>[] = [
-    { key: 'code', header: 'Mã', render: (s) => <span className="font-mono font-bold text-blue-600">{s.code}</span> },
+    { key: 'code', header: 'Mã', render: (s) => <span className="font-mono font-bold text-primary-600">{s.code}</span> },
     { key: 'name', header: 'Tên trạm', render: (s) => <span className="font-semibold text-gray-800">{s.name}</span> },
     { key: 'river', header: 'Sông', render: (s) => s.riverName ?? '—' },
     { key: 'province', header: 'Tỉnh/Thành', render: (s) => s.province ?? '—' },
@@ -63,7 +63,7 @@ export function StationsTab() {
       : <span className="text-xs font-medium px-2 py-1 rounded bg-gray-100 text-gray-500">Ngừng hoạt động</span> },
     { key: 'actions', header: '', align: 'right', render: (s) => (
       <div className="flex gap-3 justify-end">
-        <button className={`${linkButton} text-blue-600`} onClick={() => edit(s)}>Sửa</button>
+        <button className={`${linkButton} text-primary-600`} onClick={() => edit(s)}>Sửa</button>
         {isAdmin && <button className={`${linkButton} text-red-600`} disabled={remove.isPending} onClick={() => confirmDelete(s)}>Xoá</button>}
       </div>
     ) },
@@ -74,8 +74,8 @@ export function StationsTab() {
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 h-full">
       <form onSubmit={(e) => { e.preventDefault(); save.mutate(form); }}
-        className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4 self-start">
-        <h3 className="font-bold text-gray-800">{form.id ? 'Sửa trạm' : 'Thêm trạm quan trắc'}</h3>
+        className="card p-5 space-y-4 self-start">
+        <h3 className="font-semibold text-gray-900">{form.id ? 'Sửa trạm' : 'Thêm trạm quan trắc'}</h3>
         <div className="grid grid-cols-3 gap-2">
           <div>
             <label htmlFor="st-code" className={labelClass}>Mã trạm</label>

@@ -48,7 +48,7 @@ export function HistoryChart({ metrics, stationName, threshold = SALINITY_THRESH
                 labelStyle={{ color: '#A0AEC0', fontSize: '12px', marginBottom: '4px' }}
               />
               <ReferenceLine y={threshold} stroke="#ef4444" strokeDasharray="5 5" label={{ value: `Ngưỡng ${threshold}‰`, fill: '#ef4444', fontSize: 11 }} />
-              <Line type="monotone" dataKey="salinity" name="Độ mặn (‰)" stroke="#4A90D9" strokeWidth={2} dot={data.length < 30} activeDot={{ r: 4 }} />
+              <Line type="monotone" dataKey="salinity" name="Độ mặn (‰)" stroke="#0F3D5E" strokeWidth={2} dot={data.length < 30} activeDot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         )}

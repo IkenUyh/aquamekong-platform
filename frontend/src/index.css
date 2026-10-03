@@ -16,14 +16,55 @@
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
   background-color: var(--color-bg);
   color: var(--color-text-primary);
   overflow: hidden;
 }
 
+/* Checkbox/radio gốc của trình duyệt theo màu chủ đạo */
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--color-primary);
+}
+
 #root {
   width: 100vw;
   height: 100vh;
+}
+
+/* ===================================
+   Component classes dùng chung (design tokens)
+   Quy ước: thẻ = viền, không đổ bóng; màu đỏ/vàng/xanh lá chỉ cho độ mặn.
+   =================================== */
+@layer components {
+  .card {
+    @apply bg-white border border-gray-200 rounded-lg;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white
+           transition-colors hover:bg-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300
+           disabled:opacity-60 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium
+           text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300
+           disabled:opacity-60 disabled:cursor-not-allowed;
+  }
+  .field {
+    @apply w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400
+           focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500;
+  }
+  .field-label {
+    @apply mb-1 block text-xs font-medium text-gray-600;
+  }
+  .dot {
+    @apply inline-block h-2 w-2 shrink-0 rounded-full;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 /* ===================================
@@ -38,9 +79,9 @@ body {
 .leaflet-popup-content-wrapper {
   background: var(--color-bg-white);
   color: var(--color-text-primary);
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid var(--color-border);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(15, 61, 94, 0.12);
 }
 
 .leaflet-popup-tip {
@@ -93,52 +134,4 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
-}
-
-/* ===================================
-   Animations
-   =================================== */
-@keyframes ripple {
-  0% {
-    transform: scale(0.8);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(2.5);
-    opacity: 0;
-  }
-}
-
-.marker-pulse::after {
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  animation: ripple 2s ease-out infinite;
-}
-
-/* ===================================
-   Light Theme UI utilities
-   =================================== */
-@layer components {
-  .card {
-    @apply bg-white border border-gray-200 rounded-xl shadow-sm;
-  }
-
-  .metric-badge {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold;
-  }
-
-  .metric-badge-low {
-    @apply metric-badge bg-green-50 text-green-600 border border-green-200;
-  }
-
-  .metric-badge-medium {
-    @apply metric-badge bg-yellow-50 text-yellow-600 border border-yellow-200;
-  }
-
-  .metric-badge-high {
-    @apply metric-badge bg-red-50 text-red-600 border border-red-200;
-  }
 }

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link, Outlet } from 'react-router-dom';
-import { ShieldOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Navbar } from './Navbar';
 
@@ -13,9 +12,8 @@ export function RequireRole({ roles }: { roles: string[] }) {
       <Navbar />
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="text-center space-y-3">
-          <ShieldOff className="w-10 h-10 text-gray-400 mx-auto" />
           <p className="font-semibold text-gray-700">Bạn không có quyền truy cập trang này</p>
-          <Link to="/" className="inline-block text-sm font-medium text-blue-600 hover:underline">Về trang Tổng quan</Link>
+          <Link to="/" className="inline-block text-sm font-medium text-primary-600 hover:underline">Về trang Tổng quan</Link>
         </div>
       </div>
     </div>

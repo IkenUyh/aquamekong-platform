@@ -76,7 +76,7 @@ export function AlertRulesTab() {
       : <span className="text-xs font-medium px-2 py-1 rounded bg-gray-100 text-gray-500">Đã tắt</span> },
     { key: 'actions', header: '', align: 'right', render: (r) => (
       <div className="flex gap-3 justify-end">
-        <button className={`${linkButton} text-blue-600`} onClick={() => edit(r)}>Sửa</button>
+        <button className={`${linkButton} text-primary-600`} onClick={() => edit(r)}>Sửa</button>
         <button className={`${linkButton} text-amber-600`} disabled={save.isPending} onClick={() => toggleActive(r)}>{r.isActive ? 'Tắt' : 'Bật'}</button>
         <button className={`${linkButton} text-red-600`} disabled={remove.isPending} onClick={() => confirmDelete(r)}>Xoá</button>
       </div>
@@ -85,8 +85,8 @@ export function AlertRulesTab() {
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 h-full">
-      <form onSubmit={submit} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4 self-start">
-        <h3 className="font-bold text-gray-800">{form.id ? 'Sửa rule cảnh báo' : 'Thêm rule cảnh báo'}</h3>
+      <form onSubmit={submit} className="card p-5 space-y-4 self-start">
+        <h3 className="font-semibold text-gray-900">{form.id ? 'Sửa rule cảnh báo' : 'Thêm rule cảnh báo'}</h3>
         <div>
           <label htmlFor="rule-station" className={labelClass}>Trạm</label>
           <select id="rule-station" required value={form.stationId} onChange={(e) => setForm({ ...form, stationId: e.target.value })} className={inputClass}>

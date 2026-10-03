@@ -1,5 +1,4 @@
 import React from 'react';
-import { SlidersHorizontal } from 'lucide-react';
 import { DateRangeFilter } from './DateRangeFilter';
 import { StationDropdown } from './StationDropdown';
 import { MapLayerToggles, DEFAULT_LAYERS } from './MapLayerToggles';
@@ -21,7 +20,6 @@ export function FilterPanel() {
   return (
     <div className="p-4 space-y-5 border-b border-gray-200">
       <h3 className="font-semibold text-gray-700 flex items-center gap-2">
-        <SlidersHorizontal className="w-4 h-4" />
         Bộ lọc & điều khiển
       </h3>
 

@@ -28,8 +28,8 @@ export function ForecastChart({ forecasts }: ForecastChartProps) {
         <AreaChart data={data} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
           <defs>
             <linearGradient id="salinityGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#4A90D9" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#4A90D9" stopOpacity={0} />
+              <stop offset="5%" stopColor="#0F3D5E" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#0F3D5E" stopOpacity={0} />
             </linearGradient>
             <linearGradient id="confidenceGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#E2E8F0" stopOpacity={0.5} />
@@ -84,11 +84,11 @@ export function ForecastChart({ forecasts }: ForecastChartProps) {
           <Area
             type="monotone"
             dataKey="salinity"
-            stroke="#4A90D9"
+            stroke="#0F3D5E"
             strokeWidth={2}
             fill="url(#salinityGradient)"
-            dot={{ fill: '#4A90D9', r: 3, strokeWidth: 0 }}
-            activeDot={{ r: 5, fill: '#22d3ee', stroke: '#4A90D9', strokeWidth: 2 }}
+            dot={{ fill: '#0F3D5E', r: 3, strokeWidth: 0 }}
+            activeDot={{ r: 5, fill: '#22d3ee', stroke: '#0F3D5E', strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>

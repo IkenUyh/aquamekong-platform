@@ -15,7 +15,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
+import java.text.Normalizer;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,36 +53,80 @@ public class UserService {
 
     @Transactional
     public UserDto createUser(CreateUserRequest request) {
-        if (userRepository.existsByUsername(request.username())) {
-            throw new IllegalArgumentException("Username đã tồn tại: " + request.username());
+        List<String> roles = request.roles() == null || request.roles().isEmpty() ? List.of(USER_ROLE) : request.roles();
+        return toDto(create(request.username(), request.email(), request.fullName(), request.password(), roles));
+    }
+
+    /** Tự đăng ký: chỉ ROLE_USER. */
+    @Transactional
+    public UserDto registerUser(String username, String email, String fullName, String password) {
+        return toDto(create(username, email, fullName, password, List.of(USER_ROLE)));
+    }
+
+    /**
+     * Tạo user từ tài khoản Google/Zalo (chưa có mật khẩu). Username sinh từ phần trước @ của email,
+     * hoặc từ tên (bỏ dấu) khi không có email (Zalo); thêm số ngẫu nhiên nếu đã có người dùng.
+     */
+    @Transactional
+    public User createExternalUser(String email, String fullName) {
+        String seed = email != null ? emailLocalPart(email) : slugify(fullName);
+        return create(uniqueUsernameFrom(seed), email, fullName, null, List.of(USER_ROLE));
+    }
+
+    private User create(String username, String email, String fullName, String rawPassword, List<String> roles) {
+        if (userRepository.existsByUsername(username)) {
+            throw new IllegalArgumentException("Username đã tồn tại: " + username);
         }
-        if (userRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("Email đã tồn tại: " + request.email());
+        if (email != null && userRepository.existsByEmailIgnoreCase(email)) {
+            throw new IllegalArgumentException("Email đã tồn tại: " + email);
         }
 
         User user = User.builder()
-                .username(request.username())
-                .email(request.email())
-                .passwordHash(passwordEncoder.encode(request.password()))
-                .fullName(request.fullName())
+                .username(username)
+                .email(email == null ? null : email.trim())
+                .passwordHash(rawPassword == null ? null : passwordEncoder.encode(rawPassword))
+                .fullName(fullName == null || fullName.isBlank() ? null : fullName.trim())
                 .status(UserStatus.ACTIVE)
                 .build();
 
         User saved = userRepository.save(user);
-
-        List<String> roles = request.roles() == null || request.roles().isEmpty() ? List.of("ROLE_USER") : request.roles();
         for (String roleName : roles) {
             assignRoleToUser(saved.getId(), roleName);
         }
+        return saved;
+    }
 
-        return toDto(saved);
+    private static String emailLocalPart(String email) {
+        String local = email.substring(0, Math.max(0, email.indexOf('@')));
+        return local.contains("+") ? local.substring(0, local.indexOf('+')) : local; // a+tag@gmail.com -> a
+    }
+
+    /** "Nguyễn Văn Đức" -> "nguyen.van.duc" */
+    static String slugify(String name) {
+        if (name == null) return "";
+        String ascii = Normalizer.normalize(name.replace('đ', 'd').replace('Đ', 'D'), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+        return ascii.trim().toLowerCase(Locale.ROOT).replaceAll("\\s+", ".");
+    }
+
+    private String uniqueUsernameFrom(String seed) {
+        String base = seed.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9._-]", "");
+        if (base.length() < 3) base = "user" + base;
+        base = base.substring(0, Math.min(base.length(), 40));
+        String candidate = base;
+        while (userRepository.existsByUsername(candidate)) {
+            candidate = base + (1000 + RANDOM.nextInt(9000));
+        }
+        return candidate;
     }
 
     @Transactional
     public void changePassword(String username, String currentPassword, String newPassword) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("User không tồn tại: " + username));
-        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+        // Tài khoản tạo bằng Google chưa có mật khẩu -> đặt lần đầu không cần mật khẩu cũ
+        if (user.getPasswordHash() != null
+                && (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPasswordHash()))) {
             throw new IllegalArgumentException("Mật khẩu hiện tại không đúng");
         }
         user.setPasswordHash(passwordEncoder.encode(newPassword));
@@ -139,6 +186,8 @@ public class UserService {
     }
 
     private static final String ADMIN_ROLE = "ROLE_ADMIN";
+    private static final String USER_ROLE = "ROLE_USER";
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private boolean isAdmin(Long userId) {
         return userRoleRepository.findByUserId(userId).stream().anyMatch(ur -> ADMIN_ROLE.equals(ur.getRole().getName()));
@@ -166,6 +215,7 @@ public class UserService {
                 .fullName(user.getFullName())
                 .status(user.getStatus())
                 .roles(roleNames)
+                .hasPassword(user.getPasswordHash() != null)
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();

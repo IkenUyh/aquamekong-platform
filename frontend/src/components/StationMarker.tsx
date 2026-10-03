@@ -74,25 +74,22 @@ export function StationMarker({ feature, isSelected, onClick }: StationMarkerPro
           </div>
 
           {/* River */}
-          <p className="text-xs text-blue-500 mb-3">🏞️ {properties.riverName ?? '—'}</p>
+          <p className="text-xs text-gray-500 mb-3">{properties.riverName ?? '—'}</p>
 
           {/* Metrics */}
           <div className="space-y-2">
             <MetricRow
-              icon="💧"
               label="Độ mặn"
               value={properties.latestSalinity ?? null}
               unit="‰"
               level={level}
             />
             <MetricRow
-              icon="🌊"
               label="Mực nước"
               value={properties.latestWaterLevel ?? null}
               unit="m"
             />
             <MetricRow
-              icon="💨"
               label="Lưu lượng"
               value={properties.latestFlowRate ?? null}
               unit="m³/s"
@@ -122,13 +119,11 @@ export function StationMarker({ feature, isSelected, onClick }: StationMarkerPro
 }
 
 function MetricRow({
-  icon,
   label,
   value,
   unit,
   level,
 }: {
-  icon: string;
   label: string;
   value: number | null;
   unit: string;
@@ -137,7 +132,7 @@ function MetricRow({
   return (
     <div className="flex items-center justify-between text-xs">
       <span className="text-gray-500">
-        {icon} {label}
+        {label}
       </span>
       <span
         className="font-medium"

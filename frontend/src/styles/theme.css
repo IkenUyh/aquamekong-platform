@@ -1,24 +1,25 @@
 :root {
-  /* Primary blue (header) */
-  --color-primary: #4A90D9;
-  --color-primary-dark: #3A7BC8;
-  --color-primary-light: #6BA5E7;
+  /* Navy */
+  --color-primary: #0F3D5E;
+  --color-primary-dark: #0B2E47;
+  --color-primary-light: #1F5F8B;
+  --color-primary-tint: #EEF4F8;
 
-  /* Background */
-  --color-bg: #F5F7FA;
+  /* Nền / bề mặt */
+  --color-bg: #F4F6F8;
   --color-bg-white: #FFFFFF;
   --color-bg-card: #FFFFFF;
 
-  /* Text */
-  --color-text-primary: #1A202C;
-  --color-text-secondary: #4A5568;
-  --color-text-muted: #A0AEC0;
+  /* Chữ */
+  --color-text-primary: #111827;
+  --color-text-secondary: #4B5563;
+  --color-text-muted: #9CA3AF;
 
-  /* Border */
-  --color-border: #E2E8F0;
-  --color-border-light: #EDF2F7;
+  /* Viền */
+  --color-border: #E5E7EB;
+  --color-border-light: #F3F4F6;
 
-  /* Salinity colors (giữ nguyên) */
+  /* Độ mặn (khớp utils/salinity.ts) */
   --color-salinity-low: #22c55e;
   --color-salinity-medium: #eab308;
   --color-salinity-high: #ef4444;

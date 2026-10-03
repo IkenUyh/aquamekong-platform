@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { DataTable, Column } from '../components/shared/DataTable';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
+import { StatusBadge } from '../components/shared/StatusBadge';
 import { useStationsList } from '../hooks/useStations';
 import { Search } from 'lucide-react';
 import type { Station } from '../types';
@@ -75,27 +76,25 @@ export function StationsPage() {
       key: 'status',
       header: 'Trạng thái',
       render: (s) => {
-        if (s.status === 'INACTIVE') {
-          return <span className="text-gray-500 text-xs font-medium bg-gray-100 px-2 py-1 rounded">Ngừng hoạt động</span>;
-        }
+        if (s.status === 'INACTIVE') return <StatusBadge level="INFO" text="Ngừng hoạt động" />;
         return isReporting(s.lastMeasuredAt)
-          ? <span className="text-green-600 text-xs font-medium bg-green-50 px-2 py-1 rounded">Đang truyền dữ liệu</span>
-          : <span className="text-amber-600 text-xs font-medium bg-amber-50 px-2 py-1 rounded" title="Không có số đo trong 2 giờ qua">Mất tín hiệu</span>;
+          ? <StatusBadge level="SAFE" text="Đang truyền" />
+          : <span title="Không có số đo trong 2 giờ qua"><StatusBadge level="WARNING" text="Mất tín hiệu" /></span>;
       },
     },
   ];
 
-  const selectClass = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500';
+  const selectClass = 'field';
 
   return (
     <DashboardLayout
       leftPanel={
         <div className="p-5 space-y-6">
-          <h2 className="font-bold text-gray-800">Bộ lọc & tìm kiếm</h2>
+          <h2 className="font-semibold text-gray-900">Bộ lọc & tìm kiếm</h2>
 
           <div className="space-y-4">
             <div>
-              <label htmlFor="filter-province" className="text-xs font-semibold text-gray-500 mb-1 block">Tỉnh/Thành phố</label>
+              <label htmlFor="filter-province" className="field-label">Tỉnh/Thành phố</label>
               <select id="filter-province" value={province} onChange={(e) => setProvince(e.target.value)} className={selectClass}>
                 <option value={ALL}>Tất cả tỉnh thành</option>
                 {provinces.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -103,7 +102,7 @@ export function StationsPage() {
             </div>
 
             <div>
-              <label htmlFor="filter-river" className="text-xs font-semibold text-gray-500 mb-1 block">Sông</label>
+              <label htmlFor="filter-river" className="field-label">Sông</label>
               <select id="filter-river" value={river} onChange={(e) => setRiver(e.target.value)} className={selectClass}>
                 <option value={ALL}>Tất cả sông</option>
                 {rivers.map((r) => <option key={r} value={r}>{r}</option>)}
@@ -111,7 +110,7 @@ export function StationsPage() {
             </div>
 
             <fieldset>
-              <legend className="text-xs font-semibold text-gray-500 mb-2 block">Chỉ số đo</legend>
+              <legend className="field-label mb-2">Chỉ số đo</legend>
               <div className="space-y-2">
                 {Object.entries(METRIC_LABELS).map(([key, { label, unit }]) => (
                   <label key={key} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
@@ -119,7 +118,7 @@ export function StationsPage() {
                       type="checkbox"
                       checked={metrics.includes(key)}
                       onChange={() => toggleMetric(key)}
-                      className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                      className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
                     />
                     {label} ({unit})
                   </label>
@@ -128,7 +127,7 @@ export function StationsPage() {
             </fieldset>
 
             <button onClick={resetFilters}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 rounded-lg transition-colors mt-6 text-sm">
+              className="btn-primary w-full mt-6">
               Đặt lại bộ lọc
             </button>
           </div>
@@ -138,7 +137,7 @@ export function StationsPage() {
         <div className="h-full bg-white p-4 lg:p-5 flex flex-col gap-4 overflow-hidden">
           <div className="flex justify-between items-center gap-4 flex-wrap">
             <div>
-              <h2 className="font-bold text-lg text-gray-800">Danh sách trạm quan trắc</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Danh sách trạm quan trắc</h2>
               <p className="text-xs text-gray-500">
                 {filtered.length === stationsList.length
                   ? `${stationsList.length} trạm quan trắc`
@@ -153,7 +152,7 @@ export function StationsPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Tìm tên trạm, mã, sông, tỉnh..."
-                className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm w-full sm:w-64 focus:outline-none focus:border-blue-500"
+                className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm w-full sm:w-64 focus:outline-none focus:border-primary-500"
               />
             </div>
           </div>
@@ -169,9 +168,9 @@ export function StationsPage() {
         </div>
       }
       rightPanel={
-        <div className="h-full flex flex-col bg-white overflow-hidden rounded-xl border border-gray-200">
+        <div className="h-full flex flex-col bg-white overflow-hidden rounded-lg border border-gray-200">
           <div className="p-4 border-b border-gray-200">
-            <h3 className="font-bold text-gray-800 text-sm">Vị trí các trạm quan trắc</h3>
+            <h3 className="font-semibold text-gray-900 text-sm">Vị trí các trạm quan trắc</h3>
           </div>
           <div className="flex-1 relative min-h-[300px]">
             <StationsMiniMap
