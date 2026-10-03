@@ -11,10 +11,7 @@ settings = get_settings()
 
 def haversine_distance(lat1, lon1, lat2, lon2):
     """Calculate the great circle distance in kilometers between two points on the earth."""
-    # Convert latitude and longitude to radians
     lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
-
-    # Haversine formula
     dlat = lat2 - lat1 
     dlon = lon2 - lon1 
     a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
@@ -22,23 +19,9 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     r = 6371 # Radius of earth in kilometers
     return c * r
 
-class MekongDataset(Dataset):
-    """Sliding-window dataset (X: lookback x features, y: target) cho Hybrid ARIMA-CNN / LSTM."""
-    def __init__(self, X, y):
-        self.X = torch.tensor(X, dtype=torch.float32)
-        self.y = torch.tensor(y, dtype=torch.float32)
-
-    def __len__(self):
-        return len(self.X)
-
-    def __getitem__(self, idx):
-        return self.X[idx], self.y[idx]
-
 class STGNNDataset(Dataset):
     def __init__(self, X, y):
-        # X shape: (Batch, N_stations, Lookback, N_features)
         self.X = torch.tensor(X, dtype=torch.float32)
-        # y shape: (Batch, N_stations)
         self.y = torch.tensor(y, dtype=torch.float32)
 
     def __len__(self):
@@ -48,70 +31,79 @@ class STGNNDataset(Dataset):
         return self.X[idx], self.y[idx]
 
 class DataLoaderService:
-    def __init__(self, data_dir=None, lookback=14, horizon=1):
+    def __init__(self, data_dir=None, lookback=14, horizon=1, max_missing_ratio=0.20):
         """
         Args:
             data_dir: Path to raw data folder.
             lookback: Number of past days to use as input features.
-            horizon: The number of days ahead to predict (1 means next day).
+            horizon: The number of days ahead to predict.
+            max_missing_ratio: Maximum allowed missing data ratio for a station to be kept.
         """
         self.data_dir = data_dir or settings.raw_data_dir
         self.lookback = lookback
         self.horizon = horizon
+        self.max_missing_ratio = max_missing_ratio
         self.scaler = MinMaxScaler()
-        self.feature_cols = ['water_level_min', 'water_level_max', 'salinity_min', 'salinity_max']
+        self.feature_cols = [
+            'distance_to_river_mouth_km',
+            'salinity_max_lag_1d', 
+            'salinity_max_delta_3d',
+            'water_level_max_lag_1d', 
+            'water_level_max_roll7d_std',
+            'upstream_discharge_lag_1d', 
+            'rainfall_mm_roll7d_sum',
+            'tpxo_tide_mean_cm_lag_1d',
+            'tpxo_tide_range_cm_lag_1d',
+            'day_of_year_sin', 
+            'day_of_year_cos',
+            'salinity_max'
+        ]
         self.target_col = 'salinity_max'
-
-    def _find_csv(self) -> str:
-        all_files = glob.glob(os.path.join(self.data_dir, "**", "*with_metadata*.csv"), recursive=True)
-        if not all_files:
-            all_files = glob.glob(os.path.join(self.data_dir, "**", "*.csv"), recursive=True)
-            if not all_files:
-                raise FileNotFoundError(f"No CSV data found in {self.data_dir}")
-        all_files.sort(key=os.path.getmtime, reverse=True)
-        return all_files[0]
-
-    def load_long_data(self) -> pd.DataFrame:
-        """
-        Dạng long (date, station_id, feature_cols...) — dùng cho Hybrid ARIMA-CNN.
-        load_raw_data() bên dưới trả về dạng pivot cho ST-GNN.
-        """
-        df = pd.read_csv(self._find_csv())
-        df['date'] = pd.to_datetime(df['date'])
-        df = df.sort_values(by=['station_id', 'date']).reset_index(drop=True)
-        df[self.feature_cols] = df.groupby('station_id')[self.feature_cols].transform(lambda x: x.ffill().bfill())
-        df[self.feature_cols] = df[self.feature_cols].fillna(0)
-        return df
 
     def load_raw_data(self):
         """
-        Scan the data directory for the metadata CSV file, pivot it for ST-GNN,
-        and compute the distance matrix W_D.
+        Scan the data directory for the 5-year Rynan CSV file or metadata file,
+        filter out bad stations, pivot it, and compute the distance matrix W_D.
         """
-        file_path = self._find_csv()
+        # Ưu tiên tìm file AquaMekong_CLEAN_FEATURES_FINAL.csv
+        all_files = glob.glob(os.path.join(self.data_dir, "**", "AquaMekong_CLEAN_FEATURES_FINAL.csv"), recursive=True)
+        if not all_files:
+            all_files = glob.glob(os.path.join(self.data_dir, "**", "Rynan_*.csv"), recursive=True)
+        if not all_files:
+            all_files = glob.glob(os.path.join(self.data_dir, "**", "*with_metadata*.csv"), recursive=True)
+            
+        file_path = all_files[0]
         
         print(f"Loading data from: {file_path}")
         df = pd.read_csv(file_path)
         df['date'] = pd.to_datetime(df['date'])
         
-        # Get unique stations and sort them to maintain a consistent order
+        # 1. LỌC TRẠM (STATION FILTERING)
+        # Tính tỷ lệ khuyết của cột mục tiêu (salinity_max) theo từng trạm
+        missing_ratios = df.groupby('station_id')[self.target_col].apply(lambda x: x.isna().sum() / len(x))
+        # Tăng tỷ lệ lên 50% để cứu vớt các trạm hỏng nhẹ bằng Nội suy Không gian (IDW)
+        self.max_missing_ratio = 0.50
+        valid_stations = missing_ratios[missing_ratios <= self.max_missing_ratio].index.tolist()
+        
+        print(f"BỘ LỌC TRẠM: Giữ lại {len(valid_stations)}/{len(missing_ratios)} trạm (Áp dụng IDW cứu dữ liệu)")
+        
+        # Chỉ giữ lại dữ liệu của các trạm hợp lệ
+        df = df[df['station_id'].isin(valid_stations)].copy()
+        
         stations = sorted(df['station_id'].unique())
         self.stations = stations
         num_stations = len(stations)
         
-        # Compute W_D (Physical Distance Adjacency Matrix)
+        # 2. TÍNH MA TRẬN KHOẢNG CÁCH (W_D)
         W_D = np.zeros((num_stations, num_stations))
         
-        # Check if latitude and longitude exist
         if 'latitude' in df.columns and 'longitude' in df.columns:
-            # Get coordinates for each station (take the first occurrence)
             station_coords = {}
             for st in stations:
                 st_data = df[df['station_id'] == st].iloc[0]
                 station_coords[st] = (st_data['latitude'], st_data['longitude'])
             
-            # Compute distance matrix and apply Gaussian kernel
-            sigma = 10.0 # 10 km standard deviation for kernel
+            sigma = 10.0 
             for i, st1 in enumerate(stations):
                 for j, st2 in enumerate(stations):
                     if i == j:
@@ -123,40 +115,50 @@ class DataLoaderService:
                         )
                         W_D[i, j] = np.exp(-(dist**2) / (sigma**2))
         else:
-            print("Warning: latitude and longitude not found. Using Identity matrix for W_D.")
             W_D = np.eye(num_stations)
             
-        # Pivot the dataframe so that index is date, columns are MultiIndex (station_id, feature)
+        # 3. PIVOT VÀ NỘI SUY KHÔNG GIAN (SPATIAL IMPUTATION - IDW)
         pivot_df = df.pivot(index='date', columns='station_id', values=self.feature_cols)
         
-        # Fill missing values using forward fill then backward fill
+        # Ma trận W_D không chứa đường chéo (chỉ dùng hàng xóm)
+        W_D_neighbors = W_D.copy()
+        np.fill_diagonal(W_D_neighbors, 0)
+        
+        # Áp dụng IDW cho từng feature
+        for feat in self.feature_cols:
+            X_feat = pivot_df[feat].values
+            mask = ~np.isnan(X_feat)
+            
+            # Tính nội suy: Giá trị hàng xóm có trọng số / Tổng trọng số
+            X_imputed = (np.nan_to_num(X_feat) @ W_D_neighbors) / (mask @ W_D_neighbors + 1e-8)
+            
+            # Vá các chỗ khuyết bằng giá trị nội suy (Nếu tất cả hàng xóm đều khuyết thì giữ nguyên NaN)
+            X_feat_final = np.where(mask, X_feat, X_imputed)
+            X_feat_final[X_feat_final == 0] = np.nan # Re-apply NaN for empty spots
+            pivot_df[feat] = X_feat_final
+        
+        # 4. NỘI SUY THỜI GIAN (TIME INTERPOLATION)
+        # Dùng nội suy tuyến tính (Linear) để lấp các lỗ hổng còn sót lại
+        pivot_df = pivot_df.interpolate(method='time', limit=5, limit_direction='both')
+        # Bù các lỗ hổng lớn còn lại bằng ffill/bfill
         pivot_df = pivot_df.ffill().bfill().fillna(0)
         
         self.W_D = W_D
         return pivot_df, num_stations
 
     def prepare_data(self, test_size=0.2):
-        """
-        Prepare sliding windows for ST-GNN.
-        Returns:
-            train_loader, test_loader, scaler, W_D, num_stations
-        """
         pivot_df, num_stations = self.load_raw_data()
         
         num_dates = len(pivot_df)
         num_features = len(self.feature_cols)
         
-        # Extract arrays per feature
         feature_arrays = []
         for feat in self.feature_cols:
-            # Shape: (num_dates, num_stations)
             feat_data = pivot_df[feat][self.stations].values 
             feature_arrays.append(feat_data)
             
-        # Stack to shape (num_dates, num_stations, num_features)
         X_raw = np.stack(feature_arrays, axis=-1)
         
-        # Scale
         X_flat = X_raw.reshape(-1, num_features)
         X_scaled_flat = self.scaler.fit_transform(X_flat)
         X_scaled = X_scaled_flat.reshape(num_dates, num_stations, num_features)
@@ -164,21 +166,17 @@ class DataLoaderService:
         X_all, y_all = [], []
         target_idx = self.feature_cols.index(self.target_col)
         
-        # Create sliding windows
         for i in range(num_dates - self.lookback - self.horizon + 1):
-            # Window shape: (lookback, N, F)
             X_window = X_scaled[i : i + self.lookback, :, :]
-            # ST-GNN usually expects (N, Lookback, F)
             X_window = np.transpose(X_window, (1, 0, 2))
             
-            # Target shape: (N,)
             y_value = X_scaled[i + self.lookback + self.horizon - 1, :, target_idx]
             
             X_all.append(X_window)
             y_all.append(y_value)
             
-        X_all = np.array(X_all) # Shape: (Batch, N, Lookback, F)
-        y_all = np.array(y_all) # Shape: (Batch, N)
+        X_all = np.array(X_all) 
+        y_all = np.array(y_all) 
         
         split_idx = int(len(X_all) * (1 - test_size))
         
