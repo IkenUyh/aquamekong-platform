@@ -70,6 +70,8 @@ app:
     base-url: ${ML_SERVICE_URL:http://localhost:8000}
   telemetry:
     broadcast-interval-ms: ${TELEMETRY_INTERVAL:10000}
+    # Số đo cũ hơn mốc này (nạp dữ liệu lịch sử) không tạo cảnh báo, không đẩy SSE
+    max-live-age: ${TELEMETRY_MAX_LIVE_AGE:P3D}
   # Thông báo đẩy khi có cảnh báo mới
   push:
     vapid:
