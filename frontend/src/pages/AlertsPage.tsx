@@ -10,6 +10,7 @@ import { useAlerts } from '../hooks/useAlerts';
 import { alertApi } from '../api/alertApi';
 import { metricApi } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+import { PushSettings } from '../components/PushSettings';
 import type { AlertDto, AlertStatus } from '../types';
 import { formatNumber, metricLabel, SALINITY_THRESHOLD } from '../utils/salinity';
 
@@ -217,6 +218,8 @@ export function AlertsPage() {
               Đặt lại bộ lọc
             </button>
           </div>
+
+          <PushSettings compact />
         </div>
       }
       centerContent={
