@@ -52,8 +52,9 @@ export function metricLabel(metricType: string): { label: string; unit: string }
   return METRIC_LABELS[metricType] ?? { label: metricType, unit: '' };
 }
 
-/** Trạm được coi là "đang truyền dữ liệu" nếu có số đo trong khoảng này */
-export const ONLINE_WINDOW_MS = 2 * 3600_000;
+/** Trạm được coi là "đang truyền dữ liệu" nếu có số đo trong khoảng này (dữ liệu RYNAN về theo ngày) */
+export const ONLINE_WINDOW_HOURS = 48;
+export const ONLINE_WINDOW_MS = ONLINE_WINDOW_HOURS * 3600_000;
 
 export function isReporting(lastMeasuredAt: string | null | undefined, now = Date.now()): boolean {
   return !!lastMeasuredAt && now - new Date(lastMeasuredAt).getTime() <= ONLINE_WINDOW_MS;
