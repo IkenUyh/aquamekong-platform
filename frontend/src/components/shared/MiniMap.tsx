@@ -15,15 +15,24 @@ interface MiniMapProps {
   height?: string;
 }
 
-export function MiniMap({ markers, center = [10.0, 105.5], zoom = 7, height = '400px' }: MiniMapProps) {
-  const createIcon = (color: string) => {
-    return L.divIcon({
+// Mỗi màu một icon dùng chung: trang phát lại đổi màu marker nhiều lần mỗi giây
+const iconCache = new Map<string, L.DivIcon>();
+
+function createIcon(color: string): L.DivIcon {
+  let icon = iconCache.get(color);
+  if (!icon) {
+    icon = L.divIcon({
       className: 'minimap-marker',
       html: `<div style="background-color: ${color}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
       iconSize: [14, 14],
       iconAnchor: [7, 7],
     });
-  };
+    iconCache.set(color, icon);
+  }
+  return icon;
+}
+
+export function MiniMap({ markers, center = [10.0, 105.5], zoom = 7, height = '400px' }: MiniMapProps) {
 
   return (
     <div style={{ height }} className="w-full rounded-lg overflow-hidden border border-gray-200">
