@@ -31,7 +31,7 @@ COPY --chown=app:app app/ app/
 COPY --chown=app:app scripts/ scripts/
 
 # Thư mục model (mount volume ml_models) phải thuộc user app
-RUN mkdir -p /app/trained_models && chown app:app /app/trained_models
+RUN mkdir -p /app/trained_models /app/data/inbox && chown -R app:app /app/trained_models /app/data
 
 USER app
 EXPOSE 8000
