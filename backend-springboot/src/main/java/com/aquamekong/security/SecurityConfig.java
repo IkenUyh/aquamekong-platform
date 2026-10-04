@@ -22,7 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 /**
  * Phân quyền theo role có sẵn trong DB (ROLE_ADMIN, ROLE_OPERATOR, ROLE_USER):
  * - Chưa đăng nhập: xem dữ liệu quan trắc, dự báo, cảnh báo, báo cáo (nếu PUBLIC_READ_ENABLED)
- * - USER (tự đăng ký được): + chạy dự báo, xem thiết bị/cảm biến, rule cảnh báo
+ * - USER (tự đăng ký được): + chạy dự báo, xem thiết bị/cảm biến, rule cảnh báo, bật thông báo đẩy
  * - OPERATOR: + thêm/sửa/xoá trạm, thiết bị, rule cảnh báo, xử lý cảnh báo
  * - ADMIN: + quản lý người dùng
  * - DEVICE (X-API-Key): chỉ /measurements/ingest
@@ -70,6 +70,8 @@ public class SecurityConfig {
                         // Xoá trạm xoá dây chuyền toàn bộ số đo & cảnh báo của trạm -> chỉ ADMIN
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/stations/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/auth/**").authenticated()
+                        // Mọi tài khoản (kể cả tự đăng ký) bật/tắt thông báo đẩy cho thiết bị của mình
+                        .requestMatchers("/api/v1/push/**").hasAnyRole("USER", "OPERATOR", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/forecasts/predict").hasAnyRole("USER", "OPERATOR", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("USER", "OPERATOR", "ADMIN")
                         .requestMatchers("/api/**").hasAnyRole("OPERATOR", "ADMIN")
