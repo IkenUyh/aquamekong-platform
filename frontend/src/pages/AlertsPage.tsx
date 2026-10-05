@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { DashboardLayout } from '../layouts/DashboardLayout';
@@ -7,12 +8,13 @@ import { StatusBadge } from '../components/shared/StatusBadge';
 import { SummaryCounter } from '../components/shared/SummaryCounter';
 import { HistoryChart } from '../components/HistoryChart';
 import { useAlerts } from '../hooks/useAlerts';
+import { useStationsList } from '../hooks/useStations';
 import { alertApi } from '../api/alertApi';
 import { metricApi } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { PushSettings } from '../components/PushSettings';
 import type { AlertDto, AlertStatus } from '../types';
-import { formatNumber, metricLabel, SALINITY_THRESHOLD } from '../utils/salinity';
+import { formatNumber, isReporting, metricLabel, SALINITY_THRESHOLD } from '../utils/salinity';
 
 const HOUR = 3600_000;
 const ALL = '';
@@ -63,6 +65,25 @@ function AlertHistoryChart({ alert }: { alert: AlertDto }) {
   });
   if (isLoading) return <div className="h-full flex items-center justify-center text-xs text-gray-400">Đang tải...</div>;
   return <HistoryChart metrics={metrics} stationName="" threshold={alert.thresholdValue ?? SALINITY_THRESHOLD} />;
+}
+
+/**
+ * Cảnh báo chỉ sinh từ số đo mới (backend bỏ qua số đo cũ hơn 3 ngày). Khi dữ liệu đã cũ,
+ * nói rõ lý do trang trống và trỏ sang trang Phát lại để xem cảnh báo trong quá khứ.
+ */
+function StaleDataNotice() {
+  const { data: stations = [] } = useStationsList();
+  const latest = stations.map((s) => s.lastMeasuredAt).filter((t): t is string => !!t).sort().pop();
+  if (!latest || isReporting(latest)) return null;
+  const days = Math.floor((Date.now() - new Date(latest).getTime()) / 86_400_000);
+  return (
+    <p className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+      Số đo mới nhất là ngày <span className="num">{new Date(latest).toLocaleDateString('vi-VN')}</span> ({days} ngày trước).
+      Cảnh báo chỉ được tạo khi có số đo mới, nên danh sách sẽ trống tới khi nạp dữ liệu RYNAN mới.
+      Xem lại cảnh báo trong quá khứ ở trang{' '}
+      <Link to="/replay" className="font-medium text-primary hover:underline">Phát lại</Link>.
+    </p>
+  );
 }
 
 export function AlertsPage() {
@@ -228,6 +249,8 @@ export function AlertsPage() {
             <h2 className="text-lg font-semibold text-gray-900">Danh sách cảnh báo</h2>
             <p className="text-xs text-gray-500">Cảnh báo sinh tự động khi số đo vượt ngưỡng của rule cảnh báo</p>
           </div>
+
+          <StaleDataNotice />
 
           <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-2">
             {LEVELS.map(({ level, label, dot }) => (

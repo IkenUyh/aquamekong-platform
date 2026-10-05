@@ -12,7 +12,7 @@ import { recommendationApi } from '../api/recommendationApi';
 import { percentChange, reportApi } from '../api/reportApi';
 import type { Station } from '../types';
 import {
-  classifySalinity, formatNumber, isReporting, SALINITY_CLASS_COLORS, SALINITY_THRESHOLD,
+  classifySalinity, formatNumber, isReporting, ONLINE_WINDOW_HOURS, SALINITY_CLASS_COLORS, SALINITY_THRESHOLD,
 } from '../utils/salinity';
 
 /** Thang của thanh ngang: 2 × ngưỡng, để vạch ngưỡng nằm giữa */
@@ -113,7 +113,7 @@ export function OverviewPage() {
             <MetricCard
               label="Trạm đang truyền dữ liệu"
               value={`${reportingCount} / ${activeCount}`}
-              hint="có số đo trong 2 giờ qua"
+              hint={`có số đo trong ${ONLINE_WINDOW_HOURS} giờ qua`}
             />
             <MetricCard
               label="Cảnh báo chưa xử lý"

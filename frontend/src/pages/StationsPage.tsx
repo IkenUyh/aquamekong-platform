@@ -6,7 +6,7 @@ import { StatusBadge } from '../components/shared/StatusBadge';
 import { useStationsList } from '../hooks/useStations';
 import { Search } from 'lucide-react';
 import type { Station } from '../types';
-import { formatNumber, isReporting, METRIC_LABELS, metricLabel, SALINITY_THRESHOLD } from '../utils/salinity';
+import { formatNumber, isReporting, ONLINE_WINDOW_HOURS, METRIC_LABELS, metricLabel, SALINITY_THRESHOLD } from '../utils/salinity';
 
 const ALL = '';
 
@@ -79,7 +79,7 @@ export function StationsPage() {
         if (s.status === 'INACTIVE') return <StatusBadge level="INFO" text="Ngừng hoạt động" />;
         return isReporting(s.lastMeasuredAt)
           ? <StatusBadge level="SAFE" text="Đang truyền" />
-          : <span title="Không có số đo trong 2 giờ qua"><StatusBadge level="WARNING" text="Mất tín hiệu" /></span>;
+          : <span title={`Không có số đo trong ${ONLINE_WINDOW_HOURS} giờ qua`}><StatusBadge level="WARNING" text="Mất tín hiệu" /></span>;
       },
     },
   ];
