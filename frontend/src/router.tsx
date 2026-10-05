@@ -12,6 +12,7 @@ const MapPage = lazy(() => import('./pages/MapPage').then((m) => ({ default: m.M
 const StationsPage = lazy(() => import('./pages/StationsPage').then((m) => ({ default: m.StationsPage })));
 const ForecastPage = lazy(() => import('./pages/ForecastPage').then((m) => ({ default: m.ForecastPage })));
 const AlertsPage = lazy(() => import('./pages/AlertsPage').then((m) => ({ default: m.AlertsPage })));
+const ReplayPage = lazy(() => import('./pages/ReplayPage').then((m) => ({ default: m.ReplayPage })));
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then((m) => ({ default: m.ReportsPage })));
 const AccountPage = lazy(() => import('./pages/AccountPage').then((m) => ({ default: m.AccountPage })));
 const RegisterPage = lazy(() => import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })));
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
       { path: '/forecast',  element: page(<ForecastPage />) },
       { path: '/alerts',    element: page(<AlertsPage />) },
       { path: '/reports',   element: page(<ReportsPage />) },
+      { path: '/replay',    element: page(<ReplayPage />) },
       { path: '*',          element: <RouteError notFound /> },
     ],
   },

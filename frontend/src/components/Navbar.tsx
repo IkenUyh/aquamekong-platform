@@ -31,6 +31,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Dự báo',         short: 'Dự báo',    path: '/forecast' },
   { label: 'Cảnh báo',       short: 'Cảnh báo',  path: '/alerts' },
   { label: 'Báo cáo',        short: 'Báo cáo',   path: '/reports' },
+  { label: 'Phát lại',       short: 'Phát lại',  path: '/replay' },
   { label: 'Quản trị',       short: 'Quản trị',  path: '/admin', roles: ['ROLE_OPERATOR', 'ROLE_ADMIN'] },
 ];
 
