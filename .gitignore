@@ -22,6 +22,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 .env
+.env.*.local
+# Khoá service account Firebase (FIREBASE_SERVICE_ACCOUNT_BASE64), không bao giờ commit
+*firebase-adminsdk*.json
 venv/
 env/
 

@@ -117,6 +117,55 @@ Nếu muốn tự chạy và sửa code từng phần mà không qua Docker:
 
 ---
 
+## 📱 App điện thoại (Android / iOS)
+
+App điện thoại là chính frontend web được đóng gói bằng [Capacitor](https://capacitorjs.com) (`frontend/android/`). Web vẫn chạy như cũ, app và web dùng chung code và chung backend.
+
+**Cần có:** Android Studio (kèm Android SDK) và **JDK 21** (Gradle chưa chạy được trên Java 25 của Android Studio: trong Android Studio chọn *Settings → Build Tools → Gradle → Gradle JDK* = JDK 21).
+
+1. **Chỉ địa chỉ backend cho app** (app không có nginx proxy `/api` như web):
+   ```bash
+   cd frontend
+   cp .env.mobile.example .env.mobile.local   # sửa VITE_API_BASE_URL
+   ```
+   * Server thật: `https://<tên-miền>` (khuyên dùng HTTPS).
+   * Máy ảo Android: `http://10.0.2.2:8080`. Điện thoại thật cùng WiFi: `http://<IP máy chạy backend>:8080`. Với địa chỉ `http://` phải build kèm `CAPACITOR_ALLOW_HTTP=true`.
+2. **Build và đồng bộ vào project Android:**
+   ```bash
+   npm run build:mobile                                # backend https://
+   CAPACITOR_ALLOW_HTTP=true npm run build:mobile      # backend http:// (thử trong LAN)
+   ```
+3. **Chạy app:** `npx cap open android` rồi bấm Run trong Android Studio (máy ảo hoặc điện thoại cắm USB, bật USB debugging). Hoặc build file APK để cài:
+   ```bash
+   cd android && ./gradlew assembleDebug   # -> app/build/outputs/apk/debug/app-debug.apk
+   ```
+
+Backend phải cho phép origin của app trong `CORS_ORIGINS` (mặc định đã có `https://localhost`, `http://localhost`, `capacitor://localhost`). Trong app hiện chỉ đăng nhập bằng mật khẩu: Google, Zalo và passkey bị ẩn vì chưa chạy được trong WebView. iOS cần máy Mac (`npx cap add ios`).
+
+---
+
+## 🔔 Thông báo đẩy khi có cảnh báo
+
+Khi có cảnh báo mới (số đo vượt ngưỡng của rule cảnh báo), mọi tài khoản đã bật thông báo đều nhận được trên thiết bị của mình, kể cả khi không mở trang/app. Người dùng bật ở trang **Tài khoản** (hoặc nút ở trang **Cảnh báo**), có nút **Gửi thử**. Đăng xuất thì thiết bị đó thôi nhận.
+
+**Trình duyệt (Web Push)**: Chrome, Edge, Firefox trên máy tính và Android; Safari trên iPhone/iPad (iOS 16.4+) chỉ khi đã *Thêm vào MH chính*. Cần trang chạy HTTPS (riêng `localhost` được phép dùng http).
+```bash
+npx web-push generate-vapid-keys      # chép 2 khoá vào .env: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY
+docker compose up -d backend
+```
+Giữ nguyên cặp khoá về sau: đổi khoá thì mọi thiết bị phải bật thông báo lại.
+
+**App điện thoại (Firebase Cloud Messaging)**:
+1. Tạo project ở [Firebase Console](https://console.firebase.google.com), thêm app Android với package `vn.aquamekong.app`, tải `google-services.json` về `frontend/android/app/`.
+2. *Project settings → Service accounts → Generate new private key* → được file JSON (là khoá bí mật, không commit). Đưa vào `.env`:
+   ```bash
+   echo "FIREBASE_SERVICE_ACCOUNT_BASE64=$(base64 -w0 duong-dan/file-service-account.json)" >> .env
+   docker compose up -d backend
+   ```
+3. Build lại app (`npm run build:mobile`, rồi Run trong Android Studio). Nút bật thông báo trong app chỉ hiện khi backend đã có khoá Firebase.
+
+---
+
 ## 🧪 Chạy Test
 
 ```bash

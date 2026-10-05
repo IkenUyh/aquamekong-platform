@@ -3,6 +3,7 @@ import { RouterProvider } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { router } from './router';
 import { AuthProvider } from './contexts/AuthContext';
+import { openPageOnNotificationTap } from './push/pushDevice';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,6 +18,8 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+openPageOnNotificationTap((url) => void router.navigate(url));
 
 export default function App() {
   return (

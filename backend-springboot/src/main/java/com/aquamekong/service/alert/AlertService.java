@@ -11,8 +11,10 @@ import com.aquamekong.entity.station.Station;
 import com.aquamekong.repository.alert.AlertRepository;
 import com.aquamekong.repository.alert.AlertRuleRepository;
 import com.aquamekong.repository.station.StationRepository;
+import com.aquamekong.service.push.AlertCreatedEvent;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,7 @@ public class AlertService {
     private final AlertRuleRepository alertRuleRepository;
     private final AlertRepository alertRepository;
     private final StationRepository stationRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<AlertRuleDto> getAllRules() {
@@ -138,7 +141,10 @@ public class AlertService {
                         .triggeredAt(measurement.getRecordedAt() != null ? measurement.getRecordedAt() : OffsetDateTime.now())
                         .build();
 
-                alertRepository.save(alert);
+                Alert saved = alertRepository.save(alert);
+                // Thông báo đẩy được gửi sau khi transaction commit (PushService)
+                eventPublisher.publishEvent(new AlertCreatedEvent(saved.getId(), rule.getStation().getName(),
+                        saved.getMetricType(), rule.getOperator(), val, thresh, saved.getSeverity()));
             }
         }
     }

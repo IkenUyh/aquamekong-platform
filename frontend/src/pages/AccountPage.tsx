@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Navbar } from '../components/Navbar';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { ZaloButton } from '../components/ZaloButton';
+import { PushSettings } from '../components/PushSettings';
 import { useAuth } from '../contexts/AuthContext';
 import { authApi, type LinkedIdentity } from '../api/authApi';
 import { apiErrorMessage } from '../api/client';
@@ -251,6 +252,7 @@ export function AccountPage() {
             <p className="text-xs text-gray-400 mt-1">{user?.roles?.join(', ')}</p>
           </div>
 
+          <PushSettings />
           <PasswordForm />
           {config?.passkeyEnabled && passkeySupported() && <Passkeys />}
           {(config?.googleClientId || config?.zaloAppId) && (
