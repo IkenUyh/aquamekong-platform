@@ -1,0 +1,26 @@
+:root {
+  /* Navy */
+  --color-primary: #0F3D5E;
+  --color-primary-dark: #0B2E47;
+  --color-primary-light: #1F5F8B;
+  --color-primary-tint: #EEF4F8;
+
+  /* Nền / bề mặt */
+  --color-bg: #F4F6F8;
+  --color-bg-white: #FFFFFF;
+  --color-bg-card: #FFFFFF;
+
+  /* Chữ */
+  --color-text-primary: #111827;
+  --color-text-secondary: #4B5563;
+  --color-text-muted: #9CA3AF;
+
+  /* Viền */
+  --color-border: #E5E7EB;
+  --color-border-light: #F3F4F6;
+
+  /* Độ mặn (khớp utils/salinity.ts) */
+  --color-salinity-low: #22c55e;
+  --color-salinity-medium: #eab308;
+  --color-salinity-high: #ef4444;
+}

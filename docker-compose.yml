@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # ============================================
   # PostgreSQL + PostGIS
@@ -13,7 +11,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-aquamekong}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aquamekong_secret}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # Port phía host (máy dev). Trong mạng docker, các service luôn dùng postgres:5432
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -25,12 +24,31 @@ services:
       - aquamekong-network
 
   # ============================================
+  # Redis Cache
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: aquamekong-redis
+    restart: unless-stopped
+    # Redis không có mật khẩu -> chỉ mở cho máy local
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - aquamekong-network
+
+  # ============================================
   # Backend — Spring Boot 3.x + Java 21
   # ============================================
   backend:
     build:
       context: ./backend-springboot
       dockerfile: Dockerfile
+    image: aquamekong-backend:latest
     container_name: aquamekong-backend
     restart: unless-stopped
     environment:
@@ -41,11 +59,32 @@ services:
       DB_USERNAME: ${POSTGRES_USER:-aquamekong}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-aquamekong_secret}
       ML_SERVICE_URL: http://ml-service:8000
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-8h}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@aquamekong.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      INGEST_API_KEY: ${INGEST_API_KEY:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173,https://localhost,http://localhost,capacitor://localhost}
+      PUBLIC_READ_ENABLED: ${PUBLIC_READ_ENABLED:-true}
+      REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-true}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      ZALO_APP_ID: ${ZALO_APP_ID:-}
+      ZALO_APP_SECRET: ${ZALO_APP_SECRET:-}
+      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID-localhost}
+      WEBAUTHN_ORIGINS: ${WEBAUTHN_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@aquamekong.local}
+      FIREBASE_SERVICE_ACCOUNT_BASE64: ${FIREBASE_SERVICE_ACCOUNT_BASE64:-}
     ports:
       - "${SERVER_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
+      ml-service:
+        condition: service_started
     networks:
       - aquamekong-network
 
@@ -56,17 +95,28 @@ services:
     build:
       context: ./ml-service
       dockerfile: Dockerfile
+    image: aquamekong-ml-service:latest
     container_name: aquamekong-ml-service
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-aquamekong}:${POSTGRES_PASSWORD:-aquamekong_secret}@postgres:5432/${POSTGRES_DB:-aquamekong}
       ML_SERVICE_PORT: ${ML_SERVICE_PORT:-8000}
+      REDIS_URL: redis://redis:6379/0
+      ENABLE_SCHEDULER: ${ENABLE_SCHEDULER:-true}
+      ENABLE_MOCK_CRAWLER: ${ENABLE_MOCK_CRAWLER:-false}
+      INGEST_INBOX_DIR: /app/data/inbox
+      SEED_DATA_URL: ${SEED_DATA_URL:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173,https://localhost,http://localhost,capacitor://localhost}
     ports:
-      - "${ML_SERVICE_PORT:-8000}:8000"
+      - "127.0.0.1:${ML_SERVICE_PORT:-8000}:8000"
     volumes:
       - ml_models:/app/trained_models
+      # Thả file xuất từ RYNAN vào ./data/inbox, ml-service tự nạp mỗi 15 phút
+      - ./data/inbox:/app/data/inbox
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - aquamekong-network
@@ -78,12 +128,19 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    image: aquamekong-frontend:latest
     container_name: aquamekong-frontend
     restart: unless-stopped
     ports:
       - "3000:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - aquamekong-network
 
