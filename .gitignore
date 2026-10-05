@@ -11,6 +11,8 @@ ml-service/trained_models/
 *.md
 !README.md
 !CLAUDE.md
+!.claude/agents/*.md
+!.claude/rules/*.md
 !frontend/frontend_backend_status.md
 *.txt
 !requirements.txt
@@ -22,6 +24,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 .env
+.env.*.local
+# Khoá service account Firebase (FIREBASE_SERVICE_ACCOUNT_BASE64), không bao giờ commit
+*firebase-adminsdk*.json
 venv/
 env/
 
@@ -36,3 +41,7 @@ frontend/vite.config.d.ts
 # Java
 target/
 .DS_Store
+
+# Dữ liệu RYNAN thả vào inbox (processed/, failed/); chỉ giữ thư mục rỗng trong git
+/data/inbox/*
+!/data/inbox/.gitkeep

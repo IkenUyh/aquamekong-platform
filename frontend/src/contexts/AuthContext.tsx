@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi, type AuthConfig, type LoginResponse, type RegisterRequest } from '../api/authApi';
 import { clearToken, getToken, setToken, UNAUTHORIZED_EVENT } from '../auth/tokenStorage';
 import { getPasskey } from '../auth/passkey';
+import { isNativeApp } from '../platform';
+import { disablePush } from '../push/pushDevice';
 import type { User } from '../types';
 
 type AuthStatus = 'loading' | 'authenticated' | 'anonymous';
@@ -35,7 +37,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>(() => (getToken() ? 'loading' : 'anonymous'));
 
   const configQuery = useQuery({ queryKey: ['auth', 'config'], queryFn: authApi.config, staleTime: Infinity, retry: 1 });
-  const config = configQuery.isError ? FALLBACK_CONFIG : configQuery.data;
+  const config = useMemo(() => {
+    const loaded = configQuery.isError ? FALLBACK_CONFIG : configQuery.data;
+    // Trong app điện thoại, Google (GSI), Zalo (redirect về trang web) và passkey (WebAuthn) chưa chạy được
+    // trong WebView -> ẩn, chỉ đăng nhập bằng mật khẩu
+    return loaded && isNativeApp ? { ...loaded, googleClientId: null, zaloAppId: null, passkeyEnabled: false } : loaded;
+  }, [configQuery.isError, configQuery.data]);
 
   // Có token sẵn (F5 trang) -> kiểm tra còn hợp lệ không
   useEffect(() => {
@@ -94,6 +101,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [startSession]);
 
   const logout = useCallback(async () => {
+    // Đăng xuất thì thiết bị này thôi nhận thông báo (cần token nên làm trước khi huỷ phiên)
+    await disablePush().catch(() => undefined);
     try {
       await authApi.logout();
     } catch {
