@@ -20,6 +20,17 @@ else
     echo "📋 .env already exists, skipping..."
 fi
 
+# Nạp biến từ .env (để in đúng port bên dưới)
+set -a
+# shellcheck disable=SC1091
+. "$PROJECT_ROOT/.env"
+set +a
+
+# Thư mục inbox phải có trước khi Docker mount (nếu không Docker tạo nó với chủ root),
+# và ghi được bởi ml-service (uid 10001)
+mkdir -p "$PROJECT_ROOT/data/inbox"
+chmod -R a+rwX "$PROJECT_ROOT/data/inbox"
+
 # 2. Start Docker Compose
 echo ""
 echo "🐳 Starting Docker Compose services..."
@@ -43,7 +54,7 @@ echo "📍 Frontend:     http://localhost:3000"
 echo "📍 Backend API:  http://localhost:8080"
 echo "📍 Swagger UI:   http://localhost:8080/swagger-ui.html"
 echo "📍 ML Service:   http://localhost:8000/docs"
-echo "📍 PostgreSQL:   localhost:5432"
+echo "📍 PostgreSQL:   localhost:${POSTGRES_HOST_PORT:-5433}"
 echo ""
 echo "🛑 To stop: docker compose down"
 echo "======================================"

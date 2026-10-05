@@ -3,11 +3,15 @@ Predictor service — Runs inference using trained models or generates
 simulated predictions when no model is available.
 """
 
+import json
 import logging
 from datetime import date, timedelta
-from typing import List
+from typing import List, Optional
+from app.cache import get_redis
+from app.config import get_settings
 from app.schemas.forecast import PredictionItem
 from app.services.data_loader import load_station_metrics, load_station_info
+from app.models.hybrid_salinity_model import HybridSalinityModel
 from app.models.salinity_model import SalinityModel
 
 logger = logging.getLogger(__name__)
@@ -17,25 +21,78 @@ class Predictor:
     """Prediction pipeline for salinity forecasting."""
 
     def __init__(self):
-        self.model = SalinityModel()
+        self.model = HybridSalinityModel()
+        # Model Prophet riêng từng trạm, được train qua POST /api/v1/train
+        self.prophet = SalinityModel()
 
-    def predict(self, station_id: int, days_ahead: int = 7) -> List[PredictionItem]:
-        """
-        Generate salinity predictions for a station.
+    @staticmethod
+    def _cache_key(station_id, days_ahead: int) -> str:
+        # Gắn ngày hiện tại vào key để dự báo tự làm mới khi sang ngày mới
+        return f"forecast:{station_id}:{days_ahead}:{date.today().isoformat()}"
 
-        If a trained model exists, use it for prediction.
-        Otherwise, fall back to a simple statistical estimation
-        based on recent data.
-
-        Args:
-            station_id: Station to predict for.
-            days_ahead: Number of days to forecast.
-
-        Returns:
-            List of PredictionItem with predicted salinity values.
-        """
+    def _get_cached(self, key: str) -> Optional[List[PredictionItem]]:
         try:
-            # Try to load historical data
+            raw = get_redis().get(key)
+        except Exception as e:
+            logger.warning(f"Redis unavailable, skip forecast cache read: {e}")
+            return None
+        if raw is None:
+            return None
+        return [PredictionItem.model_validate(item) for item in json.loads(raw)]
+
+    def invalidate(self, station_id) -> None:
+        """Xoá cache dự báo của trạm (gọi sau khi train lại model)."""
+        try:
+            r = get_redis()
+            for key in r.scan_iter(f"forecast:{station_id}:*"):
+                r.delete(key)
+        except Exception as e:
+            logger.warning(f"Redis unavailable, skip forecast cache invalidation: {e}")
+
+    def _set_cached(self, key: str, predictions: List[PredictionItem]) -> None:
+        try:
+            payload = json.dumps([p.model_dump(mode="json") for p in predictions])
+            get_redis().set(key, payload, ex=get_settings().forecast_cache_ttl_seconds)
+        except Exception as e:
+            logger.warning(f"Redis unavailable, skip forecast cache write: {e}")
+
+    def predict(self, station_id, days_ahead: int = 7) -> List[PredictionItem]:
+        """
+        Generate salinity predictions for a station (cached in Redis).
+        Simulated fallbacks are not cached so real data/models take over as soon as available.
+        """
+        key = self._cache_key(station_id, days_ahead)
+        cached = self._get_cached(key)
+        if cached is not None:
+            logger.info(f"Forecast cache hit for station {station_id}")
+            return cached
+
+        predictions = self._predict_uncached(station_id, days_ahead)
+        if predictions and predictions[0].model_version != "simulated-v1.0":
+            self._set_cached(key, predictions)
+        return predictions
+
+    def _predict_uncached(self, station_id, days_ahead: int) -> List[PredictionItem]:
+        """
+        Thứ tự: Prophet riêng của trạm -> Hybrid ARIMA-CNN (global) -> thống kê -> mô phỏng.
+        Mỗi tầng lỗi thì rơi xuống tầng sau, không làm hỏng cả request.
+        """
+        if self.prophet.has_trained_model(station_id):
+            try:
+                logger.info(f"Using Prophet model for station {station_id}")
+                return self.prophet.predict(station_id, days_ahead)
+            except Exception as e:
+                logger.error(f"Prophet prediction failed for station {station_id}: {e}")
+
+        if self.model.has_trained_model(station_id):
+            try:
+                logger.info(f"Using Hybrid ARIMA-CNN model for station {station_id}")
+                return self.model.predict(station_id, days_ahead)
+            except Exception as e:
+                logger.error(f"Hybrid prediction failed for station {station_id}: {e}")
+
+        try:
+            # Try to load historical data for statistical fallback
             df = load_station_metrics(station_id, lookback_days=90)
             station_info = load_station_info(station_id)
 
@@ -44,11 +101,6 @@ class Predictor:
                     f"Insufficient data for station {station_id}, using simulation"
                 )
                 return self._simulate_predictions(station_id, days_ahead)
-
-            # Try trained model first
-            if self.model.has_trained_model(station_id):
-                logger.info(f"Using trained model for station {station_id}")
-                return self.model.predict(station_id, days_ahead)
 
             # Fallback: statistical estimation based on recent trends
             logger.info(

@@ -7,51 +7,29 @@ export default {
   theme: {
     extend: {
       colors: {
-        // AquaMekong brand colors
-        aqua: {
-          50:  '#ecfeff',
-          100: '#cffafe',
-          200: '#a5f3fc',
-          300: '#67e8f9',
-          400: '#22d3ee',
-          500: '#06b6d4',
-          600: '#0891b2',
-          700: '#0e7490',
-          800: '#155e75',
-          900: '#164e63',
-          950: '#083344',
+        // Navy: header, nút chính, liên kết, tab active (đổi ở đây là đổi toàn app)
+        primary: {
+          DEFAULT: '#0F3D5E',
+          50:  '#EEF4F8',
+          100: '#DCE8F0',
+          200: '#B6CDDD',
+          300: '#85A9C3',
+          400: '#4A7EA3',
+          500: '#1F5F8B',
+          600: '#0F3D5E',
+          700: '#0B2E47',
+          800: '#08243A',
+          900: '#051A2B',
         },
-        // Salinity alert colors
+        // Màu độ mặn — CHỈ dùng cho độ mặn/cảnh báo (khớp utils/salinity.ts)
         salinity: {
-          low:    '#22c55e', // Green — safe (< 1‰)
-          medium: '#eab308', // Yellow — warning (1-4‰)
-          high:   '#ef4444', // Red — danger (> 4‰)
-        },
-        // Dark theme
-        dark: {
-          bg:      '#0f172a',
-          surface: '#1e293b',
-          card:    '#334155',
-          border:  '#475569',
+          low:    '#22c55e',
+          medium: '#eab308',
+          high:   '#ef4444',
         },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
-      },
-      animation: {
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'fade-in': 'fadeIn 0.3s ease-in-out',
-        'slide-in': 'slideIn 0.3s ease-out',
-      },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideIn: {
-          '0%': { transform: 'translateX(-100%)' },
-          '100%': { transform: 'translateX(0)' },
-        },
       },
     },
   },

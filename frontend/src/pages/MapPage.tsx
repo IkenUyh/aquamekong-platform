@@ -1,0 +1,91 @@
+import React, { useCallback, useEffect, useRef } from 'react';
+import { DashboardLayout } from '../layouts/DashboardLayout';
+import { MapView } from '../components/MapView';
+import { useStations, useStationsList } from '../hooks/useStations';
+import { useTelemetrySSE } from '../hooks/useTelemetrySSE';
+import { HistorySection } from '../components/HistorySection';
+import { RightPanel } from '../components/RightPanel';
+import { useQueryClient } from '@tanstack/react-query';
+import type { GeoJsonFeature } from '../types';
+import { FilterProvider, useFilters } from '../contexts/FilterContext';
+import { FilterPanel } from '../components/filters/FilterPanel';
+
+function MapPageContent() {
+  const { selectedStationId, setSelectedStation, activeLayers } = useFilters();
+  const { data: geoJson } = useStations();
+  const { data: stationsList } = useStationsList();
+
+  const queryClient = useQueryClient();
+  // Pipeline ghi nhiều dòng một lúc -> gộp các event, refetch tối đa 1 lần / 2s
+  const refreshTimer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => () => clearTimeout(refreshTimer.current), []);
+
+  const { isConnected } = useTelemetrySSE({
+    onTelemetry: useCallback(() => {
+      if (refreshTimer.current) return;
+      refreshTimer.current = setTimeout(() => {
+        refreshTimer.current = undefined;
+        queryClient.invalidateQueries({ queryKey: ['stations'] });
+        queryClient.invalidateQueries({ queryKey: ['metrics'] });
+      }, 2000);
+    }, [queryClient]),
+  });
+
+  const features: GeoJsonFeature[] = geoJson?.features ?? [];
+
+  return (
+    <DashboardLayout
+      mobileCenterHeight="h-[60vh]"
+      leftPanel={
+        <div className="h-full flex flex-col bg-white">
+          <FilterPanel />
+          <div className="p-4 flex-1 overflow-y-auto">
+            <h2 className="font-semibold text-gray-700 mb-4">Danh sách trạm</h2>
+            <div className="text-sm text-gray-500 mb-2 flex items-center gap-2">
+              Trạng thái kết nối:
+              <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
+            </div>
+            <div className="space-y-2">
+              {stationsList?.map((station) => (
+                <div 
+                  key={station.id} 
+                  className={`p-3 rounded-lg border cursor-pointer ${selectedStationId === station.id ? 'bg-primary-50 border-primary-200' : 'bg-white border-gray-200 hover:border-primary-300'}`}
+                  onClick={() => setSelectedStation(station.id)}
+                >
+                  <div className="font-medium text-sm">{station.name}</div>
+                  <div className="text-xs text-gray-500">{station.code}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      }
+      centerContent={
+        <MapView
+          features={features}
+          selectedStationId={selectedStationId}
+          onSelectStation={setSelectedStation}
+          activeLayers={activeLayers}
+        />
+      }
+      bottomContent={
+        selectedStationId ? (
+          <HistorySection stationId={selectedStationId} />
+        ) : null
+      }
+      rightPanel={
+        <div className="p-4 h-full bg-gray-50 overflow-y-auto space-y-4">
+          <RightPanel stationId={selectedStationId} />
+        </div>
+      }
+    />
+  );
+}
+
+export function MapPage() {
+  return (
+    <FilterProvider>
+      <MapPageContent />
+    </FilterProvider>
+  );
+}

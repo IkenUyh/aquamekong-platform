@@ -1,0 +1,9 @@
+venv/
+env/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.env
+trained_models/
+test_pipeline_local.py
+Data/
