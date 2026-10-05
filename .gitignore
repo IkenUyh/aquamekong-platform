@@ -11,6 +11,7 @@ ml-service/trained_models/
 *.md
 !README.md
 !CLAUDE.md
+!.claude/agents/*.md
 !frontend/frontend_backend_status.md
 *.txt
 !requirements.txt
@@ -39,3 +40,7 @@ frontend/vite.config.d.ts
 # Java
 target/
 .DS_Store
+
+# Dữ liệu RYNAN thả vào inbox (processed/, failed/); chỉ giữ thư mục rỗng trong git
+/data/inbox/*
+!/data/inbox/.gitkeep

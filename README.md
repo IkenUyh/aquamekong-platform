@@ -166,6 +166,33 @@ Giữ nguyên cặp khoá về sau: đổi khoá thì mọi thiết bị phải 
 
 ---
 
+## 📥 Nạp dữ liệu RYNAN
+
+Tool nạp file CSV/Excel vào DB. Nó tự tạo trạm (mã, tên, toạ độ), device và sensor cho từng trạm, tạo rule cảnh báo độ mặn > 4‰ cho trạm mới, và xoá 6 trạm demo (chỉ có số đo giả). Nạp lại cùng một file không tạo bản ghi trùng.
+
+**Dữ liệu lịch sử** (`AquaMekong_CLEAN_FEATURES_FINAL.csv`, 1 dòng/trạm/ngày):
+```bash
+chmod -R a+rwX data/inbox && cp ~/Downloads/AquaMekong_CLEAN_FEATURES_FINAL-1.csv data/inbox/
+docker compose exec ml-service python -m app.ingest /app/data/inbox/AquaMekong_CLEAN_FEATURES_FINAL-1.csv --dry-run   # chạy thử
+```
+Kết quả chạy thử ổn thì có 2 cách nạp thật: chạy lại lệnh trên mà bỏ `--dry-run`, hoặc để nguyên file trong `data/inbox/` cho job tự nạp.
+
+Từ file features, tool lấy `salinity_max` làm độ mặn của ngày `date`. Còn `water_level_max_lag_1d` và `upstream_discharge_lag_1d` là giá trị của ngày `date − 1`. Các cột feature khác chỉ dùng cho huấn luyện model.
+
+**Máy mới clone về (thành viên nhóm)**: dữ liệu RYNAN không nằm trong git, vì repo public mà dữ liệu chưa được phép công khai. File dữ liệu để trên Google Drive của nhóm. Hỏi nhóm link file rồi đặt vào `.env`:
+```bash
+SEED_DATA_URL=https://drive.google.com/file/d/<id>/view?usp=sharing
+```
+Chạy `docker compose up -d` (hoặc `./scripts/setup.sh`). Nếu DB chưa có dữ liệu trạm thật, ml-service sẽ tự tải file về và nạp trong khoảng một phút. Xem tiến trình bằng `docker compose logs -f ml-service`. Trên Drive, file phải đặt quyền chia sẻ *Bất kỳ ai có đường liên kết*, vì ml-service tải file mà không đăng nhập Google.
+
+**Cập nhật hằng ngày**: thả file xuất từ RYNAN vào `data/inbox/`. ml-service quét thư mục này mỗi 15 phút (và một lần khi khởi động). File nạp xong được chuyển vào `data/inbox/processed/`. File lỗi được chuyển vào `data/inbox/failed/`, kèm `<tên>.error.txt` ghi lý do. Container chạy với uid 10001, nên thư mục phải cho mọi user ghi được: `chmod -R a+rwX data/inbox`. Nếu Docker đã tự tạo thư mục này với chủ là root thì chạy trước: `sudo chown -R $USER data`.
+
+Hiện tool mới hiểu định dạng file features. File RYNAN có cột khác thì sẽ vào `failed/`, và file `.error.txt` liệt kê các cột tìm thấy. Muốn hỗ trợ định dạng mới thì thêm parser vào `ml-service/app/ingest/parsers.py`.
+
+Số đo cũ hơn 3 ngày (`TELEMETRY_MAX_LIVE_AGE`) không tạo cảnh báo và không đẩy realtime, nên nạp dữ liệu lịch sử không gửi thông báo hàng loạt. Crawler sinh số ngẫu nhiên đã tắt mặc định (`ENABLE_MOCK_CRAWLER=false`).
+
+---
+
 ## 🧪 Chạy Test
 
 ```bash
