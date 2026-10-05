@@ -12,6 +12,7 @@ ml-service/trained_models/
 !README.md
 !CLAUDE.md
 !.claude/agents/*.md
+!.claude/rules/*.md
 !frontend/frontend_backend_status.md
 *.txt
 !requirements.txt
