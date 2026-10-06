@@ -8,6 +8,7 @@ Khi có file mẫu xuất từ app RYNAN (số đo thô), thêm parser vào FORM
 """
 
 from dataclasses import dataclass
+from typing import Optional
 from pathlib import Path
 
 import pandas as pd
@@ -27,6 +28,8 @@ class ParsedFile:
     format: str
     stations: pd.DataFrame
     measurements: pd.DataFrame
+    # Bảng gốc của file định dạng features, để gộp vào kho feature cho ST-GNN
+    features: Optional[pd.DataFrame] = None
 
 
 def read_table(path: Path) -> pd.DataFrame:
@@ -79,7 +82,7 @@ def parse_features(df: pd.DataFrame) -> ParsedFile:
 
     measurements = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame(columns=MEASUREMENT_COLUMNS)
     measurements = measurements.drop_duplicates(subset=["station_code", "metric_type", "recorded_at"], keep="last")
-    return ParsedFile("features", stations, measurements.reset_index(drop=True))
+    return ParsedFile("features", stations, measurements.reset_index(drop=True), features=df)
 
 
 FORMATS = [

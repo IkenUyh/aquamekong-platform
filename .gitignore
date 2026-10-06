@@ -46,3 +46,4 @@ target/
 # Dữ liệu RYNAN thả vào inbox (processed/, failed/); chỉ giữ thư mục rỗng trong git
 /data/inbox/*
 !/data/inbox/.gitkeep
+/data/features/
