@@ -1,38 +1,21 @@
 import React from 'react';
-import { HEAT_SCALES, type HeatMetric } from '../utils/heatScales';
-import { SALINITY_CLASS_COLORS, SALINITY_CLASS_LABELS, type SalinityClass } from '../utils/salinity';
+import { METRIC_SCALES, type ColorMetric } from '../utils/metricScales';
 
-const SALINITY_ORDER: SalinityClass[] = ['HIGH', 'MEDIUM', 'LOW', 'UNKNOWN'];
-
-/** Chú giải theo lớp nhiệt đang bật; marker trạm luôn tô theo thang độ mặn. */
-export function MapLegend({ metric }: { metric: HeatMetric | null }) {
-  const scale = metric && metric !== 'salinity' ? HEAT_SCALES[metric] : null;
-  const stops = scale ? Object.entries(scale.gradient).sort((a, b) => Number(a[0]) - Number(b[0])) : [];
-
+/** Chú giải theo chỉ số đang dùng để tô màu marker trạm. */
+export function MapLegend({ metric }: { metric: ColorMetric }) {
+  const scale = METRIC_SCALES[metric];
   return (
-    <div className="absolute bottom-6 left-6 z-[1000] bg-white/95 backdrop-blur rounded-lg shadow-lg p-3 border border-gray-200 text-xs space-y-3">
-      <div>
-        <h4 className="font-semibold text-gray-600 mb-2">Độ mặn (marker trạm)</h4>
-        <div className="space-y-1">
-          {SALINITY_ORDER.map((c) => (
-            <div key={c} className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: SALINITY_CLASS_COLORS[c] }} />
-              <span className="text-gray-600">{SALINITY_CLASS_LABELS[c]}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {scale && (
-        <div className="pt-2 border-t border-gray-100">
-          <h4 className="font-semibold text-gray-600 mb-2">Lớp nhiệt: {scale.label} ({scale.unit})</h4>
-          <div className="h-2 w-40 rounded" style={{ background: `linear-gradient(to right, ${stops.map(([p, c]) => `${c} ${Number(p) * 100}%`).join(', ')})` }} />
-          <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-            <span>0</span>
-            <span>≥ {scale.max.toLocaleString('vi-VN')}</span>
+    <div className="absolute bottom-6 left-6 z-[1000] bg-white/95 backdrop-blur rounded-lg shadow-lg p-3 border border-gray-200 text-xs">
+      <h4 className="font-semibold text-gray-600 mb-2">{scale.label} ({scale.unit})</h4>
+      <div className="space-y-1">
+        {scale.bins.map((b) => (
+          <div key={b.key} className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.2)]" style={{ backgroundColor: b.color }} />
+            <span className="text-gray-600 num">{b.label}</span>
           </div>
-        </div>
-      )}
+        ))}
+      </div>
+      <p className="mt-2 text-[10px] text-gray-400">Số đo mới nhất của từng trạm</p>
     </div>
   );
 }
