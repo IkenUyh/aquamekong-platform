@@ -5,7 +5,8 @@ import { MapFlyToStation } from '../hooks/useMapFlyTo';
 import type { GeoJsonFeature } from '../types';
 import { MetricHeatmap } from './map/MetricHeatmap';
 import type { HeatMetric } from '../utils/heatScales';
-import type { GeoJsonObject } from 'geojson';
+import type { Feature, GeoJsonObject } from 'geojson';
+import type { Layer } from 'leaflet';
 import provincesData from '../data/mekong-provinces.json';
 import riversData from '../data/mekong-rivers.json';
 
@@ -29,6 +30,12 @@ const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyrigh
 
 const HEAT_METRICS: HeatMetric[] = ['salinity', 'waterLevel', 'flowRate'];
 
+/** Ranh giới tỉnh: src/data/mekong-provinces.json, sông kênh: mekong-rivers.json (tạo bằng scripts/build_map_layers.py) */
+function bindName(feature: Feature, layer: Layer) {
+  const name = feature.properties?.name;
+  if (name) layer.bindTooltip(String(name), { sticky: true, direction: 'top', className: 'text-xs' });
+}
+
 export function MapView({ features, selectedStationId, onSelectStation, activeLayers }: MapViewProps) {
   const heatMetric = HEAT_METRICS.find((m) => activeLayers[m]) ?? null;
   const selectedFeature = features.find(f => f.properties.id === selectedStationId);
@@ -51,23 +58,19 @@ export function MapView({ features, selectedStationId, onSelectStation, activeLa
       {activeLayers.provinces && (
         <GeoJSON
           data={provincesGeoJson}
-          style={{
-            color: '#94a3b8',
-            weight: 1.5,
-            fillOpacity: 0.03,
-            dashArray: '4 4',
-          }}
+          style={{ color: '#0F3D5E', weight: 2, opacity: 0.55, fillColor: '#0F3D5E', fillOpacity: 0.03 }}
+          onEachFeature={bindName}
         />
       )}
 
       {activeLayers.rivers && (
         <GeoJSON
           data={riversGeoJson}
-          style={{
-            color: '#60a5fa',
-            weight: 2,
-            opacity: 0.7,
-          }}
+          // Sông nét đậm hơn kênh; tên hiện khi rê chuột
+          style={(f) => (f?.properties?.kind === 'canal'
+            ? { color: '#38bdf8', weight: 1, opacity: 0.7 }
+            : { color: '#0ea5e9', weight: 2, opacity: 0.75 })}
+          onEachFeature={bindName}
         />
       )}
 

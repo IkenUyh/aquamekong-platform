@@ -16,7 +16,7 @@ export interface StationPoint {
 const LEGEND_ORDER: SalinityClass[] = ['HIGH', 'MEDIUM', 'LOW', 'UNKNOWN'];
 
 /** Bản đồ nhỏ các trạm, tô màu theo thang độ mặn chung của app (utils/salinity). */
-export function StationsMiniMap({ stations, height = '100%' }: { stations: StationPoint[]; height?: string }) {
+export function StationsMiniMap({ stations, height = '100%', focusId = null }: { stations: StationPoint[]; height?: string; focusId?: number | null }) {
   const markers = stations.map((s) => ({
     id: s.id,
     lat: s.latitude,
@@ -27,7 +27,7 @@ export function StationsMiniMap({ stations, height = '100%' }: { stations: Stati
 
   return (
     <div className="relative h-full" style={{ height }}>
-      <MiniMap markers={markers} height="100%" />
+      <MiniMap markers={markers} height="100%" focusId={focusId} />
       <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow border border-gray-100 z-[1000] text-xs">
         <div className="font-semibold text-gray-700 mb-2">Độ mặn</div>
         {LEGEND_ORDER.map((c) => (
