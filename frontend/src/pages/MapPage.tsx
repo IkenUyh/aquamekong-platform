@@ -11,7 +11,7 @@ import { FilterProvider, useFilters } from '../contexts/FilterContext';
 import { FilterPanel } from '../components/filters/FilterPanel';
 
 function MapPageContent() {
-  const { selectedStationId, setSelectedStation, activeLayers, colorMetric } = useFilters();
+  const { selectedStationId, setSelectedStation, activeLayers } = useFilters();
   const { data: geoJson } = useStations();
   const { data: stationsList } = useStationsList();
 
@@ -66,7 +66,6 @@ function MapPageContent() {
           selectedStationId={selectedStationId}
           onSelectStation={setSelectedStation}
           activeLayers={activeLayers}
-          colorMetric={colorMetric}
         />
       }
       bottomContent={

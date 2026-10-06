@@ -1,5 +1,13 @@
 import fnmatch
+import os
+import tempfile
+
 import pytest
+
+# Mặc định model_dir/features_dir là /app/... (đường dẫn trong container): khi chạy test ngoài Docker
+# (máy dev, CI) thì trỏ sang thư mục tạm, trước khi app import get_settings()
+os.environ.setdefault("MODEL_DIR", tempfile.mkdtemp(prefix="aquamekong-models-"))
+os.environ.setdefault("FEATURES_DIR", tempfile.mkdtemp(prefix="aquamekong-features-"))
 
 
 class FakeRedis:
