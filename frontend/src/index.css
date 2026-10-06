@@ -76,6 +76,18 @@ input[type='radio'] {
   background-color: #f1f5f9;
 }
 
+/* Màn hình có tỉ lệ zoom lẻ (125%, 150%...): ô nền 256px lệch dưới 1 điểm ảnh, lộ khe trắng
+   giữa các ô. Cho ô to hơn nửa điểm ảnh để phủ khe. */
+.leaflet-tile-container img.leaflet-tile {
+  width: 256.5px !important;
+  height: 256.5px !important;
+}
+
+/* Bấm vào ranh giới tỉnh, sông kênh: không vẽ khung focus của trình duyệt quanh cả vùng */
+.leaflet-interactive:focus {
+  outline: none;
+}
+
 .leaflet-popup-content-wrapper {
   background: var(--color-bg-white);
   color: var(--color-text-primary);
