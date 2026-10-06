@@ -130,6 +130,33 @@ export interface SalinityForecast {
   upperBound?: number;
   confidenceLevel?: number;
   createdAt?: string;
+  /** Thời điểm chạy mô hình của lượt dự báo */
+  runAt?: string;
+  /** Ngày cuối có dữ liệu đầu vào (ST-GNN); dự báo tính từ ngày này, có thể trước hôm nay */
+  dataUntil?: string | null;
+}
+
+interface ErrorScore {
+  mae: number;
+  rmse: number;
+}
+
+/** Điểm ST-GNN trên tập test (GET /forecasts/model-info, khoá giữ nguyên dạng snake_case của ML service) */
+export interface StgnnModelInfo {
+  model_version: string;
+  installed_at: string;
+  trained_until: string;
+  horizons: number[];
+  /** Trạm đang dùng ST-GNN (tốt hơn giữ nguyên giá trị cũ trên tập test) */
+  stations: string[];
+  all_stations: string[];
+  evaluation: Record<string, {
+    overall: { stgnn: ErrorScore; naive: ErrorScore };
+    interval_coverage: number;
+    exceed_recall: number;
+    exceed_precision: number;
+    test_days: number;
+  }>;
 }
 
 // --- Domain: Alert ---

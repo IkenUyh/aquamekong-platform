@@ -14,7 +14,9 @@ import type {
   SalinityForecast,
   User,
   UserStatus,
+  StgnnModelInfo,
 } from '../types';
+import { storedForecasts, usableForecasts } from './forecastSelection';
 import { MOCK_STATIONS_LIST, generateMockForecasts } from '../data/mockData';
 
 // Mặc định gọi cùng origin: nginx (production) và Vite dev server đều proxy /api -> backend
@@ -204,11 +206,6 @@ export const metricApi = {
     ),
 };
 
-/** Ngày theo giờ máy người dùng, dạng yyyy-MM-dd (cùng định dạng LocalDate của backend) */
-const isoDate = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const todayIso = () => isoDate(new Date());
-const tomorrowIso = () => isoDate(new Date(Date.now() + 86_400_000));
 
 export const forecastApi = {
   getRuns: () => apiClient.get<ForecastRun[]>('/forecasts/runs').then((r) => r.data),
@@ -218,22 +215,30 @@ export const forecastApi = {
     apiClient.post<SalinityForecast[]>('/forecasts/predict', { stationId, daysAhead }, { timeout: 60000 }).then((r) => r.data),
 
   /**
-   * `daysAhead` ngày dự báo bắt đầu từ ngày mai. Lượt chạy mới nhất đã cũ (ngày đầu đã qua)
-   * hoặc ngắn hơn số ngày cần -> chạy ML lại (POST /forecasts/predict).
+   * Dự báo `daysAhead` ngày của trạm. Lượt chạy mới nhất không dùng được (cũ, hoặc không phủ đủ
+   * số ngày cần, xem usableForecasts) -> chạy ML lại (POST /forecasts/predict).
    */
   getOrPredict: (stationId: number, daysAhead: number = 7) =>
     withFallback(
       apiClient.get<SalinityForecast[]>(`/forecasts/station/${stationId}`).then(async (r) => {
-        const fromTomorrow = r.data.filter((f) => f.forecastDate > todayIso());
-        const usable = fromTomorrow.length >= daysAhead && r.data[0]?.forecastDate === tomorrowIso();
+        const usable = usableForecasts(r.data, daysAhead);
+        if (usable) return usable;
         // Chạy mô hình cần đăng nhập; người chưa đăng nhập xem lượt dự báo đã lưu
-        const forecasts = usable || !getToken() ? fromTomorrow : await forecastApi.predict(stationId, daysAhead);
-        return forecasts.slice(0, daysAhead);
+        if (!getToken()) return storedForecasts(r.data, daysAhead);
+        const fresh = await forecastApi.predict(stationId, daysAhead);
+        return [...fresh].sort((a, b) => a.forecastDate.localeCompare(b.forecastDate)).slice(0, daysAhead);
       }),
       generateMockForecasts(stationId)
     ),
 
   getByRunId: (runId: number) => apiClient.get<SalinityForecast[]>(`/forecasts/run/${runId}`).then((r) => r.data),
+
+  /** null khi ML service chưa cài ST-GNN (404) */
+  getModelInfo: () =>
+    apiClient.get<StgnnModelInfo>('/forecasts/model-info').then((r) => r.data).catch((e) => {
+      if (e?.response?.status === 404) return null;
+      throw e;
+    }),
 };
 
 

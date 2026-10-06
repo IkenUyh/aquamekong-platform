@@ -9,8 +9,8 @@ import { StationsMiniMap } from '../components/shared/StationsMiniMap';
 import { forecastApi } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useStationsList } from '../hooks/useStations';
-import { forecastQueryKey } from '../hooks/useForecast';
-import type { SalinityForecast, Station } from '../types';
+import { forecastQueryKey, useStgnnModelInfo } from '../hooks/useForecast';
+import type { SalinityForecast, Station, StgnnModelInfo } from '../types';
 import { classifySalinity, formatNumber, SALINITY_THRESHOLD } from '../utils/salinity';
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
@@ -26,6 +26,47 @@ const levelOf = (v: number | null | undefined) => {
   const c = classifySalinity(v);
   return c === 'HIGH' ? 'CRITICAL' : c === 'MEDIUM' ? 'WARNING' : 'SAFE';
 };
+
+const formatDay = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('vi-VN');
+
+/** Tên mô hình theo model_version mà ML service ghi vào lượt dự báo */
+function modelLabel(version?: string): string {
+  if (!version) return '';
+  if (version.startsWith('st-gnn')) return 'ST-GNN';
+  if (version.startsWith('prophet')) return 'Prophet';
+  if (version.startsWith('hybrid')) return 'ARIMA-CNN';
+  if (version.startsWith('statistical')) return 'Xu hướng thống kê';
+  if (version.startsWith('simulated')) return 'Mô phỏng';
+  return version;
+}
+
+/** Thẻ điểm ST-GNN trên tập test, so với cách giữ nguyên giá trị cũ */
+function StgnnScoreCard({ info }: { info: StgnnModelInfo }) {
+  const pct = (a: number, b: number) => Math.round((100 * (b - a)) / b);
+  return (
+    <div className="card p-3 text-xs text-gray-600 space-y-1">
+      <p className="text-sm font-semibold text-gray-900">
+        ST-GNN · {info.stations.length}/{info.all_stations.length} trạm của mô hình
+      </p>
+      {info.horizons.map((h) => {
+        const ev = info.evaluation[`h${h}`];
+        if (!ev) return null;
+        const { stgnn, naive } = ev.overall;
+        return (
+          <p key={h} className="num">
+            Dự báo {h} ngày: sai số trung bình {formatNumber(stgnn.mae)}‰, giữ nguyên giá trị cũ {formatNumber(naive.mae)}‰
+            {' '}({pct(stgnn.mae, naive.mae) >= 0 ? `tốt hơn ${pct(stgnn.mae, naive.mae)}%` : `kém hơn ${-pct(stgnn.mae, naive.mae)}%`});
+            {' '}khoảng dự báo chứa {Math.round(ev.interval_coverage * 100)}% giá trị thật
+          </p>
+        );
+      })}
+      <p className="text-gray-400">
+        Chấm trên {info.evaluation[`h${info.horizons[0]}`]?.test_days ?? '—'} ngày cuối của dữ liệu (tập kiểm tra), dữ liệu tới {formatDay(info.trained_until)}.
+        Trạm còn lại dùng mô hình khác.
+      </p>
+    </div>
+  );
+}
 
 interface StationForecast {
   station: Station;
@@ -104,8 +145,14 @@ export function ForecastPage() {
     isError: results[i]?.isError ?? false,
   }));
 
-  const dates = items.find((i) => i.forecasts.length > 0)?.forecasts.map((f) => f.forecastDate) ?? [];
+  // Các trạm có thể dùng mô hình khác nhau (ST-GNN chỉ có vài mốc), nên tra theo ngày chứ không theo vị trí
+  const dates = [...new Set(items.flatMap((i) => i.forecasts.map((f) => f.forecastDate)))].sort();
   const dayIndex = Math.min(selectedDay, Math.max(0, dates.length - 1));
+  const selectedDate = dates[dayIndex];
+  const forecastOn = (forecasts: SalinityForecast[], date?: string) => forecasts.find((f) => f.forecastDate === date);
+  const { data: modelInfo } = useStgnnModelInfo();
+  // Ngày dữ liệu cuối của ST-GNN, khi đã cũ hơn hôm nay
+  const dataUntil = items.flatMap((i) => i.forecasts).find((f) => f.dataUntil)?.dataUntil ?? null;
   const insights = buildInsights(items);
 
   const togglePicked = (id: number) =>
@@ -204,6 +251,14 @@ export function ForecastPage() {
               <p className="text-xs text-gray-500">Chọn một ngày để xem bản đồ dự báo của ngày đó</p>
             </div>
 
+            {dataUntil && (
+              <p className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700">
+                Dự báo ST-GNN tính từ dữ liệu ngày <span className="num">{formatDay(dataUntil)}</span> (dữ liệu mới nhất),
+                nên các ngày dự báo có thể đã qua. Mô hình chỉ có 2 mốc: sau 1 ngày và sau 7 ngày.
+              </p>
+            )}
+            {modelInfo && <StgnnScoreCard info={modelInfo} />}
+
             {dates.length > 0 && (
               <div className="flex gap-2 bg-white p-2 rounded-lg border border-gray-200 overflow-x-auto">
                 {dates.map((d, i) => {
@@ -230,17 +285,19 @@ export function ForecastPage() {
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               {items.map(({ station, forecasts, isLoading, isError }) => {
-                const dayValue = forecasts[dayIndex]?.predictedSalinity;
+                const dayForecast = forecastOn(forecasts, selectedDate);
+                const dayValue = dayForecast?.predictedSalinity;
+                const model = modelLabel(forecasts[0]?.modelVersion);
                 return (
                   <div key={station.id} className="card p-4">
                     <div className="flex justify-between items-start mb-4 gap-2">
                       <div className="min-w-0">
                         <h4 className="font-semibold text-gray-900 flex items-center gap-1 truncate">{station.name}</h4>
-                        <p className="text-xs text-gray-500">{station.riverName || '—'}</p>
+                        <p className="text-xs text-gray-500">{model ? `Mô hình: ${model}` : station.riverName || '—'}</p>
                         <p className="text-sm mt-1 text-gray-600">
                           Hiện tại <span className="font-semibold text-gray-900">{formatNumber(station.latestSalinity)}‰</span>
                           {dayValue != null && (
-                            <> · {dayLabel(forecasts[dayIndex].forecastDate).label}: <span className="font-semibold text-gray-900">{formatNumber(dayValue)}‰</span></>
+                            <> · {dayLabel(dayForecast!.forecastDate).label}: <span className="font-semibold text-gray-900">{formatNumber(dayValue)}‰</span></>
                           )}
                         </p>
                       </div>
@@ -277,7 +334,7 @@ export function ForecastPage() {
                   name: station.name,
                   latitude: station.latitude,
                   longitude: station.longitude,
-                  salinity: forecasts[dayIndex]?.predictedSalinity,
+                  salinity: forecastOn(forecasts, selectedDate)?.predictedSalinity,
                 }))}
               />
               {insights.length > 0 && (
