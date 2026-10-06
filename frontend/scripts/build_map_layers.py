@@ -11,7 +11,7 @@ Cách chạy (cần shapely):
   git clone --depth 1 --filter=blob:none --sparse https://github.com/ThangLeQuoc/vietnamese-provinces-database.git vpd
   (cd vpd && git sparse-checkout set --no-cone \
      $(for p in 80_tay_ninh 82_dong_thap 86_vinh_long 91_an_giang 92_can_tho 96_ca_mau; do echo /json/geojson/$p/$p.geojson; done))
-  curl -s -A "AquaMekong-map-build" --data-urlencode data@scripts/overpass_waterways.txt \
+  curl -s -A "AquaMekong-map-build" --data-urlencode data@scripts/overpass_waterways.overpassql \
        https://overpass-api.de/api/interpreter -o osm_water.json
   python scripts/build_map_layers.py vpd osm_water.json src/data
 """
