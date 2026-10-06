@@ -55,7 +55,7 @@ class ForecastServiceTest {
         when(mlServiceClient.predict(1L, 2)).thenReturn(new MlServiceClient.PredictionResponse(1L, List.of(
                 new MlServiceClient.PredictionItem(tomorrow, 2.5, 0.9, 2.0, 3.0, "prophet-v1.0"),
                 new MlServiceClient.PredictionItem(tomorrow.plusDays(1), 2.7, null, 2.1, 3.3, "prophet-v1.0")
-        ), "prophet-v1.0"));
+        ), "prophet-v1.0", null));
         when(forecastRunRepository.save(any())).thenAnswer(inv -> {
             ForecastRun run = inv.getArgument(0);
             run.setId(42L);
@@ -79,6 +79,28 @@ class ForecastServiceTest {
         assertThat(result.get(0).getPredictedSalinity()).isEqualTo(2.5);
         // confidence null từ ML -> mặc định 0.95
         assertThat(result.get(1).getConfidenceLevel()).isEqualTo(0.95);
+    }
+
+    @Test
+    void stgnnDataEndIsStoredAsRunInputAndReturnedWithForecasts() {
+        LocalDate dataEnd = LocalDate.of(2026, 8, 31);
+        when(stationRepository.existsById(1L)).thenReturn(true);
+        when(stationRepository.getReferenceById(1L)).thenReturn(station);
+        when(mlServiceClient.predict(1L, 7)).thenReturn(new MlServiceClient.PredictionResponse(1L, List.of(
+                new MlServiceClient.PredictionItem(dataEnd.plusDays(1), 0.3, 0.8, 0.2, 0.5, "st-gnn-v1"),
+                new MlServiceClient.PredictionItem(dataEnd.plusDays(7), 0.4, 0.8, 0.1, 0.9, "st-gnn-v1")
+        ), "st-gnn-v1", dataEnd));
+        when(forecastRunRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(salinityForecastRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<SalinityForecastDto> result = forecastService.predict(1L, 7);
+
+        ArgumentCaptor<ForecastRun> run = ArgumentCaptor.forClass(ForecastRun.class);
+        verify(forecastRunRepository).save(run.capture());
+        // 00:00 giờ Việt Nam của ngày dữ liệu cuối
+        assertThat(run.getValue().getInputTo()).isEqualTo(java.time.OffsetDateTime.parse("2026-08-31T00:00+07:00"));
+        assertThat(result).extracting(SalinityForecastDto::getDataUntil).containsOnly(dataEnd);
+        assertThat(result.get(0).getRunAt()).isNotNull();
     }
 
     @Test
