@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/forecasts")
@@ -23,6 +24,14 @@ import java.util.List;
 public class ForecastController {
 
     private final ForecastService forecastService;
+
+    @GetMapping("/model-info")
+    @Operation(summary = "Điểm đánh giá ST-GNN đã cài", description = "404 nếu ML service chưa cài ST-GNN")
+    public ResponseEntity<Map<String, Object>> modelInfo() {
+        return forecastService.stgnnModelInfo()
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
 
     @GetMapping("/runs")
     @Operation(summary = "Danh sách các đợt chạy dự báo ML", description = "Mới nhất trước, tối đa `limit` dòng (≤ 1000)")
