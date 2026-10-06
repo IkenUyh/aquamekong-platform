@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { endOfDay, subHours } from 'date-fns';
+import type { ColorMetric } from '../utils/metricScales';
 
 interface FilterState {
   // Date range
@@ -9,17 +10,19 @@ interface FilterState {
   // Selected station
   selectedStationId: number | null;
 
-  // Map layers
+  // Map layers (ranh giới tỉnh, sông kênh)
   activeLayers: Record<string, boolean>;
+
+  // Chỉ số dùng để tô màu marker trạm
+  colorMetric: ColorMetric;
 }
 
 interface FilterContextType extends FilterState {
   setDateRange: (start: Date, end: Date) => void;
   setSelectedStation: (id: number | null) => void;
   toggleLayer: (layerId: string) => void;
+  setColorMetric: (metric: ColorMetric) => void;
 }
-
-const HEAT_LAYERS = ['salinity', 'waterLevel', 'flowRate'];
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
@@ -30,12 +33,10 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     endDate: endOfDay(new Date()),
     selectedStationId: null,
     activeLayers: {
-      salinity: true,
-      waterLevel: false,
-      flowRate: false,
       provinces: true,
       rivers: true,
     },
+    colorMetric: 'salinity',
   });
 
   const setDateRange = (start: Date, end: Date) =>
@@ -44,19 +45,14 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
   const setSelectedStation = (id: number | null) =>
     setState(prev => ({ ...prev, selectedStationId: id }));
 
-  // Các lớp nhiệt (salinity/waterLevel/flowRate) loại trừ nhau: bật một lớp thì tắt hai lớp kia
   const toggleLayer = (layerId: string) =>
-    setState(prev => {
-      const turningOn = !prev.activeLayers[layerId];
-      const next = { ...prev.activeLayers, [layerId]: turningOn };
-      if (turningOn && HEAT_LAYERS.includes(layerId)) {
-        HEAT_LAYERS.filter((l) => l !== layerId).forEach((l) => { next[l] = false; });
-      }
-      return { ...prev, activeLayers: next };
-    });
+    setState(prev => ({ ...prev, activeLayers: { ...prev.activeLayers, [layerId]: !prev.activeLayers[layerId] } }));
+
+  const setColorMetric = (metric: ColorMetric) =>
+    setState(prev => ({ ...prev, colorMetric: metric }));
 
   return (
-    <FilterContext.Provider value={{ ...state, setDateRange, setSelectedStation, toggleLayer }}>
+    <FilterContext.Provider value={{ ...state, setDateRange, setSelectedStation, toggleLayer, setColorMetric }}>
       {children}
     </FilterContext.Provider>
   );
