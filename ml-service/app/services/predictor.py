@@ -13,6 +13,7 @@ from app.schemas.forecast import PredictionItem
 from app.services.data_loader import load_station_metrics, load_station_info
 from app.models.hybrid_salinity_model import HybridSalinityModel
 from app.models.salinity_model import SalinityModel
+from app.stgnn.forecaster import forecaster as stgnn_forecaster
 
 logger = logging.getLogger(__name__)
 
@@ -74,9 +75,13 @@ class Predictor:
 
     def _predict_uncached(self, station_id, days_ahead: int) -> List[PredictionItem]:
         """
-        Thứ tự: Prophet riêng của trạm -> Hybrid ARIMA-CNN (global) -> thống kê -> mô phỏng.
+        Thứ tự: ST-GNN (trạm có trong model và tốt hơn giữ nguyên giá trị cũ) -> Prophet riêng của trạm
+        -> Hybrid ARIMA-CNN (global) -> thống kê -> mô phỏng.
         Mỗi tầng lỗi thì rơi xuống tầng sau, không làm hỏng cả request.
         """
+        stgnn = self._stgnn_forecast(station_id, days_ahead)
+        if stgnn:
+            return stgnn
         if self.prophet.has_trained_model(station_id):
             try:
                 logger.info(f"Using Prophet model for station {station_id}")
@@ -111,6 +116,23 @@ class Predictor:
         except Exception as e:
             logger.error(f"Prediction failed for station {station_id}: {e}")
             return self._simulate_predictions(station_id, days_ahead)
+
+    def _stgnn_forecast(self, station_id, days_ahead: int) -> Optional[List[PredictionItem]]:
+        try:
+            code = load_station_info(station_id)["code"]
+            graph = stgnn_forecaster.forecast(code, days_ahead)
+            if graph is None:
+                return None
+            version = stgnn_forecaster.meta()["model_version"]
+            logger.info(f"Using ST-GNN for station {station_id} ({code}), data until {graph.data_end}")
+            return [
+                PredictionItem(date=f.date, salinity=f.q50, lower_bound=f.q10, upper_bound=f.q90,
+                               confidence=0.8, model_version=version, data_end=graph.data_end)
+                for f in graph.by_station[code]
+            ]
+        except Exception as e:
+            logger.error(f"ST-GNN prediction failed for station {station_id}: {e}", exc_info=True)
+            return None
 
     def _statistical_forecast(
         self, df, days_ahead: int

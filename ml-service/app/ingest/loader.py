@@ -10,6 +10,7 @@ from pathlib import Path
 from sqlalchemy import text
 
 from app.db import get_engine
+from app.ingest.features_store import append_features
 from app.ingest.parsers import parse_file
 from app.ingest.stations import upsert_stations
 from app.pipeline.sensors import get_crawler_sensor_mapping
@@ -84,6 +85,9 @@ def import_file(path, dry_run: bool = False, engine=None) -> ImportReport:
                 trans.rollback()
             else:
                 trans.commit()
+                if parsed.features is not None:
+                    rows = append_features(parsed.features)
+                    logger.info(f"Kho feature ST-GNN: {rows} dòng")
         except Exception:
             trans.rollback()
             raise
