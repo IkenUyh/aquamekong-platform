@@ -10,6 +10,7 @@ from app.pipeline.sensors import get_crawler_sensor_mapping
 from app.config import get_settings
 from app.ingest.inbox import process_inbox
 from app.ingest.seed import seed_if_empty
+from app.ingest.drive_sync import sync_drive
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +92,11 @@ def start_scheduler():
     # Máy mới clone: tự tải dữ liệu ban đầu từ SEED_DATA_URL (chạy nền, không chặn khởi động)
     if settings.seed_data_url:
         scheduler.add_job(seed_if_empty, 'date', id='seed_data_job', replace_existing=True)
+    # File RYNAN hằng ngày trên Google Drive → inbox (job inbox ở trên nạp vào DB)
+    if settings.gdrive_folder_id and settings.gdrive_api_key:
+        scheduler.add_job(sync_drive, 'interval', hours=1, id='drive_sync_job',
+                          replace_existing=True, max_instances=1, coalesce=True,
+                          next_run_time=datetime.now(timezone.utc))
     # Crawler sinh số ngẫu nhiên, chỉ bật khi demo không có dữ liệu thật
     if settings.enable_mock_crawler:
         scheduler.add_job(run_pipeline, 'interval', minutes=15, id='data_pipeline_job',
