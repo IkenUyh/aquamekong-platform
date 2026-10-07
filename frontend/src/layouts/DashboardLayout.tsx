@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
+import { BottomNav } from '../components/BottomNav';
 
 interface DashboardLayoutProps {
   leftPanel: React.ReactNode;
@@ -23,7 +24,7 @@ export function DashboardLayout({ leftPanel, centerContent, bottomContent, right
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]">
+    <div className="flex flex-col h-dvh w-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]">
       <Navbar />
 
       <div className="flex flex-1 flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
@@ -58,6 +59,7 @@ export function DashboardLayout({ leftPanel, centerContent, bottomContent, right
           </aside>
         )}
       </div>
+      <BottomNav />
     </div>
   );
 }
