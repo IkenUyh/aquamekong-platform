@@ -41,6 +41,20 @@ _CRAWLER_SENSORS = text("""
 """)
 
 
+# Như Flyway V11: tỉnh chứa trạm, hoặc tỉnh gần nhất trong ~5 km (trạm ven biển, cửa sông).
+# Chỉ trạm chưa có tỉnh, để không ghi đè tỉnh admin đã sửa.
+_ASSIGN_PROVINCES = text("""
+    UPDATE stations s
+    SET province = (
+        SELECT p.name FROM provinces p
+        WHERE ST_DWithin(p.geom, s.location, 0.05)
+        ORDER BY ST_Distance(p.geom, s.location)
+        LIMIT 1
+    )
+    WHERE s.code = ANY(:codes) AND s.province IS NULL
+""")
+
+
 # Cùng ngưỡng với backend classifySalinity và frontend utils/salinity.ts
 SALINITY_THRESHOLD = 4.0
 
@@ -82,6 +96,9 @@ def upsert_stations(conn, stations: pd.DataFrame) -> int:
     ])
     conn.execute(_CRAWLER_DEVICES)
     conn.execute(_CRAWLER_SENSORS)
+    # Bảng provinces do Flyway V11 tạo; backend cũ chưa có thì bỏ qua, trạm để trống tỉnh như trước
+    if conn.execute(text("SELECT to_regclass('provinces') IS NOT NULL")).scalar():
+        conn.execute(_ASSIGN_PROVINCES, {"codes": codes})
     # Rule mặc định chỉ cho trạm mới tạo, để không tạo lại rule admin đã xoá
     new_codes = [c for c in codes if c not in existing]
     if new_codes:
