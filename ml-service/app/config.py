@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     raw_data_dir: str = "../Data"
     # Thả file xuất từ RYNAN vào đây, job định kỳ sẽ nạp vào DB (app/ingest/inbox.py)
     ingest_inbox_dir: str = "/app/data/inbox"
+    # Kho feature (CSV định dạng features) cho ST-GNN, gộp mỗi lần nạp file features
+    features_dir: str = "/app/data/features"
     # Crawler sinh số ngẫu nhiên (demo); tắt khi đã có dữ liệu thật
     enable_mock_crawler: bool = False
     # Link Google Drive (hoặc URL bất kỳ) tới file dữ liệu ban đầu; tự nạp khi DB chưa có trạm thật

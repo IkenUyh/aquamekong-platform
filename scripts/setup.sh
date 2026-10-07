@@ -26,10 +26,10 @@ set -a
 . "$PROJECT_ROOT/.env"
 set +a
 
-# Thư mục inbox phải có trước khi Docker mount (nếu không Docker tạo nó với chủ root),
+# Thư mục inbox, features phải có trước khi Docker mount (nếu không Docker tạo nó với chủ root),
 # và ghi được bởi ml-service (uid 10001)
-mkdir -p "$PROJECT_ROOT/data/inbox"
-chmod -R a+rwX "$PROJECT_ROOT/data/inbox"
+mkdir -p "$PROJECT_ROOT/data/inbox" "$PROJECT_ROOT/data/features"
+chmod -R a+rwX "$PROJECT_ROOT/data/inbox" "$PROJECT_ROOT/data/features"
 
 # 2. Start Docker Compose
 echo ""

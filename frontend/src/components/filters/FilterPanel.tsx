@@ -2,14 +2,13 @@ import React from 'react';
 import { DateRangeFilter } from './DateRangeFilter';
 import { StationDropdown } from './StationDropdown';
 import { MapLayerToggles, DEFAULT_LAYERS } from './MapLayerToggles';
-import { ColorMetricPicker } from './ColorMetricPicker';
 import { useFilters } from '../../contexts/FilterContext';
 import { useStationsList } from '../../hooks/useStations';
 
 export function FilterPanel() {
   const { startDate, endDate, setDateRange,
           selectedStationId, setSelectedStation,
-          activeLayers, toggleLayer, colorMetric, setColorMetric } = useFilters();
+          activeLayers, toggleLayer } = useFilters();
 
   const { data: stations } = useStationsList();
 
@@ -37,8 +36,6 @@ export function FilterPanel() {
         selectedId={selectedStationId}
         onChange={setSelectedStation}
       />
-
-      <ColorMetricPicker value={colorMetric} onChange={setColorMetric} />
 
       {/* Map layers */}
       <MapLayerToggles

@@ -1,12 +1,11 @@
-import { useState } from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import { StationMarker } from './StationMarker';
 import { MapLegend } from './MapLegend';
 import { MapFlyToStation } from '../hooks/useMapFlyTo';
 import type { GeoJsonFeature } from '../types';
-import type { ColorMetric } from '../utils/metricScales';
-import type { Feature, GeoJsonObject } from 'geojson';
-import type { Layer } from 'leaflet';
+import { MetricHeatmap } from './map/MetricHeatmap';
+import type { HeatMetric } from '../utils/heatScales';
+import type { GeoJsonObject } from 'geojson';
 import provincesData from '../data/mekong-provinces.json';
 import riversData from '../data/mekong-rivers.json';
 
@@ -18,7 +17,6 @@ interface MapViewProps {
   selectedStationId: number | null;
   onSelectStation: (id: number) => void;
   activeLayers: Record<string, boolean>;
-  colorMetric: ColorMetric;
 }
 
 // Mekong Delta center coordinates
@@ -29,22 +27,10 @@ const DEFAULT_ZOOM = 9;
 const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
-/** Từ mức zoom này tên trạm hiện thẳng trên marker; nhỏ hơn thì chỉ hiện khi rê chuột */
-const SHOW_NAMES_ZOOM = 11;
+const HEAT_METRICS: HeatMetric[] = ['salinity', 'waterLevel', 'flowRate'];
 
-function ZoomWatcher({ onZoom }: { onZoom: (zoom: number) => void }) {
-  const map = useMapEvents({ zoomend: () => onZoom(map.getZoom()) });
-  return null;
-}
-
-/** Ranh giới tỉnh: src/data/mekong-provinces.json, sông kênh: mekong-rivers.json (tạo bằng scripts/build_map_layers.py) */
-function bindName(feature: Feature, layer: Layer) {
-  const name = feature.properties?.name;
-  if (name) layer.bindTooltip(String(name), { sticky: true, direction: 'top', className: 'text-xs' });
-}
-
-export function MapView({ features, selectedStationId, onSelectStation, activeLayers, colorMetric }: MapViewProps) {
-  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+export function MapView({ features, selectedStationId, onSelectStation, activeLayers }: MapViewProps) {
+  const heatMetric = HEAT_METRICS.find((m) => activeLayers[m]) ?? null;
   const selectedFeature = features.find(f => f.properties.id === selectedStationId);
   const flyToCenter: [number, number] | null = selectedFeature 
     ? [selectedFeature.geometry.coordinates[1], selectedFeature.geometry.coordinates[0]] // Leaflet takes [lat, lng]
@@ -60,22 +46,28 @@ export function MapView({ features, selectedStationId, onSelectStation, activeLa
     >
       <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
 
+      {heatMetric && <MetricHeatmap features={features} metric={heatMetric} />}
+
       {activeLayers.provinces && (
         <GeoJSON
           data={provincesGeoJson}
-          style={{ color: '#0F3D5E', weight: 2, opacity: 0.55, fillColor: '#0F3D5E', fillOpacity: 0.03 }}
-          onEachFeature={bindName}
+          style={{
+            color: '#94a3b8',
+            weight: 1.5,
+            fillOpacity: 0.03,
+            dashArray: '4 4',
+          }}
         />
       )}
 
       {activeLayers.rivers && (
         <GeoJSON
           data={riversGeoJson}
-          // Sông nét đậm hơn kênh; tên hiện khi rê chuột
-          style={(f) => (f?.properties?.kind === 'canal'
-            ? { color: '#38bdf8', weight: 1, opacity: 0.7 }
-            : { color: '#0ea5e9', weight: 2, opacity: 0.75 })}
-          onEachFeature={bindName}
+          style={{
+            color: '#60a5fa',
+            weight: 2,
+            opacity: 0.7,
+          }}
         />
       )}
 
@@ -85,14 +77,11 @@ export function MapView({ features, selectedStationId, onSelectStation, activeLa
           feature={feature}
           isSelected={feature.properties.id === selectedStationId}
           onClick={() => onSelectStation(feature.properties.id)}
-          metric={colorMetric}
-          showName={zoom >= SHOW_NAMES_ZOOM}
         />
       ))}
 
       <MapFlyToStation center={flyToCenter} />
-      <ZoomWatcher onZoom={setZoom} />
-      <MapLegend metric={colorMetric} />
+      <MapLegend metric={heatMetric} />
     </MapContainer>
   );
 }

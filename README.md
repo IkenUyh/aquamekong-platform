@@ -193,6 +193,22 @@ Số đo cũ hơn 3 ngày (`TELEMETRY_MAX_LIVE_AGE`) không tạo cảnh báo v�
 
 ---
 
+## 🧠 Dự báo ST-GNN
+
+Trang **Dự báo** dùng ST-GNN cho các trạm có trong mô hình, nếu trên tập kiểm tra mô hình dự báo 7 ngày tốt hơn cách "giữ nguyên giá trị cũ". Các trạm còn lại dùng Prophet hoặc xu hướng thống kê. Weights không nằm trong git: nhóm gửi nhau thư mục `trained_models` (`st_gnn_horizon_1.pth`, `st_gnn_horizon_7.pth`, `st_gnn_scaler.pkl`).
+
+1. Nạp dữ liệu RYNAN trước (mục trên). ST-GNN đọc mưa, lưu lượng, thủy triều từ kho feature `data/features/`, kho này được tạo khi nạp file features.
+2. Cài weights:
+   ```bash
+   docker compose cp ~/Downloads/trained_models/. ml-service:/tmp/weights/
+   docker compose exec ml-service python -m app.stgnn.install /tmp/weights
+   ```
+   Lệnh kiểm tra file scaler chỉ chứa lớp của sklearn/numpy rồi mới mở. Nó cũng kiểm tra scaler khớp với kho feature (weights train trên dữ liệu khác thì báo lỗi), chấm điểm trên tập kiểm tra rồi in ra, ví dụ `h7: MAE 0.446‰ (giữ nguyên giá trị cũ: 0.526‰, tốt hơn 15%)`.
+
+Mô hình hiện có 2 mốc: sau 1 ngày và sau 7 ngày, và dự báo tính từ **ngày cuối có dữ liệu**. Dữ liệu cũ thì các ngày dự báo có thể đã qua, trang Dự báo ghi rõ điều này.
+
+---
+
 ## 🧪 Chạy Test
 
 ```bash
