@@ -42,7 +42,8 @@ export function DashboardLayout({ leftPanel, centerContent, bottomContent, right
 
         {/* Center: nội dung chính + biểu đồ dưới */}
         <main className="flex-1 flex flex-col relative z-0 min-w-0">
-          <div className={`relative ${mobileCenterHeight} lg:h-auto lg:flex-1 shrink-0`}>{centerContent}</div>
+          {/* lg:min-h-0: không thì vùng giữa cao theo nội dung, cột cuộn bên trong không cuộn được */}
+          <div className={`relative ${mobileCenterHeight} lg:h-auto lg:flex-1 lg:min-h-0 shrink-0`}>{centerContent}</div>
           {bottomContent && (
             <div className="h-[280px] shrink-0 bg-white border-t border-[var(--color-border)] z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] overflow-x-auto">
               {bottomContent}
