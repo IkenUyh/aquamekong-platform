@@ -42,6 +42,18 @@ class ForecastControllerTest {
     @MockBean UserDetailsService userDetailsService;
 
     @Test
+    @WithAnonymousUser
+    void modelInfoIsPublicAnd404WhenNoModelInstalled() throws Exception {
+        when(forecastService.stgnnModelInfo()).thenReturn(java.util.Optional.empty());
+        mvc.perform(get("/api/v1/forecasts/model-info")).andExpect(status().isNotFound());
+
+        when(forecastService.stgnnModelInfo()).thenReturn(java.util.Optional.of(java.util.Map.of("model_version", "st-gnn-v1")));
+        mvc.perform(get("/api/v1/forecasts/model-info"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("st-gnn-v1")));
+    }
+
+    @Test
     void predictValidatesDaysAhead() throws Exception {
         mvc.perform(post("/api/v1/forecasts/predict").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"stationId\":1,\"daysAhead\":99}"))

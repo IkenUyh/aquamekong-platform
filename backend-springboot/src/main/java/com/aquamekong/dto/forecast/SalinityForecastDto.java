@@ -26,4 +26,9 @@ public class SalinityForecastDto {
     private Double confidenceLevel;
 
     private OffsetDateTime createdAt;
+
+    /** Thời điểm chạy mô hình của lượt dự báo này */
+    private OffsetDateTime runAt;
+    /** Ngày cuối có dữ liệu đầu vào (ST-GNN); dự báo tính từ ngày này, có thể trước hôm nay */
+    private LocalDate dataUntil;
 }

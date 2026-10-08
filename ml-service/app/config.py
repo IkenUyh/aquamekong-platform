@@ -19,10 +19,16 @@ class Settings(BaseSettings):
     raw_data_dir: str = "../Data"
     # Thả file xuất từ RYNAN vào đây, job định kỳ sẽ nạp vào DB (app/ingest/inbox.py)
     ingest_inbox_dir: str = "/app/data/inbox"
+    # Kho feature (CSV định dạng features) cho ST-GNN, gộp mỗi lần nạp file features
+    features_dir: str = "/app/data/features"
     # Crawler sinh số ngẫu nhiên (demo); tắt khi đã có dữ liệu thật
     enable_mock_crawler: bool = False
     # Link Google Drive (hoặc URL bất kỳ) tới file dữ liệu ban đầu; tự nạp khi DB chưa có trạm thật
     seed_data_url: str = ""
+    # Folder Google Drive chứa rynan_YYYY-MM-DD.csv (GitHub Actions tải lên mỗi ngày) và API key để đọc nó.
+    # Trống = tắt job tải về (app/ingest/drive_sync.py)
+    gdrive_folder_id: str = ""
+    gdrive_api_key: str = ""
 
     # Model defaults
     default_lookback_days: int = 90

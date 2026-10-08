@@ -105,7 +105,10 @@ services:
       ENABLE_SCHEDULER: ${ENABLE_SCHEDULER:-true}
       ENABLE_MOCK_CRAWLER: ${ENABLE_MOCK_CRAWLER:-false}
       INGEST_INBOX_DIR: /app/data/inbox
+      FEATURES_DIR: /app/data/features
       SEED_DATA_URL: ${SEED_DATA_URL:-}
+      GDRIVE_FOLDER_ID: ${GDRIVE_FOLDER_ID:-}
+      GDRIVE_API_KEY: ${GDRIVE_API_KEY:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173,https://localhost,http://localhost,capacitor://localhost}
     ports:
       - "127.0.0.1:${ML_SERVICE_PORT:-8000}:8000"
@@ -113,6 +116,8 @@ services:
       - ml_models:/app/trained_models
       # Thả file xuất từ RYNAN vào ./data/inbox, ml-service tự nạp mỗi 15 phút
       - ./data/inbox:/app/data/inbox
+      # Kho feature cho ST-GNN (mưa, lưu lượng, thủy triều...), gộp mỗi lần nạp file features
+      - ./data/features:/app/data/features
     depends_on:
       postgres:
         condition: service_healthy

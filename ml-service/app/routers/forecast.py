@@ -39,6 +39,7 @@ def predict_salinity(request: PredictionRequest):
             station_id=request.station_id,
             predictions=predictions,
             model_version=predictions[0].model_version if predictions else "unknown",
+            data_end=predictions[0].data_end if predictions else None,
         )
 
     except ValueError as e:
@@ -115,3 +116,26 @@ def list_models():
             )
 
     return models
+
+
+@router.get("/models/stgnn")
+def stgnn_model_info():
+    """Thông tin ST-GNN đã cài: trạm, ngày dữ liệu cuối lúc train, điểm trên tập test (không kèm scaler)."""
+    from app.stgnn.forecaster import forecaster as stgnn_forecaster
+
+    meta = stgnn_forecaster.meta()
+    if not meta:
+        raise HTTPException(status_code=404, detail="Chưa cài ST-GNN (python -m app.stgnn.install <thư mục weights>)")
+    evaluation = {
+        key: {k: ev[k] for k in ("overall", "interval_coverage", "exceed_recall", "exceed_precision", "test_days")}
+        for key, ev in meta["evaluation"].items()
+    }
+    return {
+        "model_version": meta["model_version"],
+        "installed_at": meta["installed_at"],
+        "trained_until": meta["trained_until"],
+        "horizons": meta["horizons"],
+        "stations": [code for code in meta["stations"] if stgnn_forecaster.eligible(meta, code)],
+        "all_stations": meta["stations"],
+        "evaluation": evaluation,
+    }

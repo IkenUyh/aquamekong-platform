@@ -8,6 +8,7 @@ Khi có file mẫu xuất từ app RYNAN (số đo thô), thêm parser vào FORM
 """
 
 from dataclasses import dataclass
+from typing import Optional
 from pathlib import Path
 
 import pandas as pd
@@ -27,6 +28,8 @@ class ParsedFile:
     format: str
     stations: pd.DataFrame
     measurements: pd.DataFrame
+    # Bảng gốc của file định dạng features, để gộp vào kho feature cho ST-GNN
+    features: Optional[pd.DataFrame] = None
 
 
 def read_table(path: Path) -> pd.DataFrame:
@@ -79,11 +82,61 @@ def parse_features(df: pd.DataFrame) -> ParsedFile:
 
     measurements = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame(columns=MEASUREMENT_COLUMNS)
     measurements = measurements.drop_duplicates(subset=["station_code", "metric_type", "recorded_at"], keep="last")
-    return ParsedFile("features", stations, measurements.reset_index(drop=True))
+    return ParsedFile("features", stations, measurements.reset_index(drop=True), features=df)
+
+
+# --- Định dạng "rynan_raw": rynan_YYYY-MM-DD.csv do scripts/rynan_fetch.py ghi (1 dòng / trạm / metric / thời điểm).
+# Script ghi giá trị cao nhất trong ngày lúc 00:00, giống salinity_max của định dạng features.
+
+RYNAN_RAW_REQUIRED = {"station_code", "recorded_at", "metric", "value"}
+
+# metric trong file → (metric_type, hệ số đổi sang đơn vị của sensor). Độ mặn g/L ≈ ‰.
+# Metric khác (pH, nhiệt độ...) chưa có sensor CRAWLER nên bị bỏ.
+RYNAN_RAW_METRICS = {
+    "salinity": ("salinity", 1.0),
+    "water_level": ("water_level", 0.01),
+}
+
+
+def _to_local_time(values: pd.Series) -> pd.Series:
+    """Giờ không kèm múi giờ hiểu là giờ Việt Nam. Từng giá trị một vì file có thể lẫn cả hai loại."""
+    def convert(value):
+        t = pd.Timestamp(value)
+        return t.tz_localize(TIMEZONE) if t.tz is None else t.tz_convert(TIMEZONE)
+    return pd.to_datetime(values.map(convert))
+
+
+def parse_rynan_raw(df: pd.DataFrame) -> ParsedFile:
+    df = df.copy()
+    df["station_code"] = df["station_code"].astype(str).str.strip()
+
+    stations = (
+        df.reindex(columns=STATION_COLUMNS)
+        .assign(station_name=lambda s: s["station_name"].astype("string").str.strip())
+        .groupby("station_code", as_index=False)
+        .first()
+    )
+
+    df["metric"] = df["metric"].astype(str).str.strip().str.lower()
+    df["value"] = pd.to_numeric(df["value"], errors="coerce")
+    df = df[df["metric"].isin(RYNAN_RAW_METRICS.keys())].dropna(subset=["value"])
+    metric_type = df["metric"].map(lambda m: RYNAN_RAW_METRICS[m][0])
+    factor = df["metric"].map(lambda m: RYNAN_RAW_METRICS[m][1])
+
+    measurements = pd.DataFrame({
+        "station_code": df["station_code"],
+        "recorded_at": _to_local_time(df["recorded_at"]),
+        "metric_type": metric_type,
+        "value": df["value"].astype(float) * factor,
+    }, columns=MEASUREMENT_COLUMNS)
+    measurements = measurements.drop_duplicates(subset=["station_code", "metric_type", "recorded_at"], keep="last")
+    # Không gộp vào kho feature ST-GNN: file này thiếu mưa, lưu lượng thượng nguồn, thủy triều...
+    return ParsedFile("rynan_raw", stations, measurements.reset_index(drop=True))
 
 
 FORMATS = [
     ("features", FEATURES_REQUIRED, parse_features),
+    ("rynan_raw", RYNAN_RAW_REQUIRED, parse_rynan_raw),
 ]
 
 

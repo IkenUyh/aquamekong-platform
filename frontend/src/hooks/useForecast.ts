@@ -12,3 +12,8 @@ export function useForecast(stationId: number | null, daysAhead = 7) {
     staleTime: 10 * 60_000,
   });
 }
+
+/** Điểm đánh giá ST-GNN đã cài; null nếu chưa cài */
+export function useStgnnModelInfo() {
+  return useQuery({ queryKey: ['forecast', 'model-info'], queryFn: forecastApi.getModelInfo, staleTime: 30 * 60_000 });
+}

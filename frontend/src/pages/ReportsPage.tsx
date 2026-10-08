@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Navbar } from '../components/Navbar';
+import { BottomNav } from '../components/BottomNav';
 import { MetricCard, type MetricChange } from '../components/MetricCard';
 import { DonutChart } from '../components/shared/DonutChart';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { reportApi, percentChange, type PeriodValue } from '../api/reportApi';
 import { formatNumber, SALINITY_CLASS_COLORS } from '../utils/salinity';
+import { roundedPercents } from '../utils/percent';
 
 const PERIODS = [
   { days: 7, label: '7 ngày qua' },
@@ -45,10 +47,10 @@ export function ReportsPage() {
   }));
   const distribution = overview?.levelDistribution ?? [];
   const totalStations = overview?.totalStations ?? 0;
-  const percentOf = (count: number) => (totalStations > 0 ? Math.round((count / totalStations) * 100) : 0);
+  const percents = roundedPercents(distribution.map((d) => d.count));
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]">
+    <div className="flex flex-col h-dvh w-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]">
       <Navbar />
 
       <div className="flex-1 overflow-y-auto p-4 lg:p-6 max-w-7xl mx-auto w-full">
@@ -128,12 +130,12 @@ export function ReportsPage() {
               />
             </div>
             <div className="grid grid-cols-1 gap-y-2 mt-6 text-sm">
-              {distribution.map((d) => (
+              {distribution.map((d, i) => (
                 <div key={d.level} className="flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: SALINITY_CLASS_COLORS[d.level] }} /> {d.label}
                   </span>
-                  <span className="font-bold text-gray-700">{d.count} ({percentOf(d.count)}%)</span>
+                  <span className="font-bold text-gray-700">{d.count} ({percents[i]}%)</span>
                 </div>
               ))}
             </div>
@@ -176,6 +178,7 @@ export function ReportsPage() {
           </div>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

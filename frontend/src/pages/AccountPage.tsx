@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Navbar } from '../components/Navbar';
+import { BottomNav } from '../components/BottomNav';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { ZaloButton } from '../components/ZaloButton';
 import { PushSettings } from '../components/PushSettings';
@@ -242,7 +243,7 @@ export function AccountPage() {
   const { user, config } = useAuth();
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[var(--color-bg)]">
+    <div className="flex flex-col h-dvh w-screen bg-[var(--color-bg)]">
       <Navbar />
       <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="max-w-lg mx-auto space-y-6">
@@ -260,6 +261,7 @@ export function AccountPage() {
           )}
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }
