@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Navbar } from '../components/Navbar';
+import { BottomNav } from '../components/BottomNav';
 import { MetricCard, type MetricChange } from '../components/MetricCard';
 import { DonutChart } from '../components/shared/DonutChart';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
@@ -49,7 +50,7 @@ export function ReportsPage() {
   const percents = roundedPercents(distribution.map((d) => d.count));
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]">
+    <div className="flex flex-col h-dvh w-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]">
       <Navbar />
 
       <div className="flex-1 overflow-y-auto p-4 lg:p-6 max-w-7xl mx-auto w-full">
@@ -177,6 +178,7 @@ export function ReportsPage() {
           </div>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

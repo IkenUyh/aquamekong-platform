@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Navbar } from '../components/Navbar';
+import { BottomNav } from '../components/BottomNav';
 import { MetricCard } from '../components/MetricCard';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
 import { useReplay, useReplayBounds } from '../hooks/useReplay';
@@ -213,7 +214,7 @@ export function ReplayPage() {
   const draftInvalid = !draft.from || !draft.to || draft.from > draft.to;
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[var(--color-bg)]">
+    <div className="flex flex-col h-dvh w-screen bg-[var(--color-bg)]">
       <Navbar />
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto w-full p-4 lg:p-6 space-y-6">
@@ -275,6 +276,7 @@ export function ReplayPage() {
           )}
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

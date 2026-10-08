@@ -2,13 +2,14 @@ import React from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Navbar } from './Navbar';
+import { BottomNav } from './BottomNav';
 
 /** Chặn route theo vai trò (đặt bên trong RequireAuth). Backend vẫn kiểm tra quyền ở từng API. */
 export function RequireRole({ roles }: { roles: string[] }) {
   const { hasRole } = useAuth();
   if (hasRole(...roles)) return <Outlet />;
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-dvh bg-gray-50">
       <Navbar />
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="text-center space-y-3">
@@ -16,6 +17,7 @@ export function RequireRole({ roles }: { roles: string[] }) {
           <Link to="/" className="inline-block text-sm font-medium text-primary-600 hover:underline">Về trang Tổng quan</Link>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }
