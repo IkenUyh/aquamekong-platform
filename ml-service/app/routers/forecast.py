@@ -13,7 +13,7 @@ from app.schemas.forecast import (
     TrainResponse,
     ModelInfo,
 )
-from app.services.predictor import predictor
+from app.services.predictor import InsufficientDataError, predictor
 from app.services.data_loader import load_station_metrics, load_station_info
 
 logger = logging.getLogger(__name__)
@@ -26,8 +26,7 @@ def predict_salinity(request: PredictionRequest):
     """
     Predict salinity levels for a station.
 
-    Uses trained Prophet model if available, otherwise falls back
-    to statistical estimation or simulation.
+    ST-GNN, Prophet, Hybrid hoặc xu hướng thống kê (xem Predictor). 422 khi trạm không đủ số đo.
     """
     try:
         predictions = predictor.predict(
@@ -42,6 +41,8 @@ def predict_salinity(request: PredictionRequest):
             data_end=predictions[0].data_end if predictions else None,
         )
 
+    except InsufficientDataError as e:
+        raise HTTPException(status_code=422, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:

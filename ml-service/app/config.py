@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     gdrive_folder_id: str = ""
     gdrive_api_key: str = ""
 
+    # Kho feature ST-GNN cũ hơn số ngày này (dữ liệu RYNAN hằng ngày không cập nhật được nó) thì không dùng
+    # ST-GNN, để không đưa ra dự báo cho những ngày đã qua
+    stgnn_max_data_age_days: int = 7
+
     # Model defaults
     default_lookback_days: int = 90
     default_forecast_days: int = 7

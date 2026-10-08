@@ -60,13 +60,16 @@ def import_file(path, dry_run: bool = False, engine=None) -> ImportReport:
     with engine.connect() as conn:
         trans = conn.begin()
         try:
-            stations = upsert_stations(conn, parsed.stations)
+            stations = upsert_stations(conn, parsed.stations, create=parsed.creates_stations)
             sensors = get_crawler_sensor_mapping(conn)
             rows = parsed.measurements.merge(sensors, on=["station_code", "metric_type"], how="inner")
             unmatched = len(parsed.measurements) - len(rows)
             if unmatched:
                 missing = sorted(set(parsed.measurements["station_code"]) - set(sensors["station_code"]))
-                logger.warning(f"{unmatched} số đo không có sensor CRAWLER (trạm chưa có trong DB: {missing[:10]})")
+                if parsed.creates_stations:
+                    logger.warning(f"{unmatched} số đo không có sensor CRAWLER (trạm chưa có trong DB: {missing[:10]})")
+                else:
+                    logger.info(f"Bỏ qua {unmatched} số đo của {len(missing)} trạm hệ thống không theo dõi")
 
             inserted = 0
             for start in range(0, len(rows), CHUNK_SIZE):

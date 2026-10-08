@@ -75,15 +75,24 @@ def _river_id(conn) -> int:
     return conn.execute(text("SELECT id FROM rivers WHERE name = :name"), {"name": DEFAULT_RIVER}).scalar_one()
 
 
-def upsert_stations(conn, stations: pd.DataFrame) -> int:
-    """Trả về số trạm được tạo/cập nhật. Trạm thiếu toạ độ chỉ dùng được nếu đã có trong DB."""
+def upsert_stations(conn, stations: pd.DataFrame, create: bool = True) -> int:
+    """
+    Trả về số trạm được tạo/cập nhật. Trạm thiếu toạ độ chỉ dùng được nếu đã có trong DB.
+    create=False: chỉ cập nhật trạm đã có, bỏ qua trạm mới.
+    """
     located = stations.dropna(subset=["latitude", "longitude"])
     if located.empty:
         return 0
 
-    river_id = _river_id(conn)
     codes = located["station_code"].tolist()
     existing = set(conn.execute(text("SELECT code FROM stations WHERE code = ANY(:codes)"), {"codes": codes}).scalars())
+    if not create:
+        located = located[located["station_code"].isin(existing)]
+        if located.empty:
+            return 0
+        codes = located["station_code"].tolist()
+
+    river_id = _river_id(conn)
     conn.execute(_UPSERT_STATION, [
         {
             "code": row.station_code,

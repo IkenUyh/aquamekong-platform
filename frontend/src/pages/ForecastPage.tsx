@@ -11,7 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useStationsList } from '../hooks/useStations';
 import { forecastQueryKey, useStgnnModelInfo } from '../hooks/useForecast';
 import type { SalinityForecast, Station, StgnnModelInfo } from '../types';
-import { classifySalinity, formatNumber, SALINITY_THRESHOLD } from '../utils/salinity';
+import { classifySalinity, formatNumber, riverOf, SALINITY_THRESHOLD } from '../utils/salinity';
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const HORIZONS = [7, 14];
@@ -154,6 +154,8 @@ export function ForecastPage() {
   // Ngày dữ liệu cuối của ST-GNN, khi đã cũ hơn hôm nay
   const dataUntil = items.flatMap((i) => i.forecasts).find((f) => f.dataUntil)?.dataUntil ?? null;
   const insights = buildInsights(items);
+  // Thẻ điểm ST-GNN chỉ khi có trạm đang hiển thị dự báo của nó (dữ liệu ST-GNN cũ thì ML dùng mô hình khác)
+  const usesStgnn = items.some((i) => i.forecasts.some((f) => f.modelVersion?.startsWith('st-gnn')));
 
   const togglePicked = (id: number) =>
     setPicked((prev) => {
@@ -257,7 +259,7 @@ export function ForecastPage() {
                 nên các ngày dự báo có thể đã qua. Mô hình chỉ có 2 mốc: sau 1 ngày và sau 7 ngày.
               </p>
             )}
-            {modelInfo && <StgnnScoreCard info={modelInfo} />}
+            {modelInfo && usesStgnn && <StgnnScoreCard info={modelInfo} />}
 
             {dates.length > 0 && (
               <div className="flex shrink-0 gap-2 bg-white p-2 rounded-lg border border-gray-200 overflow-x-auto">
@@ -293,7 +295,7 @@ export function ForecastPage() {
                     <div className="flex justify-between items-start mb-4 gap-2">
                       <div className="min-w-0">
                         <h4 className="font-semibold text-gray-900 flex items-center gap-1 truncate">{station.name}</h4>
-                        <p className="text-xs text-gray-500">{model ? `Mô hình: ${model}` : station.riverName || '—'}</p>
+                        <p className="text-xs text-gray-500">{model ? `Mô hình: ${model}` : riverOf(station) ?? '—'}</p>
                         <p className="text-sm mt-1 text-gray-600">
                           Hiện tại <span className="font-semibold text-gray-900">{formatNumber(station.latestSalinity)}‰</span>
                           {dayValue != null && (
