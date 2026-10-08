@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Navbar } from '../components/Navbar';
+import { BottomNav } from '../components/BottomNav';
 import { useAuth } from '../contexts/AuthContext';
 import { AlertRulesTab } from '../components/admin/AlertRulesTab';
 import { StationsTab } from '../components/admin/StationsTab';
@@ -21,7 +22,7 @@ export function AdminPage() {
   const [active, setActive] = useState<TabId>('rules');
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[var(--color-bg)]">
+    <div className="flex flex-col h-dvh w-screen bg-[var(--color-bg)]">
       <Navbar />
       <div className="flex-1 overflow-y-auto p-4 lg:p-6">
         <div className="max-w-7xl mx-auto space-y-6">
@@ -47,6 +48,7 @@ export function AdminPage() {
           </div>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

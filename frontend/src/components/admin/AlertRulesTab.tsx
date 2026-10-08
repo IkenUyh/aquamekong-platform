@@ -22,7 +22,7 @@ const EMPTY: RuleForm = { stationId: '', metricType: 'salinity', operator: '>', 
 
 export function AlertRulesTab() {
   const queryClient = useQueryClient();
-  const { data: rules = [] } = useQuery({ queryKey: ['alerts', 'rules'], queryFn: alertApi.getRules });
+  const { data: rules = [], isLoading, isError } = useQuery({ queryKey: ['alerts', 'rules'], queryFn: alertApi.getRules });
   const { data: stations = [] } = useStationsList();
   const [form, setForm] = useState<RuleForm>(EMPTY);
   const [error, setError] = useState<string | null>(null);
@@ -131,7 +131,11 @@ export function AlertRulesTab() {
       </form>
 
       <div className="xl:col-span-2 min-h-[400px]">
-        <DataTable data={rules} columns={columns} keyExtractor={(r) => r.id} emptyText="Chưa có rule cảnh báo nào — hệ thống sẽ không sinh cảnh báo" />
+        <DataTable data={rules} columns={columns} keyExtractor={(r) => r.id} emptyText={
+          isLoading ? 'Đang tải...'
+            : isError ? 'Không tải được danh sách rule. Tải lại trang để thử lại.'
+            : 'Chưa có rule cảnh báo nào — hệ thống sẽ không sinh cảnh báo'
+        } />
       </div>
     </div>
   );

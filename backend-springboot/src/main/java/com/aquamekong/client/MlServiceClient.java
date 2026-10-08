@@ -6,11 +6,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * HTTP client gọi sang ML service (FastAPI) — POST /api/v1/predict.
@@ -23,6 +27,22 @@ public class MlServiceClient {
 
     public MlServiceClient(@Qualifier("mlRestClient") RestClient restClient) {
         this.restClient = restClient;
+    }
+
+    /** Điểm đánh giá ST-GNN đã cài (GET /api/v1/models/stgnn); rỗng nếu chưa cài. */
+    public Optional<Map<String, Object>> stgnnModelInfo() {
+        try {
+            Map<String, Object> body = restClient.get()
+                    .uri("/api/v1/models/stgnn")
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<>() {});
+            return Optional.ofNullable(body);
+        } catch (HttpClientErrorException.NotFound e) {
+            return Optional.empty();
+        } catch (RestClientException e) {
+            log.error("Gọi ML service lấy thông tin ST-GNN thất bại: {}", e.getMessage());
+            throw new MlServiceException("Không gọi được ML service: " + e.getMessage(), e);
+        }
     }
 
     public PredictionResponse predict(Long stationId, int daysAhead) {
@@ -51,7 +71,9 @@ public class MlServiceClient {
     public record PredictionResponse(
             @JsonProperty("station_id") Long stationId,
             List<PredictionItem> predictions,
-            @JsonProperty("model_version") String modelVersion) {
+            @JsonProperty("model_version") String modelVersion,
+            // Ngày cuối có dữ liệu đầu vào (chỉ ST-GNN gửi)
+            @JsonProperty("data_end") LocalDate dataEnd) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

@@ -19,12 +19,17 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ForecastService {
+
+    private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final ForecastRunRepository forecastRunRepository;
     private final SalinityForecastRepository salinityForecastRepository;
@@ -112,6 +117,10 @@ public class ForecastService {
      * Gọi ML service dự báo cho trạm, lưu thành 1 forecast_run + các salinity_forecasts.
      * Lời gọi HTTP nằm ngoài transaction để không giữ connection DB trong lúc chờ ML.
      */
+    public Optional<Map<String, Object>> stgnnModelInfo() {
+        return mlServiceClient.stgnnModelInfo();
+    }
+
     public List<SalinityForecastDto> predict(Long stationId, int daysAhead) {
         if (!stationRepository.existsById(stationId)) {
             throw new IllegalArgumentException("Station không tồn tại với ID: " + stationId);
@@ -124,6 +133,7 @@ public class ForecastService {
             ForecastRun run = forecastRunRepository.save(ForecastRun.builder()
                     .modelVersion(response.modelVersion() != null ? response.modelVersion() : "unknown")
                     .runAt(OffsetDateTime.now())
+                    .inputTo(response.dataEnd() != null ? response.dataEnd().atStartOfDay(ZONE).toOffsetDateTime() : null)
                     .status(ForecastRunStatus.SUCCESS)
                     .build());
 
@@ -173,6 +183,9 @@ public class ForecastService {
                 .upperBound(entity.getUpperBound())
                 .confidenceLevel(entity.getConfidenceLevel())
                 .createdAt(entity.getCreatedAt())
+                .runAt(entity.getRun() != null ? entity.getRun().getRunAt() : null)
+                .dataUntil(entity.getRun() != null && entity.getRun().getInputTo() != null
+                        ? entity.getRun().getInputTo().atZoneSameInstant(ZONE).toLocalDate() : null)
                 .build();
     }
 }

@@ -17,6 +17,8 @@ class PredictionItem(BaseModel):
     lower_bound: Optional[float] = Field(None, description="Lower bound of confidence interval")
     upper_bound: Optional[float] = Field(None, description="Upper bound of confidence interval")
     model_version: str = "prophet-v1.0"
+    # Ngày cuối có dữ liệu đầu vào; chỉ ST-GNN điền (dự báo tính từ ngày này, không phải từ hôm nay)
+    data_end: Optional[date] = None
 
 
 class PredictionResponse(BaseModel):
@@ -24,6 +26,7 @@ class PredictionResponse(BaseModel):
     station_id: int
     predictions: List[PredictionItem]
     model_version: str = "prophet-v1.0"
+    data_end: Optional[date] = None
     status: str = "success"
 
 

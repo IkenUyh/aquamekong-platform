@@ -19,4 +19,6 @@ public interface ForecastRunRepository extends JpaRepository<ForecastRun, Long> 
     List<ForecastRun> findByStatus(ForecastRunStatus status);
 
     List<ForecastRun> findByRunAtBetweenOrderByRunAtDesc(OffsetDateTime from, OffsetDateTime to);
+
+    boolean existsByRunAtAfter(OffsetDateTime from);
 }

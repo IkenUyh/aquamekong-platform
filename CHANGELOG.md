@@ -2,6 +2,31 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [0.2.0] - 2026-10-09
+
+### Thêm mới
+- **Dữ liệu RYNAN tự động mỗi ngày**: GitHub Actions lúc 06:00 lấy độ mặn và mực nước cao nhất theo ngày của các trạm từ app MEKONG RYNAN, lưu CSV lên Google Drive; ml-service kiểm tra thư mục Drive mỗi giờ và tự nạp file mới. Có thể lấy bù nhiều ngày (`--from`/`--to`). Cần cài đặt một lần, xem README.
+- **Dự báo ST-GNN** của nhóm trên trang Dự báo, kèm sai số trên tập kiểm tra so với cách giữ nguyên giá trị cũ.
+- **Dự báo tự chạy mỗi sáng** (07:30) cho mọi trạm, nên người chưa đăng nhập cũng xem được dự báo trong ngày.
+- **Thanh tab dưới cùng trên điện thoại** (app và web): Tổng quan, Bản đồ, Dự báo, Cảnh báo (kèm số cảnh báo đang mở) và mục Thêm.
+- Trạm tự được gán tỉnh/thành theo toạ độ (6 tỉnh ĐBSCL sau sáp nhập), bộ lọc tỉnh dùng được.
+
+### Thay đổi
+- Bản đồ dùng ranh giới tỉnh và sông, kênh thật; tô màu trạm theo một chỉ số thay cho lớp nhiệt.
+- Khuyến nghị vận hành liệt kê trạm mặn nhất trước.
+- Nhãn trạm đè nhau trên bản đồ: mức mặn cao hơn nằm trên.
+
+### Sửa lỗi
+- Bản đồ trang Dự báo trống (khung cao hơn 5000px) và thanh chọn ngày bị bóp dẹt.
+- Vệt trắng giữa các ô bản đồ.
+- Tỷ lệ trên trang Báo cáo cộng ra 101%.
+- Trang Trạm và Cảnh báo báo "không có dữ liệu" khi thực ra không kết nối được máy chủ.
+- Nhãn ô số liệu bị cắt trên điện thoại.
+
+### Hạn chế đã biết
+- ST-GNN chỉ dùng cho các trạm trong dữ liệu huấn luyện mà nó dự báo tốt hơn cách giữ nguyên giá trị cũ (hiện 12/17), và chỉ có mốc +1 và +7 ngày; các trạm khác dùng mô hình khác. Dữ liệu RYNAN hằng ngày chưa có lượng mưa, lưu lượng, thuỷ triều nên chưa cập nhật đầu vào của ST-GNN.
+- Cảnh báo và khuyến nghị vẫn dựa trên số đo mới nhất, chưa dựa trên dự báo.
+
 ## [0.1.0] - 2026-10-06
 
 Bản phát hành đầu tiên.
@@ -21,4 +46,5 @@ Bản phát hành đầu tiên.
 - Cảnh báo và khuyến nghị dựa trên số đo mới nhất, chưa dựa trên dự báo.
 - Dữ liệu RYNAN hiện có đến 31/08/2026; trạm hiện "mất tín hiệu" tới khi nạp dữ liệu mới.
 
+[0.2.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/IkenUyh/aquamekong-platform/releases/tag/v0.1.0

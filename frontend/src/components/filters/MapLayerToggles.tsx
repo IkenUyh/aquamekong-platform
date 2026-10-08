@@ -8,10 +8,6 @@ export interface MapLayer {
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const DEFAULT_LAYERS: MapLayer[] = [
-  // 3 lớp nhiệt loại trừ nhau (FilterContext.toggleLayer)
-  { id: 'salinity',    label: 'Nhiệt: Độ mặn (‰)', enabled: true },
-  { id: 'waterLevel',  label: 'Nhiệt: Mực nước (m)', enabled: false },
-  { id: 'flowRate',    label: 'Nhiệt: Lưu lượng', enabled: false },
   { id: 'provinces',   label: 'Ranh giới tỉnh', enabled: true },
   { id: 'rivers',      label: 'Sông, kênh', enabled: true },
 ];

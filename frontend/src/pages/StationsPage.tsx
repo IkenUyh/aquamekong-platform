@@ -16,7 +16,7 @@ const uniqueSorted = (values: (string | undefined)[]) =>
 const normalize = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
 export function StationsPage() {
-  const { data: stationsList = [] } = useStationsList();
+  const { data: stationsList = [], isLoading, isError } = useStationsList();
   const [province, setProvince] = useState(ALL);
   const [river, setRiver] = useState(ALL);
   const [metrics, setMetrics] = useState<string[]>([]);
@@ -51,8 +51,12 @@ export function StationsPage() {
         <p className="text-xs text-gray-400 font-mono">{s.code}</p>
       </div>
     ) },
-    { key: 'river', header: 'Sông', render: (s) => s.riverName ?? '—' },
-    { key: 'province', header: 'Tỉnh/Thành', render: (s) => s.province ?? '—' },
+    { key: 'location', header: 'Tỉnh/Thành · Sông', render: (s) => (
+      <div className="whitespace-nowrap">
+        <p className="text-gray-800">{s.province ?? '—'}</p>
+        <p className="text-xs text-gray-400">{s.riverName ?? '—'}</p>
+      </div>
+    ) },
     { key: 'type', header: 'Chỉ số đo', render: (s) =>
       s.metricTypes?.length ? s.metricTypes.map((m) => metricLabel(m).label).join(', ') : <span className="text-gray-400">Chưa có số đo</span> },
     {
@@ -139,7 +143,7 @@ export function StationsPage() {
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Danh sách trạm quan trắc</h2>
               <p className="text-xs text-gray-500">
-                {filtered.length === stationsList.length
+                {isLoading ? 'Đang tải...' : filtered.length === stationsList.length
                   ? `${stationsList.length} trạm quan trắc`
                   : `${filtered.length} / ${stationsList.length} trạm khớp bộ lọc`}
               </p>
@@ -162,7 +166,12 @@ export function StationsPage() {
               data={filtered}
               columns={columns}
               keyExtractor={(s) => s.id}
-              emptyText="Không có trạm nào khớp bộ lọc"
+              emptyText={
+                isLoading ? 'Đang tải danh sách trạm...'
+                  : isError ? 'Không tải được danh sách trạm. Máy chủ có thể đang khởi động lại, trang sẽ tự thử lại.'
+                  : stationsList.length === 0 ? 'Chưa có trạm quan trắc nào'
+                  : 'Không có trạm nào khớp bộ lọc'
+              }
             />
           </div>
         </div>

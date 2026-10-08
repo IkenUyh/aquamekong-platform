@@ -90,7 +90,7 @@ export function AlertsPage() {
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
   const canManage = hasRole('ROLE_OPERATOR', 'ROLE_ADMIN');
-  const { data: alerts = [], isLoading } = useAlerts();
+  const { data: alerts = [], isLoading, isError } = useAlerts();
 
   const [periodHours, setPeriodHours] = useState(24 * 7);
   const [levels, setLevels] = useState<Level[]>(['CRITICAL', 'WARNING', 'INFO']);
@@ -265,7 +265,10 @@ export function AlertsPage() {
               keyExtractor={(a) => a.id}
               selectedRowKey={selectedAlert?.id}
               onRowClick={(a) => setSelectedId(a.id)}
-              emptyText={alerts.length === 0 ? 'Chưa có cảnh báo nào' : 'Không có cảnh báo khớp bộ lọc'}
+              emptyText={
+                isError ? 'Không tải được danh sách cảnh báo. Trang sẽ tự thử lại.'
+                  : alerts.length === 0 ? 'Chưa có cảnh báo nào' : 'Không có cảnh báo khớp bộ lọc'
+              }
             />
           </div>
         </div>

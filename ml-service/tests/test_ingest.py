@@ -47,6 +47,33 @@ def test_features_lag_columns_are_recorded_on_the_previous_day(features_file):
     assert stations.loc["A001", "latitude"] == 9.5
 
 
+RYNAN_RAW_CSV = """station_code,station_name,latitude,longitude,recorded_at,metric,value
+A001,Trạm A,9.5,105.2,2026-10-06T07:00:00+07:00,salinity,3.2
+A001,Trạm A,9.5,105.2,2026-10-06T07:00:00+07:00,water_level,125
+A001,Trạm A,9.5,105.2,2026-10-06T07:00:00+07:00,ph,7.6
+A001,Trạm A,9.5,105.2,2026-10-06T08:00:00+07:00,salinity,
+B002,Trạm B,9.7,105.4,2026-10-06T08:00:00,salinity,0.4
+"""
+
+
+def test_rynan_raw_keeps_hourly_readings_and_converts_water_level(tmp_path):
+    path = tmp_path / "rynan_2026-10-06.csv"
+    path.write_text(RYNAN_RAW_CSV, encoding="utf-8")
+
+    parsed = parse_file(path)
+
+    assert parsed.format == "rynan_raw"
+    # Giữ giờ đo; giờ không có múi giờ hiểu là giờ Việt Nam; mực nước cm → m; pH và ô trống bị bỏ
+    assert _values(parsed.measurements) == {
+        ("A001", "salinity", "2026-10-06 07:00+0700", 3.2),
+        ("A001", "water_level", "2026-10-06 07:00+0700", 1.25),
+        ("B002", "salinity", "2026-10-06 08:00+0700", 0.4),
+    }
+    assert sorted(parsed.stations["station_code"]) == ["A001", "B002"]
+    # Thiếu mưa, lưu lượng thượng nguồn... nên không gộp vào kho feature ST-GNN
+    assert parsed.features is None
+
+
 def test_unknown_header_is_rejected_with_the_columns_found():
     with pytest.raises(UnsupportedFormatError, match="Thời gian"):
         detect_format(["Thời gian", "Mã trạm", "Độ mặn"])
@@ -134,3 +161,20 @@ def test_upsert_adds_default_rule_only_for_new_stations_and_removes_demo():
     rule_params = [p for sql, p in calls if "INSERT INTO alert_rules" in sql]
     assert rule_params == [{"codes": ["B002"], "threshold": 4.0}]
     assert any("DELETE FROM stations" in sql and "CT-001" in p["codes"] for sql, p in calls)
+    # Gán tỉnh theo toạ độ cho các trạm vừa nạp, chỉ khi chưa có
+    province_params = [p for sql, p in calls if "SET province" in sql]
+    assert province_params == [{"codes": ["A001", "B002"]}]
+
+
+def test_upsert_skips_province_assignment_before_the_provinces_table_exists():
+    from app.ingest.stations import upsert_stations
+
+    conn = MagicMock()
+    conn.execute.return_value.scalar.return_value = False           # to_regclass('provinces') IS NULL
+    conn.execute.return_value.scalar_one.return_value = 1
+    conn.execute.return_value.scalars.return_value = []
+    stations = pd.DataFrame([{"station_code": "A001", "station_name": "Trạm A", "latitude": 9.5, "longitude": 105.2}])
+
+    upsert_stations(conn, stations)
+
+    assert not any("SET province" in str(c.args[0]) for c in conn.execute.call_args_list)
