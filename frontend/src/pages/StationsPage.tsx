@@ -51,8 +51,12 @@ export function StationsPage() {
         <p className="text-xs text-gray-400 font-mono">{s.code}</p>
       </div>
     ) },
-    { key: 'river', header: 'Sông', render: (s) => s.riverName ?? '—' },
-    { key: 'province', header: 'Tỉnh/Thành', render: (s) => s.province ?? '—' },
+    { key: 'location', header: 'Tỉnh/Thành · Sông', render: (s) => (
+      <div className="whitespace-nowrap">
+        <p className="text-gray-800">{s.province ?? '—'}</p>
+        <p className="text-xs text-gray-400">{s.riverName ?? '—'}</p>
+      </div>
+    ) },
     { key: 'type', header: 'Chỉ số đo', render: (s) =>
       s.metricTypes?.length ? s.metricTypes.map((m) => metricLabel(m).label).join(', ') : <span className="text-gray-400">Chưa có số đo</span> },
     {
