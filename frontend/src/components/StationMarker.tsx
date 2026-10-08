@@ -59,13 +59,17 @@ export function StationMarker({ feature, isSelected, onClick, metric, showName }
   const scale = METRIC_SCALES[metric];
   const value = scale.value(properties);
   const valueText = value == null ? '—' : `${formatNumber(value, scale.digits)} ${scale.unit}`;
+  const bin = scale.binOf(value);
+  // Trạm sát nhau thì nhãn đè lên nhau: mức cao hơn nằm trên (bins xếp từ cao xuống thấp, "chưa có dữ liệu" cuối).
+  // Bước 100 lớn hơn chênh lệch toạ độ y (Leaflet xếp theo y) giữa hai marker đang đè nhau.
+  const rank = scale.bins.length - scale.bins.findIndex((b) => b.key === bin.key);
 
   return (
     <Marker
       position={[lat, lng]}
-      icon={createStationIcon(properties.name, valueText, scale.binOf(value).color, isSelected, showName)}
+      icon={createStationIcon(properties.name, valueText, bin.color, isSelected, showName)}
       eventHandlers={{ click: onClick }}
-      zIndexOffset={isSelected ? 1000 : 0}
+      zIndexOffset={isSelected ? 10000 : rank * 100}
     >
       {!isSelected && !showName && (
         <Tooltip direction="top" offset={[0, -12]}>{properties.name}</Tooltip>

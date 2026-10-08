@@ -36,13 +36,13 @@ export function MetricCard({ label, value, unit, hint, change, tone = 'default' 
 
   return (
     <div className="card p-4 h-full">
-      <p className="text-xs font-medium text-gray-500 line-clamp-1">{label}</p>
+      <p className="text-xs font-medium text-gray-500 line-clamp-2">{label}</p>
       <p className={`mt-1 text-2xl font-semibold num ${tone === 'danger' ? 'text-red-600' : 'text-gray-900'}`}>
         {value}
         {unit && <span className="ml-1 text-sm font-normal text-gray-500">{unit}</span>}
       </p>
       {(changeText || hint) && (
-        <p className="mt-1 text-xs text-gray-500 line-clamp-1">
+        <p className="mt-1 text-xs text-gray-500 line-clamp-2">
           {changeText && <span className={`font-medium num ${changeClass}`}>{changeText}</span>}
           {changeText && change?.label && <span> {change.label}</span>}
           {changeText && hint && <span> · </span>}

@@ -1,0 +1,52 @@
+name: RYNAN daily fetch
+
+on:
+  schedule:
+    - cron: '0 23 * * *'  # 06:00 giờ Việt Nam, lấy số đo của hôm qua
+  workflow_dispatch:
+    inputs:
+      from_date:
+        description: 'Ngày bắt đầu YYYY-MM-DD (lấy bù lần đầu, ví dụ 2026-09-01). Trống = hôm qua'
+        required: false
+      to_date:
+        description: 'Ngày kết thúc YYYY-MM-DD. Trống = hôm qua'
+        required: false
+
+# Hai lần chạy cùng lúc sẽ ghi đè file của nhau trên Drive
+concurrency: rynan-fetch
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    name: Fetch RYNAN → Google Drive
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install
+        run: pip install "requests>=2.31.0" "cryptography>=42.0"
+
+      # Repo công khai: log ai cũng xem được, script chỉ in số trạm/số dòng. Không upload artifact.
+      - name: Fetch and upload
+        working-directory: ml-service
+        env:
+          FROM_DATE: ${{ inputs.from_date }}
+          TO_DATE: ${{ inputs.to_date }}
+          RYNAN_USERNAME: ${{ secrets.RYNAN_USERNAME }}
+          RYNAN_PASSWORD: ${{ secrets.RYNAN_PASSWORD }}
+          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+          GDRIVE_REFRESH_TOKEN: ${{ secrets.GDRIVE_REFRESH_TOKEN }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+        run: >
+          python scripts/rynan_fetch.py
+          --from "${FROM_DATE:-yesterday}" --to "${TO_DATE:-yesterday}"
+          --out "$RUNNER_TEMP/rynan" --upload

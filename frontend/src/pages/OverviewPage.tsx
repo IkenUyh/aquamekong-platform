@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Navbar } from '../components/Navbar';
+import { BottomNav } from '../components/BottomNav';
 import { MetricCard } from '../components/MetricCard';
 import { RecommendationList } from '../components/RecommendationList';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
@@ -92,7 +93,7 @@ export function OverviewPage() {
   const hasTrend = trendData.some((p) => p.current != null);
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[var(--color-bg)]">
+    <div className="flex flex-col h-dvh w-screen bg-[var(--color-bg)]">
       <Navbar />
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto w-full p-4 lg:p-6 space-y-6">
@@ -202,6 +203,7 @@ export function OverviewPage() {
           </div>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

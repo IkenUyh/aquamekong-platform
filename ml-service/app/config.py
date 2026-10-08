@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     enable_mock_crawler: bool = False
     # Link Google Drive (hoặc URL bất kỳ) tới file dữ liệu ban đầu; tự nạp khi DB chưa có trạm thật
     seed_data_url: str = ""
+    # Folder Google Drive chứa rynan_YYYY-MM-DD.csv (GitHub Actions tải lên mỗi ngày) và API key để đọc nó.
+    # Trống = tắt job tải về (app/ingest/drive_sync.py)
+    gdrive_folder_id: str = ""
+    gdrive_api_key: str = ""
 
     # Model defaults
     default_lookback_days: int = 90

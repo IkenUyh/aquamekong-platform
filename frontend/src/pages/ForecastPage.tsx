@@ -260,7 +260,7 @@ export function ForecastPage() {
             {modelInfo && <StgnnScoreCard info={modelInfo} />}
 
             {dates.length > 0 && (
-              <div className="flex gap-2 bg-white p-2 rounded-lg border border-gray-200 overflow-x-auto">
+              <div className="flex shrink-0 gap-2 bg-white p-2 rounded-lg border border-gray-200 overflow-x-auto">
                 {dates.map((d, i) => {
                   const { weekday, label } = dayLabel(d);
                   const active = i === dayIndex;
