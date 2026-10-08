@@ -1,10 +1,10 @@
-# 🌊 AquaMekong Platform
+# AquaMekong Platform
 
 **AquaMekong Platform** là hệ thống giám sát, phân tích và dự báo xâm nhập mặn vùng Đồng bằng Sông Cửu Long (ĐBSCL). Hệ thống kết hợp cơ sở dữ liệu địa lý PostGIS, Spring Boot Backend REST API, mô hình AI/ML Python (Prophet/LSTM), và giao diện React Web Dashboard trực quan.
 
 ---
 
-## 🏗️ Kiến trúc Công nghệ (Monorepo)
+## Kiến trúc Công nghệ (Monorepo)
 
 * **Frontend**: React 18 + Vite + TypeScript + Tailwind CSS v3 + Leaflet Maps + Recharts
 * **Backend**: Spring Boot 3.3 (Java 21) + Spring Data JPA + Flyway Migrations + Swagger OpenAPI 3.0
@@ -14,7 +14,7 @@
 
 ---
 
-## 🚀 Hướng dẫn Khởi chạy Dự án (Quick Start)
+## Hướng dẫn Khởi chạy Dự án (Quick Start)
 
 Dành cho thành viên clone dự án về máy local:
 
@@ -47,21 +47,21 @@ chmod +x scripts/setup.sh
 
 ---
 
-## 📍 Các Địa chỉ Truy cập (Service URLs)
+## Các Địa chỉ Truy cập (Service URLs)
 
 Sau khi Docker Compose khởi chạy thành công:
 
 | Dịch vụ | Địa chỉ URL | Mô tả |
 | :--- | :--- | :--- |
-| **🌐 Frontend Web** | [http://localhost:3000](http://localhost:3000) | Giao diện chính (Tổng quan, Bản đồ, Dự báo, Cảnh báo, Báo cáo) |
-| **⚙️ Backend API** | [http://localhost:8080](http://localhost:8080) | REST API Spring Boot |
-| **📑 Swagger UI** | [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html) | Tài liệu & Đã test API Backend |
-| **🤖 ML Service Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) | Swagger UI Python FastAPI (Model AI) |
-| **🗄️ PostgreSQL Database** | `localhost:5433` (đổi bằng `POSTGRES_HOST_PORT` trong `.env`) | DB: `aquamekong`, User: `aquamekong`, Pass: `aquamekong_secret` |
+| **Frontend Web** | [http://localhost:3000](http://localhost:3000) | Giao diện chính (Tổng quan, Bản đồ, Dự báo, Cảnh báo, Báo cáo) |
+| **Backend API** | [http://localhost:8080](http://localhost:8080) | REST API Spring Boot |
+| **Swagger UI** | [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html) | Tài liệu & Đã test API Backend |
+| **ML Service Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) | Swagger UI Python FastAPI (Model AI) |
+| **PostgreSQL Database** | `localhost:5433` (đổi bằng `POSTGRES_HOST_PORT` trong `.env`) | DB: `aquamekong`, User: `aquamekong`, Pass: `aquamekong_secret` |
 
 ---
 
-## 🛠️ Các Lệnh Quản lý Tiện ích
+## Các Lệnh Quản lý Tiện ích
 
 * **Xem log thời gian thực của toàn bộ hệ thống:**
   ```bash
@@ -85,7 +85,7 @@ Sau khi Docker Compose khởi chạy thành công:
 
 ---
 
-## 💻 Hướng dẫn Chạy Dev Thủ công (Local Development)
+## Hướng dẫn Chạy Dev Thủ công (Local Development)
 
 Nếu muốn tự chạy và sửa code từng phần mà không qua Docker:
 
@@ -117,7 +117,7 @@ Nếu muốn tự chạy và sửa code từng phần mà không qua Docker:
 
 ---
 
-## 📱 App điện thoại (Android / iOS)
+## App điện thoại (Android / iOS)
 
 App điện thoại là chính frontend web được đóng gói bằng [Capacitor](https://capacitorjs.com) (`frontend/android/`). Web vẫn chạy như cũ, app và web dùng chung code và chung backend.
 
@@ -144,7 +144,7 @@ Backend phải cho phép origin của app trong `CORS_ORIGINS` (mặc định đ
 
 ---
 
-## 🔔 Thông báo đẩy khi có cảnh báo
+## Thông báo đẩy khi có cảnh báo
 
 Khi có cảnh báo mới (số đo vượt ngưỡng của rule cảnh báo), mọi tài khoản đã bật thông báo đều nhận được trên thiết bị của mình, kể cả khi không mở trang/app. Người dùng bật ở trang **Tài khoản** (hoặc nút ở trang **Cảnh báo**), có nút **Gửi thử**. Đăng xuất thì thiết bị đó thôi nhận.
 
@@ -166,7 +166,7 @@ Giữ nguyên cặp khoá về sau: đổi khoá thì mọi thiết bị phải 
 
 ---
 
-## 📥 Nạp dữ liệu RYNAN
+## Nạp dữ liệu RYNAN
 
 Tool nạp file CSV/Excel vào DB. Nó tự tạo trạm (mã, tên, toạ độ), device và sensor cho từng trạm, tạo rule cảnh báo độ mặn > 4‰ cho trạm mới, và xoá 6 trạm demo (chỉ có số đo giả). Nạp lại cùng một file không tạo bản ghi trùng.
 
@@ -187,13 +187,15 @@ Chạy `docker compose up -d` (hoặc `./scripts/setup.sh`). Nếu DB chưa có 
 
 **Cập nhật hằng ngày**: thả file xuất từ RYNAN vào `data/inbox/`. ml-service quét thư mục này mỗi 15 phút (và một lần khi khởi động). File nạp xong được chuyển vào `data/inbox/processed/`. File lỗi được chuyển vào `data/inbox/failed/`, kèm `<tên>.error.txt` ghi lý do. Container chạy với uid 10001, nên thư mục phải cho mọi user ghi được: `chmod -R a+rwX data/inbox`. Nếu Docker đã tự tạo thư mục này với chủ là root thì chạy trước: `sudo chown -R $USER data`.
 
-Hiện tool mới hiểu định dạng file features. File RYNAN có cột khác thì sẽ vào `failed/`, và file `.error.txt` liệt kê các cột tìm thấy. Muốn hỗ trợ định dạng mới thì thêm parser vào `ml-service/app/ingest/parsers.py`.
+Tool hiểu 2 định dạng: file features (1 dòng / trạm / ngày) và `rynan_YYYY-MM-DD.csv` (1 dòng / số đo, do `ml-service/scripts/rynan_fetch.py` ghi). File có cột khác thì sẽ vào `failed/`, và file `.error.txt` liệt kê các cột tìm thấy. Muốn hỗ trợ định dạng mới thì thêm parser vào `ml-service/app/ingest/parsers.py`.
+
+**Tự động lấy từ app RYNAN MEKONG**: workflow `.github/workflows/rynan-daily.yml` chạy `ml-service/scripts/rynan_fetch.py` mỗi sáng, lấy số đo hôm qua và tải `rynan_YYYY-MM-DD.csv` lên một folder Google Drive. Đặt `GDRIVE_FOLDER_ID` và `GDRIVE_API_KEY` trong `.env` thì ml-service tải file mới về `data/inbox/` mỗi giờ. Lần đầu lấy bù nhiều ngày: Actions → *RYNAN daily fetch* → *Run workflow*, điền `from_date`. Script đăng nhập bằng tài khoản app MEKONG RYNAN và lấy độ mặn, mực nước cao nhất từng ngày (giống tab "Tháng" trong app). Cách lấy refresh token Drive và các GitHub Secret cần có nằm trong `docs/rynan-capture.md` (file này không lên git). File `rynan_*` chỉ vào bảng `measurements`, không vào kho feature ST-GNN, vì thiếu mưa, lưu lượng thượng nguồn, thủy triều.
 
 Số đo cũ hơn 3 ngày (`TELEMETRY_MAX_LIVE_AGE`) không tạo cảnh báo và không đẩy realtime, nên nạp dữ liệu lịch sử không gửi thông báo hàng loạt. Crawler sinh số ngẫu nhiên đã tắt mặc định (`ENABLE_MOCK_CRAWLER=false`).
 
 ---
 
-## 🧠 Dự báo ST-GNN
+## Dự báo ST-GNN
 
 Trang **Dự báo** dùng ST-GNN cho các trạm có trong mô hình, nếu trên tập kiểm tra mô hình dự báo 7 ngày tốt hơn cách "giữ nguyên giá trị cũ". Các trạm còn lại dùng Prophet hoặc xu hướng thống kê. Weights không nằm trong git: nhóm gửi nhau thư mục `trained_models` (`st_gnn_horizon_1.pth`, `st_gnn_horizon_7.pth`, `st_gnn_scaler.pkl`).
 
@@ -209,7 +211,7 @@ Mô hình hiện có 2 mốc: sau 1 ngày và sau 7 ngày, và dự báo tính t
 
 ---
 
-## 🧪 Chạy Test
+## Chạy Test
 
 ```bash
 cd backend-springboot && ./mvnw test        # JUnit + Mockito, không cần DB

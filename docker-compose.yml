@@ -107,6 +107,8 @@ services:
       INGEST_INBOX_DIR: /app/data/inbox
       FEATURES_DIR: /app/data/features
       SEED_DATA_URL: ${SEED_DATA_URL:-}
+      GDRIVE_FOLDER_ID: ${GDRIVE_FOLDER_ID:-}
+      GDRIVE_API_KEY: ${GDRIVE_API_KEY:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173,https://localhost,http://localhost,capacitor://localhost}
     ports:
       - "127.0.0.1:${ML_SERVICE_PORT:-8000}:8000"
