@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -22,18 +23,19 @@ public class RecommendationService {
     public List<RecommendationDto> getRecommendations() {
         List<RecommendationDto> recommendations = new ArrayList<>();
 
-        // Rule 1: Nếu có trạm salinity > 4‰ → khuyến nghị hạn chế tưới tiêu
-        List<Measurement> latestMetrics = measurementRepository.findLatestMeasurementPerStation();
-        for (Measurement m : latestMetrics) {
-            if ("SALINITY".equalsIgnoreCase(m.getMetricType()) && m.getValue() != null && m.getValue() > 4.0) {
-                String stationName = m.getStation() != null ? m.getStation().getName() : ("Trạm " + (m.getStation() != null ? m.getStation().getId() : ""));
-                recommendations.add(RecommendationDto.builder()
-                    .type("IRRIGATION")
-                    .priority("HIGH")
-                    .message(String.format(VI, "Hạn chế lấy nước tưới tại khu vực %s (%.1f‰)",
-                        stationName, m.getValue()))
-                    .build());
-            }
+        // Rule 1: Nếu có trạm salinity > 4‰ → khuyến nghị hạn chế tưới tiêu, trạm mặn nhất trước
+        List<Measurement> salty = measurementRepository.findLatestMeasurementPerStation().stream()
+            .filter(m -> "SALINITY".equalsIgnoreCase(m.getMetricType()) && m.getValue() != null && m.getValue() > 4.0)
+            .sorted(Comparator.comparing(Measurement::getValue).reversed())
+            .toList();
+        for (Measurement m : salty) {
+            String stationName = m.getStation() != null ? m.getStation().getName() : ("Trạm " + (m.getStation() != null ? m.getStation().getId() : ""));
+            recommendations.add(RecommendationDto.builder()
+                .type("IRRIGATION")
+                .priority("HIGH")
+                .message(String.format(VI, "Hạn chế lấy nước tưới tại khu vực %s (%.1f‰)",
+                    stationName, m.getValue()))
+                .build());
         }
 
         // Rule 2: Cảnh báo chung nếu không có rule 1
