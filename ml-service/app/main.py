@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="AquaMekong ML Service",
     description="AI/ML Salinity Forecasting Service for Mekong Delta Hydrology",
-    version="0.2.0",
+    version="0.2.1",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,

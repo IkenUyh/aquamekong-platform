@@ -13,7 +13,7 @@ import { recommendationApi } from '../api/recommendationApi';
 import { percentChange, reportApi } from '../api/reportApi';
 import type { Station } from '../types';
 import {
-  classifySalinity, formatNumber, isReporting, ONLINE_WINDOW_HOURS, SALINITY_CLASS_COLORS, SALINITY_THRESHOLD,
+  classifySalinity, formatMeasuredAt, formatNumber, isReporting, ONLINE_WINDOW_HOURS, SALINITY_CLASS_COLORS, SALINITY_THRESHOLD,
 } from '../utils/salinity';
 
 /** Thang của thanh ngang: 2 × ngưỡng, để vạch ngưỡng nằm giữa */
@@ -72,7 +72,8 @@ export function OverviewPage() {
     queryKey: ['recommendations'],
     queryFn: recommendationApi.getRecommendations,
   });
-  const { data: last24h } = useQuery({ queryKey: ['reports', 'overview', 1], queryFn: () => reportApi.getOverview(1) });
+  // Số đo theo ngày: 24 giờ qua thường chưa có số nào, nên lấy trung bình 7 ngày (cùng query với trang Báo cáo)
+  const { data: lastWeek } = useQuery({ queryKey: ['reports', 'overview', 7], queryFn: () => reportApi.getOverview(7) });
   const { data: trend = [] } = useQuery({ queryKey: ['reports', 'trend', 7], queryFn: () => reportApi.getTrend(7) });
 
   const aboveThreshold = stations.filter((s) => (s.latestSalinity ?? 0) > SALINITY_THRESHOLD).length;
@@ -84,7 +85,7 @@ export function OverviewPage() {
     .filter((t): t is string => !!t)
     .sort()
     .pop();
-  const salinityChange = last24h ? percentChange(last24h.avgSalinity) : null;
+  const salinityChange = lastWeek ? percentChange(lastWeek.avgSalinity) : null;
 
   const trendData = trend.map((p) => ({
     ...p,
@@ -102,7 +103,7 @@ export function OverviewPage() {
             <h1 className="text-2xl font-semibold text-gray-900">Tổng quan</h1>
             <p className="text-sm text-gray-500 num">
               {lastUpdate
-                ? `Số đo mới nhất lúc ${new Date(lastUpdate).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}`
+                ? `Số đo mới nhất ${formatMeasuredAt(lastUpdate)}`
                 : 'Chưa có số đo'}
             </p>
           </div>
@@ -116,10 +117,10 @@ export function OverviewPage() {
               hint="theo số đo mới nhất"
             />
             <MetricCard
-              label="Độ mặn trung bình 24 giờ"
-              value={formatNumber(last24h?.avgSalinity.current)}
+              label="Độ mặn trung bình 7 ngày"
+              value={formatNumber(lastWeek?.avgSalinity.current, 2, true)}
               unit="‰"
-              change={salinityChange != null ? { value: salinityChange, kind: '%', label: 'so với 24h trước', upIsBad: true } : undefined}
+              change={salinityChange != null ? { value: salinityChange, kind: '%', label: 'so với 7 ngày trước', upIsBad: true } : undefined}
             />
             <MetricCard
               label="Trạm đang truyền dữ liệu"

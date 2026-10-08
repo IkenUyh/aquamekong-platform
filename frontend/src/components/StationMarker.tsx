@@ -3,7 +3,7 @@ import L from 'leaflet';
 
 import type { GeoJsonFeature } from '../types';
 import {
-  classifySalinity, formatNumber, SALINITY_CLASS_COLORS, SALINITY_CLASS_SHORT_LABELS, type SalinityClass,
+  classifySalinity, formatMeasuredAt, formatNumber, riverOf, SALINITY_CLASS_COLORS, SALINITY_CLASS_SHORT_LABELS, type SalinityClass,
 } from '../utils/salinity';
 import { METRIC_SCALES, type ColorMetric } from '../utils/metricScales';
 
@@ -88,8 +88,7 @@ export function StationMarker({ feature, isSelected, onClick, metric, showName }
             </div>
           </div>
 
-          {/* River */}
-          <p className="text-xs text-gray-500 mb-3">{properties.riverName ?? '—'}</p>
+          {riverOf(properties) && <p className="text-xs text-gray-500 mb-3">{riverOf(properties)}</p>}
 
           {/* Metrics */}
           <div className="space-y-2">
@@ -124,7 +123,7 @@ export function StationMarker({ feature, isSelected, onClick, metric, showName }
               {SALINITY_CLASS_SHORT_LABELS[level]}
             </span>
             <span className="text-[10px] text-gray-400">
-              {properties.lastMeasuredAt ? `Đo lúc ${new Date(properties.lastMeasuredAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}` : 'Chưa có số đo'}
+              {properties.lastMeasuredAt ? `Số liệu ${formatMeasuredAt(properties.lastMeasuredAt)}` : 'Chưa có số đo'}
             </span>
           </div>
         </div>
