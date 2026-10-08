@@ -161,3 +161,20 @@ def test_upsert_adds_default_rule_only_for_new_stations_and_removes_demo():
     rule_params = [p for sql, p in calls if "INSERT INTO alert_rules" in sql]
     assert rule_params == [{"codes": ["B002"], "threshold": 4.0}]
     assert any("DELETE FROM stations" in sql and "CT-001" in p["codes"] for sql, p in calls)
+    # Gán tỉnh theo toạ độ cho các trạm vừa nạp, chỉ khi chưa có
+    province_params = [p for sql, p in calls if "SET province" in sql]
+    assert province_params == [{"codes": ["A001", "B002"]}]
+
+
+def test_upsert_skips_province_assignment_before_the_provinces_table_exists():
+    from app.ingest.stations import upsert_stations
+
+    conn = MagicMock()
+    conn.execute.return_value.scalar.return_value = False           # to_regclass('provinces') IS NULL
+    conn.execute.return_value.scalar_one.return_value = 1
+    conn.execute.return_value.scalars.return_value = []
+    stations = pd.DataFrame([{"station_code": "A001", "station_name": "Trạm A", "latitude": 9.5, "longitude": 105.2}])
+
+    upsert_stations(conn, stations)
+
+    assert not any("SET province" in str(c.args[0]) for c in conn.execute.call_args_list)
