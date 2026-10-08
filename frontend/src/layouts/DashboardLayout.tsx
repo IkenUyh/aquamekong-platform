@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
+import { BottomNav } from '../components/BottomNav';
 
 interface DashboardLayoutProps {
   leftPanel: React.ReactNode;
@@ -23,7 +24,7 @@ export function DashboardLayout({ leftPanel, centerContent, bottomContent, right
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]">
+    <div className="flex flex-col h-dvh w-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]">
       <Navbar />
 
       <div className="flex flex-1 flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
@@ -42,7 +43,8 @@ export function DashboardLayout({ leftPanel, centerContent, bottomContent, right
 
         {/* Center: nội dung chính + biểu đồ dưới */}
         <main className="flex-1 flex flex-col relative z-0 min-w-0">
-          <div className={`relative ${mobileCenterHeight} lg:h-auto lg:flex-1 shrink-0`}>{centerContent}</div>
+          {/* lg:min-h-0: không thì vùng giữa cao theo nội dung, cột cuộn bên trong không cuộn được */}
+          <div className={`relative ${mobileCenterHeight} lg:h-auto lg:flex-1 lg:min-h-0 shrink-0`}>{centerContent}</div>
           {bottomContent && (
             <div className="h-[280px] shrink-0 bg-white border-t border-[var(--color-border)] z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] overflow-x-auto">
               {bottomContent}
@@ -57,6 +59,7 @@ export function DashboardLayout({ leftPanel, centerContent, bottomContent, right
           </aside>
         )}
       </div>
+      <BottomNav />
     </div>
   );
 }
