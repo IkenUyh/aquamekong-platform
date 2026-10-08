@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import { endOfDay, subHours } from 'date-fns';
+import { endOfDay, subDays } from 'date-fns';
 import type { ColorMetric } from '../utils/metricScales';
 
 interface FilterState {
@@ -28,8 +28,8 @@ const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
 export function FilterProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<FilterState>({
-    // Mặc định 24 giờ qua (đầu ngày thì "hôm nay" gần như chưa có số đo)
-    startDate: subHours(new Date(), 24),
+    // Mặc định 30 ngày qua: số đo RYNAN mỗi trạm một lần/ngày, 24 giờ thường chưa có điểm nào
+    startDate: subDays(new Date(), 30),
     endDate: endOfDay(new Date()),
     selectedStationId: null,
     activeLayers: {

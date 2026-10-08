@@ -16,7 +16,8 @@ const PERIODS = [
 ];
 
 
-const fmt = formatNumber;
+/** Chỉ số trung bình: luôn đủ chữ số thập phân */
+const fmt = (value: number | null | undefined, digits = 2) => formatNumber(value, digits, true);
 
 /** % thay đổi so với kỳ trước cho MetricCard (độ mặn: tăng là xấu) */
 function changeOf(v: PeriodValue | undefined, upIsBad = false): MetricChange | undefined {
@@ -31,6 +32,7 @@ export function ReportsPage() {
     queryFn: () => reportApi.getOverview(days),
   });
 
+  const hasFlow = overview?.avgFlowRate.current != null || overview?.avgFlowRate.previous != null;
   const { data: trendData = [] } = useQuery({
     queryKey: ['reports', 'trend', days],
     queryFn: () => reportApi.getTrend(days),
@@ -78,7 +80,7 @@ export function ReportsPage() {
         </div>
 
         {/* Row 1: Metrics */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className={`grid grid-cols-2 ${hasFlow ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4 mb-6`}>
           <MetricCard label="Độ mặn trung bình toàn vùng" value={fmt(overview?.avgSalinity.current)} unit="‰"
             change={changeOf(overview?.avgSalinity, true)} />
           <MetricCard label={`Trạm vượt ngưỡng ${overview?.salinityThreshold ?? 4}‰`}
@@ -86,8 +88,11 @@ export function ReportsPage() {
             tone={(overview?.stationsAboveThreshold ?? 0) > 0 ? 'danger' : 'default'} hint="theo số đo mới nhất" />
           <MetricCard label="Mực nước trung bình" value={fmt(overview?.avgWaterLevel.current)} unit="m"
             change={changeOf(overview?.avgWaterLevel)} />
-          <MetricCard label="Lưu lượng trung bình" value={fmt(overview?.avgFlowRate.current, 0)} unit="m³/s"
-            change={changeOf(overview?.avgFlowRate)} />
+          {/* Dữ liệu RYNAN không đo lưu lượng: ô luôn trống thì ẩn */}
+          {hasFlow && (
+            <MetricCard label="Lưu lượng trung bình" value={fmt(overview?.avgFlowRate.current, 0)} unit="m³/s"
+              change={changeOf(overview?.avgFlowRate)} />
+          )}
         </div>
 
         {/* Row 2: Charts */}

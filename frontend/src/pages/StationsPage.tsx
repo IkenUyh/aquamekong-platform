@@ -6,7 +6,7 @@ import { StatusBadge } from '../components/shared/StatusBadge';
 import { useStationsList } from '../hooks/useStations';
 import { Search } from 'lucide-react';
 import type { Station } from '../types';
-import { formatNumber, isReporting, ONLINE_WINDOW_HOURS, METRIC_LABELS, metricLabel, SALINITY_THRESHOLD } from '../utils/salinity';
+import { formatMeasuredAt, formatNumber, isReporting, riverOf, ONLINE_WINDOW_HOURS, METRIC_LABELS, metricLabel, SALINITY_THRESHOLD } from '../utils/salinity';
 
 const ALL = '';
 
@@ -23,15 +23,19 @@ export function StationsPage() {
   const [query, setQuery] = useState('');
 
   const provinces = useMemo(() => uniqueSorted(stationsList.map((s) => s.province)), [stationsList]);
-  const rivers = useMemo(() => uniqueSorted(stationsList.map((s) => s.riverName)), [stationsList]);
+  const rivers = useMemo(() => uniqueSorted(stationsList.map(riverOf)), [stationsList]);
+  // Chỉ những chỉ số có trạm đang đo (dữ liệu RYNAN không có lưu lượng)
+  const measuredMetrics = useMemo(
+    () => Object.entries(METRIC_LABELS).filter(([key]) => stationsList.some((s) => s.metricTypes?.includes(key))),
+    [stationsList]);
 
   const filtered = useMemo(() => {
     const q = normalize(query.trim());
     return stationsList.filter((s) =>
       (!province || s.province === province) &&
-      (!river || s.riverName === river) &&
+      (!river || riverOf(s) === river) &&
       (metrics.length === 0 || metrics.some((m) => s.metricTypes?.includes(m))) &&
-      (!q || normalize([s.name, s.code, s.riverName, s.province].filter(Boolean).join(' ')).includes(q))
+      (!q || normalize([s.name, s.code, riverOf(s), s.province].filter(Boolean).join(' ')).includes(q))
     );
   }, [stationsList, province, river, metrics, query]);
 
@@ -51,10 +55,10 @@ export function StationsPage() {
         <p className="text-xs text-gray-400 font-mono">{s.code}</p>
       </div>
     ) },
-    { key: 'location', header: 'Tỉnh/Thành · Sông', render: (s) => (
+    { key: 'location', header: rivers.length ? 'Tỉnh/Thành · Sông' : 'Tỉnh/Thành', render: (s) => (
       <div className="whitespace-nowrap">
         <p className="text-gray-800">{s.province ?? '—'}</p>
-        <p className="text-xs text-gray-400">{s.riverName ?? '—'}</p>
+        {rivers.length > 0 && <p className="text-xs text-gray-400">{riverOf(s) ?? '—'}</p>}
       </div>
     ) },
     { key: 'type', header: 'Chỉ số đo', render: (s) =>
@@ -73,7 +77,7 @@ export function StationsPage() {
       key: 'lastMeasuredAt',
       header: 'Số đo gần nhất',
       render: (s) => s.lastMeasuredAt
-        ? new Date(s.lastMeasuredAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })
+        ? formatMeasuredAt(s.lastMeasuredAt, false)
         : '—',
     },
     {
@@ -105,18 +109,20 @@ export function StationsPage() {
               </select>
             </div>
 
-            <div>
-              <label htmlFor="filter-river" className="field-label">Sông</label>
-              <select id="filter-river" value={river} onChange={(e) => setRiver(e.target.value)} className={selectClass}>
-                <option value={ALL}>Tất cả sông</option>
-                {rivers.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </div>
+            {rivers.length > 0 && (
+              <div>
+                <label htmlFor="filter-river" className="field-label">Sông</label>
+                <select id="filter-river" value={river} onChange={(e) => setRiver(e.target.value)} className={selectClass}>
+                  <option value={ALL}>Tất cả sông</option>
+                  {rivers.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+            )}
 
             <fieldset>
               <legend className="field-label mb-2">Chỉ số đo</legend>
               <div className="space-y-2">
-                {Object.entries(METRIC_LABELS).map(([key, { label, unit }]) => (
+                {measuredMetrics.map(([key, { label, unit }]) => (
                   <label key={key} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                     <input
                       type="checkbox"
