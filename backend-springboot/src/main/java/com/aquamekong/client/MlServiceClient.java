@@ -45,6 +45,19 @@ public class MlServiceClient {
         }
     }
 
+    /** Backtest độ chính xác của mô hình dự báo (GET /api/v1/evaluation/accuracy), JSON chuyển thẳng cho frontend */
+    public Map<String, Object> accuracy(int days) {
+        try {
+            return restClient.get()
+                    .uri(uri -> uri.path("/api/v1/evaluation/accuracy").queryParam("days", days).build())
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<>() {});
+        } catch (RestClientException e) {
+            log.error("Gọi ML service lấy độ chính xác dự báo thất bại: {}", e.getMessage());
+            throw new MlServiceException("Không gọi được ML service: " + e.getMessage(), e);
+        }
+    }
+
     public PredictionResponse predict(Long stationId, int daysAhead) {
         try {
             PredictionResponse response = restClient.post()

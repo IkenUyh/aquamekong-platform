@@ -8,9 +8,11 @@ import { formatNumber } from '../utils/salinity';
 
 interface ForecastChartProps {
   forecasts: SalinityForecast[];
+  /** Lớp Tailwind cho chiều cao; "h-full" để vừa khung chứa (khung thấp hơn mà để 180px thì biểu đồ tràn, đè lên nút bên dưới) */
+  heightClass?: string;
 }
 
-export function ForecastChart({ forecasts }: ForecastChartProps) {
+export function ForecastChart({ forecasts, heightClass = 'h-[180px]' }: ForecastChartProps) {
   const data = forecasts.map((f) => ({
     date: new Date(f.forecastDate).toLocaleDateString('vi-VN', {
       day: '2-digit',
@@ -23,7 +25,7 @@ export function ForecastChart({ forecasts }: ForecastChartProps) {
   }));
 
   return (
-    <div className="h-[180px] w-full">
+    <div className={`${heightClass} w-full`}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
           <defs>

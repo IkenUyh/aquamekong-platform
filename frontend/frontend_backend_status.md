@@ -53,6 +53,11 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
   - `POST /api/v1/forecasts/predict` `{stationId, daysAhead (1-30)}` 👤: backend gọi ML service rồi lưu kết quả thành `forecast_run`. Người chưa đăng nhập chỉ xem lượt dự báo đã lưu, không tự chạy mô hình.
   - `GET /api/v1/forecasts/runs?limit=` 🌐
 
+### 4b. Độ chính xác dự báo
+- **Trang:** `/forecast`, thẻ "Độ chính xác dự báo" và nút "So với thực tế" trên mỗi trạm (`components/ForecastAccuracy.tsx`, `api/accuracyApi.ts`)
+- **Trạng thái:** 🟢 Đã liên kết
+- **Endpoints:** `GET /api/v1/forecasts/accuracy?days=` 🌐 (backtest: chạy lại mô hình cho từng ngày đã qua, chỉ dùng số đo có tới hôm đó, so với số đo thật và với cách giữ nguyên số mới nhất), `GET /api/v1/forecasts/station/{id}/verification?days=` 🌐 (dự báo đã lưu đặt cạnh số đo thật)
+
 ### 5. Cảnh báo (Alerts)
 - **Trang:** `/alerts`, panel cảnh báo trên bản đồ
 - **Trạng thái:** 🟢 Đã liên kết. `api/alertApi.ts` (`toAlertDto`) map dữ liệu backend sang dạng UI hiển thị.
