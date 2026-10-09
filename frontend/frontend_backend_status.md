@@ -35,6 +35,7 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
   - `GET /api/v1/stations` (GeoJSON), `GET /api/v1/stations/list`, `GET /api/v1/stations/{id}`, `GET /api/v1/stations/nearby` 🌐
   - `POST/PUT /api/v1/stations` 🛠️, `DELETE` 🔑 (giao diện: `/admin`)
 - Mỗi trạm có `latestSalinity`, `latestWaterLevel`, `latestFlowRate`: là giá trị mới nhất **theo từng chỉ số**.
+- **Trạm gần tôi** (Tổng quan, và nút "Chọn trạm gần tôi nhất" ở Trạm theo dõi): tính trên máy từ `GET /api/v1/stations/list`, vị trí người dùng không gửi lên backend. `GET /api/v1/stations/nearby` vẫn có nhưng frontend không dùng.
 
 ### 3. Số liệu đo (Measurements) & Realtime
 - **Trang:** `/map` (bảng lịch sử, heatmap)
