@@ -17,12 +17,17 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class StationService {
+
+    /** Số đo của một chỉ số cũ hơn số đo mới nhất của trạm quá mốc này thì coi là chỉ số đã ngừng đo */
+    static final Duration STALE_METRIC_AGE = Duration.ofDays(3);
 
     private final StationRepository stationRepository;
     private final RiverRepository riverRepository;
@@ -187,10 +192,15 @@ public class StationService {
                 .updatedAt(station.getUpdatedAt());
 
         if (measurements != null && !measurements.isEmpty()) {
-            builder.lastMeasuredAt(measurements.stream()
+            OffsetDateTime newest = measurements.stream()
                     .map(Measurement::getRecordedAt)
                     .max(Comparator.naturalOrder())
-                    .orElse(null));
+                    .orElseThrow();
+            builder.lastMeasuredAt(newest);
+            // Chỉ số trạm đã ngừng đo (vd. lưu lượng chỉ có trong bộ dữ liệu cũ, RYNAN không đo) không phải "số đo mới nhất"
+            measurements = measurements.stream()
+                    .filter(m -> !m.getRecordedAt().isBefore(newest.minus(STALE_METRIC_AGE)))
+                    .toList();
             builder.metricTypes(measurements.stream().map(Measurement::getMetricType).distinct().sorted().toList());
             for (Measurement m : measurements) {
                 if ("SALINITY".equalsIgnoreCase(m.getMetricType())) {
