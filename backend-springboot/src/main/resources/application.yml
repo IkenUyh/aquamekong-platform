@@ -82,6 +82,9 @@ app:
   freshness:
     expected-by: ${FRESHNESS_EXPECTED_BY:09:00}
     check-cron: ${FRESHNESS_CHECK_CRON:0 0 9 * * *}
+  # So trạm người dùng theo dõi với ngưỡng của họ, sau khi chạy dự báo lúc 07:30 (giờ VN). "-" = tắt
+  watch:
+    check-cron: ${WATCH_CHECK_CRON:0 0 8 * * *}
   telemetry:
     broadcast-interval-ms: ${TELEMETRY_INTERVAL:10000}
     # Số đo cũ hơn mốc này (nạp dữ liệu lịch sử) không tạo cảnh báo, không đẩy SSE
