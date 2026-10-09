@@ -2,6 +2,18 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [0.2.1] - 2026-10-09
+
+### Sửa lỗi
+- Nạp dữ liệu RYNAN hằng ngày không còn tự thêm hơn 90 trạm ngoài 40 trạm hệ thống theo dõi.
+- Trang Dự báo không còn hiện dự báo ST-GNN cho các ngày đã qua (01/09, 07/09): khi dữ liệu của ST-GNN cũ hơn 7 ngày, hệ thống dùng mô hình khác, dự báo từ ngày mai.
+- Trạm thiếu số đo không còn nhận dự báo "mô phỏng" (số bịa quanh 3‰).
+- Dự báo xu hướng thống kê tính theo giờ Việt Nam, bám số đo 14 ngày gần nhất và không kéo độ mặn về 0 sau vài ngày.
+- Trạm không còn bị báo "mất tín hiệu" trước mỗi lần lấy dữ liệu sáng (ngưỡng 72 giờ cho số liệu theo ngày).
+- Độ mặn trung bình trên Tổng quan và bản đồ tính theo 7 ngày thay vì 24 giờ (thường trống); biểu đồ lịch sử mặc định 30 ngày.
+- Số đo theo ngày hiện theo ngày ("ngày 07-10") thay vì "00:00"; bản đồ so sánh với lần đo trước thay vì 24 giờ trước.
+- Ẩn lưu lượng (dữ liệu RYNAN không đo), sông "Chưa phân loại" và thẻ điểm ST-GNN khi không có dữ liệu tương ứng.
+
 ## [0.2.0] - 2026-10-09
 
 ### Thêm mới
@@ -46,5 +58,6 @@ Bản phát hành đầu tiên.
 - Cảnh báo và khuyến nghị dựa trên số đo mới nhất, chưa dựa trên dự báo.
 - Dữ liệu RYNAN hiện có đến 31/08/2026; trạm hiện "mất tín hiệu" tới khi nạp dữ liệu mới.
 
+[0.2.1]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/IkenUyh/aquamekong-platform/releases/tag/v0.1.0
