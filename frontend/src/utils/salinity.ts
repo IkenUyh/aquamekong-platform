@@ -80,6 +80,12 @@ export function formatMeasuredAt(iso: string, prefix = true): string {
   return prefix ? `${daily ? 'ngày' : 'lúc'} ${text}` : text;
 }
 
+/** Ngày dạng YYYY-MM-DD (không có giờ) theo cùng kiểu với formatMeasuredAt, vd. "08-10" */
+export function formatDay(isoDate: string): string {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+}
+
 export function isReporting(lastMeasuredAt: string | null | undefined, now = Date.now()): boolean {
   return !!lastMeasuredAt && now - new Date(lastMeasuredAt).getTime() <= ONLINE_WINDOW_MS;
 }

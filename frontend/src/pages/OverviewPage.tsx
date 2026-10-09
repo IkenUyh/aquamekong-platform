@@ -5,6 +5,7 @@ import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Too
 import { Navbar } from '../components/Navbar';
 import { BottomNav } from '../components/BottomNav';
 import { MetricCard } from '../components/MetricCard';
+import { DataFreshnessBanner } from '../components/DataFreshnessBanner';
 import { RecommendationList } from '../components/RecommendationList';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
 import { useStationsList } from '../hooks/useStations';
@@ -108,6 +109,8 @@ export function OverviewPage() {
             </p>
           </div>
 
+          <DataFreshnessBanner />
+
           {/* Chỉ số chính */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
             <MetricCard
@@ -140,7 +143,14 @@ export function OverviewPage() {
             <section className="card overflow-hidden lg:col-span-2 flex flex-col">
               <div className="flex items-baseline justify-between px-4 py-3 border-b border-gray-200">
                 <h2 className="text-sm font-semibold text-gray-900">Độ mặn tại các trạm</h2>
-                <Link to="/map" className="text-xs font-medium text-primary hover:underline">Mở bản đồ chi tiết</Link>
+                <div className="flex items-baseline gap-3">
+                  {selectedId != null && (
+                    <button type="button" onClick={() => setSelectedId(null)} className="text-xs font-medium text-primary hover:underline">
+                      Xem toàn vùng
+                    </button>
+                  )}
+                  <Link to="/map" className="text-xs font-medium text-primary hover:underline">Mở bản đồ chi tiết</Link>
+                </div>
               </div>
               <div className="h-[520px]">
                 <StationsMiniMap

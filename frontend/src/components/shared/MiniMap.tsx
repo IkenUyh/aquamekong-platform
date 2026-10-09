@@ -59,10 +59,24 @@ function InvalidateOnResize() {
   return null;
 }
 
-function FocusMarker({ marker, refs }: { marker: MarkerPoint | undefined; refs: Map<MarkerPoint['id'], L.Marker> }) {
+/** Bay tới trạm được chọn; bỏ chọn thì lùi về khung chứa mọi trạm */
+function FocusMarker({ marker, markers, refs }: {
+  marker: MarkerPoint | undefined;
+  markers: MarkerPoint[];
+  refs: Map<MarkerPoint['id'], L.Marker>;
+}) {
   const map = useMap();
+  const focused = useRef(false);
   useEffect(() => {
-    if (!marker) return;
+    if (!marker) {
+      if (focused.current && markers.length > 0) {
+        map.closePopup();
+        map.flyToBounds(L.latLngBounds(markers.map((m) => [m.lat, m.lng] as [number, number])), { padding: [24, 24], duration: 0.6 });
+      }
+      focused.current = false;
+      return;
+    }
+    focused.current = true;
     map.flyTo([marker.lat, marker.lng], Math.max(map.getZoom(), 10), { duration: 0.6 });
     refs.get(marker.id)?.openPopup();
     // Chỉ chạy khi đổi trạm được chọn, không chạy lại khi màu marker đổi
@@ -104,7 +118,7 @@ export function MiniMap({ markers, center = [10.0, 105.5], zoom = 7, height = '4
         ))}
         <InvalidateOnResize />
         <FitToMarkersOnce markers={markers} />
-        <FocusMarker marker={focused} refs={markerRefs} />
+        <FocusMarker marker={focused} markers={markers} refs={markerRefs} />
       </MapContainer>
     </div>
   );

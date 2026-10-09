@@ -139,6 +139,18 @@ class PushServiceTest {
     }
 
     @Test
+    void staffNotificationsGoOnlyToAdminAndOperatorDevices() {
+        PushSubscription admin = PushSubscription.builder().channel(PushSubscription.Channel.FCM).endpoint("admin-token").build();
+        when(subscriptionRepository.findByUserRoleIn(List.of("ROLE_ADMIN", "ROLE_OPERATOR"))).thenReturn(List.of(admin));
+        when(fcmSender.send(eq("admin-token"), any())).thenReturn(PushResult.SENT);
+
+        int sent = pushService.notifyStaff(new PushMessage("Dữ liệu chưa về", "…", "/", "data-freshness"));
+
+        assertThat(sent).isEqualTo(1);
+        verify(subscriptionRepository, never()).findAll();
+    }
+
+    @Test
     void alertMessageIsVietnamese() {
         PushMessage message = PushService.alertMessage(new AlertCreatedEvent(9L, "Mỹ Tho", "salinity", ">", 5.25, 4.0, AlertSeverity.HIGH));
 
