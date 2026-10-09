@@ -47,6 +47,17 @@ class RynanApiError(RuntimeError):
     pass
 
 
+class DriveAuthError(RuntimeError):
+    pass
+
+
+# Mã lỗi của Google khi đổi refresh token (không chứa bí mật nên in ra log được)
+DRIVE_AUTH_HINTS = {
+    "invalid_client": "GDRIVE_CLIENT_ID hoặc GDRIVE_CLIENT_SECRET không khớp OAuth client: chép lại từ file JSON",
+    "invalid_grant": "GDRIVE_REFRESH_TOKEN đã bị thu hồi, hết hạn hoặc thuộc OAuth client khác: chạy lại scripts/drive_auth.py",
+}
+
+
 def cryptojs_encrypt(plaintext: str, passphrase: str, salt: bytes = None) -> str:
     """
     Giống CryptoJS.AES.encrypt(chuỗi, passphrase) app dùng cho mật khẩu khi đăng nhập: AES-256-CBC, khoá + IV
@@ -212,7 +223,13 @@ def drive_access_token(client_id: str, client_secret: str, refresh_token: str, s
         "refresh_token": refresh_token,
         "grant_type": "refresh_token",
     }, timeout=30)
-    response.raise_for_status()
+    if response.status_code != 200:
+        try:
+            code = response.json().get("error", "")
+        except ValueError:
+            code = ""
+        hint = DRIVE_AUTH_HINTS.get(code, "kiểm tra các secret GDRIVE_*")
+        raise DriveAuthError(f"Google từ chối cấp quyền Drive ({response.status_code} {code}): {hint}")
     return response.json()["access_token"]
 
 
@@ -244,7 +261,11 @@ def upload_to_drive(path: Path, folder_id: str, token: str, session=requests) ->
 
 
 def _env(name: str) -> str:
-    value = os.environ.get(name, "")
+    # Secret dán vào GitHub hay dính khoảng trắng hoặc xuống dòng; giá trị GDRIVE_* chép từ file JSON
+    # hay dính cả dấu ". Mật khẩu RYNAN thì giữ nguyên dấu nháy, vì có thể là một phần của mật khẩu.
+    value = os.environ.get(name, "").strip()
+    if name.startswith("GDRIVE_"):
+        value = value.strip("\"'").strip()
     if not value:
         sys.exit(f"Thiếu biến môi trường {name}")
     return value
@@ -264,6 +285,9 @@ def main(argv=None) -> int:
     if args.upload:
         folder_id = _env("GDRIVE_FOLDER_ID")
         drive_creds = (_env("GDRIVE_CLIENT_ID"), _env("GDRIVE_CLIENT_SECRET"), _env("GDRIVE_REFRESH_TOKEN"))
+
+        # Kiểm tra quyền Drive trước, để không mất nhiều phút lấy dữ liệu rồi mới báo lỗi
+        drive_access_token(*drive_creds)
 
     client.login()
     stations = client.stations()

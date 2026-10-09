@@ -199,3 +199,33 @@ def test_client_does_not_retry_client_errors():
     with pytest.raises(RuntimeError):
         client.request("POST", "/login")
     assert session.request.call_count == 1
+
+
+def test_drive_token_error_names_the_google_error_code():
+    session = MagicMock()
+    session.post.return_value = _response({"error": "invalid_client", "error_description": "Unauthorized"}, 401)
+
+    with pytest.raises(rynan_fetch.DriveAuthError, match="invalid_client"):
+        rynan_fetch.drive_access_token("id", "secret", "refresh", session)
+
+
+def test_secrets_pasted_with_quotes_or_newline_are_cleaned(monkeypatch):
+    monkeypatch.setenv("GDRIVE_CLIENT_SECRET", ' "GOCSPX-abc"\n')
+
+    assert rynan_fetch._env("GDRIVE_CLIENT_SECRET") == "GOCSPX-abc"
+
+
+def test_upload_checks_drive_access_before_fetching(tmp_path, monkeypatch):
+    client = FakeClient({(2026, 9): {1: {"salinity": 3.2}}})
+    monkeypatch.setattr(rynan_fetch, "RynanClient", lambda *a: client)
+    _env(monkeypatch)
+    for name in ("GDRIVE_FOLDER_ID", "GDRIVE_CLIENT_ID", "GDRIVE_CLIENT_SECRET", "GDRIVE_REFRESH_TOKEN"):
+        monkeypatch.setenv(name, "x")
+
+    def reject(*args):
+        raise rynan_fetch.DriveAuthError("invalid_client")
+    monkeypatch.setattr(rynan_fetch, "drive_access_token", reject)
+
+    with pytest.raises(rynan_fetch.DriveAuthError):
+        rynan_fetch.main(["--from", "2026-09-01", "--to", "2026-09-01", "--out", str(tmp_path), "--upload"])
+    assert client.calls == []
