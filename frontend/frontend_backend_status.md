@@ -62,6 +62,14 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
   - `GET/POST/DELETE /api/v1/alerts/rules...` (GET 👤, ghi 🛠️; giao diện: `/admin`)
 - Backend tự sinh cảnh báo cho mọi số liệu mới, kể cả dữ liệu do ML pipeline crawl về. Mỗi rule chỉ có tối đa 1 cảnh báo chưa xử lý (ACTIVE hoặc ACKNOWLEDGED) tại một thời điểm.
 
+### 5b. Trạm theo dõi (Watches)
+- **Trang:** `/account`, mục "Trạm theo dõi" (`components/StationWatchSettings.tsx`, `api/watchApi.ts`)
+- **Trạng thái:** 🟢 Đã liên kết
+- **Endpoints:** `GET /api/v1/watches` 👤 (kèm số đo mới nhất và dự báo so với ngưỡng), `POST /api/v1/watches` `{stationId, threshold, crop}` 👤 (theo dõi, hoặc đổi ngưỡng nếu đã theo dõi; tối đa 20 trạm), `DELETE /api/v1/watches/{id}` 👤
+- Ngưỡng gợi ý theo loại cây (`utils/crops.ts`): sầu riêng 0,5‰, cây ăn trái 1‰, lúa 2‰, rau màu 2‰; người dùng sửa được.
+- 08:00 mỗi sáng (`WATCH_CHECK_CRON`), sau khi chạy dự báo, backend báo khi trạm đổi trạng thái: số đo mới nhất hoặc dự báo 7 ngày bắt đầu vượt ngưỡng, hoặc đã xuống dưới ngưỡng. Không báo lặp mỗi ngày.
+- Tài khoản đã theo dõi ít nhất một trạm thì chỉ nhận cảnh báo đo được (mục 5) của các trạm đó; chưa theo dõi trạm nào thì nhận mọi trạm. Quản trị/Vận hành luôn nhận mọi trạm.
+
 ### 6. Khuyến nghị (Recommendations)
 - **Trang:** `/` (Tổng quan), panel trên bản đồ
 - **Trạng thái:** 🟢 Đã liên kết
@@ -74,6 +82,7 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
   - `GET /api/v1/reports/overview?days=`: độ mặn, mực nước, lưu lượng trung bình; số trạm vượt 4‰; phân bố trạm theo mức độ mặn
   - `GET /api/v1/reports/trend?days=`: độ mặn trung bình toàn vùng theo từng ngày
   - `GET /api/v1/reports/top-stations?days=&limit=`: các trạm có độ mặn trung bình cao nhất
+  - `GET /api/v1/reports/data-freshness`: dữ liệu có về đúng hạn không (sau 09:00 phải có số đo của hôm qua). Trang Tổng quan hiện dải cảnh báo khi `stale`; lúc 09:00 backend báo cho Quản trị/Vận hành.
 - Hệ thống chưa có cảm biến đo **lượng mưa**, nên không có số liệu lượng mưa.
 
 ---
