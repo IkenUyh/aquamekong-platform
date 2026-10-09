@@ -68,7 +68,7 @@ class AlertServiceTest {
         assertThat(alert.getValue().getValue()).isEqualTo(5.2);
         assertThat(alert.getValue().getSeverity()).isEqualTo(AlertSeverity.HIGH);
         assertThat(alert.getValue().getStatus()).isEqualTo(AlertStatus.ACTIVE);
-        verify(eventPublisher).publishEvent(new AlertCreatedEvent(42L, "Mỹ Tho", "salinity", ">", 5.2, 4.0, AlertSeverity.HIGH));
+        verify(eventPublisher).publishEvent(new AlertCreatedEvent(42L, 1L, "Mỹ Tho", "salinity", ">", 5.2, 4.0, AlertSeverity.HIGH));
     }
 
     @Test
