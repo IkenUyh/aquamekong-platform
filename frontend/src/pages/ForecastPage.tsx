@@ -6,10 +6,12 @@ import { DashboardLayout } from '../layouts/DashboardLayout';
 import { ForecastChart } from '../components/ForecastChart';
 import { StatusBadge } from '../components/shared/StatusBadge';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
+import { ForecastAccuracyCard, StationAccuracy } from '../components/ForecastAccuracy';
 import { forecastApi } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useStationsList } from '../hooks/useStations';
 import { forecastQueryKey, useStgnnModelInfo } from '../hooks/useForecast';
+import { useForecastAccuracy } from '../hooks/useForecastAccuracy';
 import type { SalinityForecast, Station, StgnnModelInfo } from '../types';
 import { classifySalinity, formatNumber, riverOf, SALINITY_THRESHOLD } from '../utils/salinity';
 
@@ -35,7 +37,8 @@ function modelLabel(version?: string): string {
   if (version.startsWith('st-gnn')) return 'ST-GNN';
   if (version.startsWith('prophet')) return 'Prophet';
   if (version.startsWith('hybrid')) return 'ARIMA-CNN';
-  if (version.startsWith('statistical')) return 'Xu hướng thống kê';
+  if (version.startsWith('statistical-v1')) return 'Xu hướng thống kê';
+  if (version.startsWith('statistical')) return 'Giữ nguyên số mới nhất';
   if (version.startsWith('simulated')) return 'Mô phỏng';
   return version;
 }
@@ -155,6 +158,7 @@ export function ForecastPage() {
   const dataUntil = items.flatMap((i) => i.forecasts).find((f) => f.dataUntil)?.dataUntil ?? null;
   const insights = buildInsights(items);
   // Thẻ điểm ST-GNN chỉ khi có trạm đang hiển thị dự báo của nó (dữ liệu ST-GNN cũ thì ML dùng mô hình khác)
+  const { data: accuracy } = useForecastAccuracy();
   const usesStgnn = items.some((i) => i.forecasts.some((f) => f.modelVersion?.startsWith('st-gnn')));
 
   const togglePicked = (id: number) =>
@@ -260,6 +264,7 @@ export function ForecastPage() {
               </p>
             )}
             {modelInfo && usesStgnn && <StgnnScoreCard info={modelInfo} />}
+            {accuracy && <ForecastAccuracyCard accuracy={accuracy} />}
 
             {dates.length > 0 && (
               <div className="flex shrink-0 gap-2 bg-white p-2 rounded-lg border border-gray-200 overflow-x-auto">
@@ -313,9 +318,13 @@ export function ForecastPage() {
                       ) : forecasts.length === 0 ? (
                         <div className="h-full flex items-center justify-center text-xs text-gray-400">Chưa có dữ liệu dự báo</div>
                       ) : (
-                        <ForecastChart forecasts={forecasts} />
+                        <ForecastChart forecasts={forecasts} heightClass="h-full" />
                       )}
                     </div>
+                    {accuracy && (
+                      <StationAccuracy stationId={station.id} seriesLead={accuracy.seriesLead}
+                        accuracy={accuracy.stations.find((a) => a.stationId === station.id)} />
+                    )}
                   </div>
                 );
               })}
