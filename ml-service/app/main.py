@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import forecast
+from app.routers import evaluation, forecast
 from app.config import get_settings
 from app.pipeline.scheduler import start_scheduler, stop_scheduler
 
@@ -35,6 +35,7 @@ app.add_middleware(
 
 # Routers
 app.include_router(forecast.router, prefix="/api/v1", tags=["Forecast"])
+app.include_router(evaluation.router, prefix="/api/v1", tags=["Evaluation"])
 
 
 @app.get("/health", tags=["System"])
