@@ -77,6 +77,11 @@ app:
   # Dự báo cho mọi trạm mỗi sáng (giờ VN), sau khi dữ liệu RYNAN về lúc ~06:00. "-" = tắt
   forecast:
     daily-cron: ${FORECAST_DAILY_CRON:0 30 7 * * *}
+  # Sau giờ hẹn (giờ VN) mà chưa có số đo của hôm qua thì coi là dữ liệu trễ: trang Tổng quan hiện cảnh báo,
+  # và lúc check-cron gửi thông báo cho Quản trị/Vận hành. "-" = tắt thông báo (trang Tổng quan vẫn hiện)
+  freshness:
+    expected-by: ${FRESHNESS_EXPECTED_BY:09:00}
+    check-cron: ${FRESHNESS_CHECK_CRON:0 0 9 * * *}
   telemetry:
     broadcast-interval-ms: ${TELEMETRY_INTERVAL:10000}
     # Số đo cũ hơn mốc này (nạp dữ liệu lịch sử) không tạo cảnh báo, không đẩy SSE

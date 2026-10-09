@@ -2,9 +2,11 @@ package com.aquamekong.controller.report;
 
 import com.aquamekong.dto.report.ReplayDtos.Bounds;
 import com.aquamekong.dto.report.ReplayDtos.Replay;
+import com.aquamekong.dto.report.ReportDtos.DataFreshness;
 import com.aquamekong.dto.report.ReportDtos.Overview;
 import com.aquamekong.dto.report.ReportDtos.TopStation;
 import com.aquamekong.dto.report.ReportDtos.TrendPoint;
+import com.aquamekong.service.report.DataFreshnessService;
 import com.aquamekong.service.report.ReplayService;
 import com.aquamekong.service.report.ReportService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,6 +30,7 @@ public class ReportController {
 
     private final ReportService reportService;
     private final ReplayService replayService;
+    private final DataFreshnessService dataFreshnessService;
 
     @GetMapping("/overview")
     @Operation(summary = "Chỉ số tổng hợp kỳ hiện tại so với kỳ trước", description = "days: 1-90 (mặc định 7)")
@@ -47,6 +50,12 @@ public class ReportController {
             @RequestParam(defaultValue = "7") int days,
             @RequestParam(defaultValue = "5") int limit) {
         return ResponseEntity.ok(reportService.topStations(days, limit));
+    }
+
+    @GetMapping("/data-freshness")
+    @Operation(summary = "Dữ liệu có về đúng hạn không", description = "stale = sau 09:00 (giờ VN) vẫn chưa có số đo của hôm qua")
+    public ResponseEntity<DataFreshness> dataFreshness() {
+        return ResponseEntity.ok(dataFreshnessService.status());
     }
 
     @GetMapping("/replay/bounds")
