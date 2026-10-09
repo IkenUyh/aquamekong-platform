@@ -30,6 +30,8 @@ class ParsedFile:
     measurements: pd.DataFrame
     # Bảng gốc của file định dạng features, để gộp vào kho feature cho ST-GNN
     features: Optional[pd.DataFrame] = None
+    # False: chỉ nạp số đo cho trạm đã có trong DB, không tạo trạm mới
+    creates_stations: bool = True
 
 
 def read_table(path: Path) -> pd.DataFrame:
@@ -131,7 +133,8 @@ def parse_rynan_raw(df: pd.DataFrame) -> ParsedFile:
     }, columns=MEASUREMENT_COLUMNS)
     measurements = measurements.drop_duplicates(subset=["station_code", "metric_type", "recorded_at"], keep="last")
     # Không gộp vào kho feature ST-GNN: file này thiếu mưa, lưu lượng thượng nguồn, thủy triều...
-    return ParsedFile("rynan_raw", stations, measurements.reset_index(drop=True))
+    # RYNAN có hơn 100 trạm; hệ thống chỉ theo dõi các trạm của bộ dữ liệu gốc (file features)
+    return ParsedFile("rynan_raw", stations, measurements.reset_index(drop=True), creates_stations=False)
 
 
 FORMATS = [

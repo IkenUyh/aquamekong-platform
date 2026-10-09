@@ -84,7 +84,7 @@ def test_loader_inserts_matched_rows_and_reports_unmatched(features_file, monkey
         {"station_code": "A001", "station_id": 10, "metric_type": m, "sensor_id": i, "unit": u}
         for i, (m, u) in enumerate([("salinity", "‰"), ("water_level", "m"), ("flow_rate", "m³/s")], start=1)
     ])
-    monkeypatch.setattr(loader, "upsert_stations", lambda conn, stations: len(stations))
+    monkeypatch.setattr(loader, "upsert_stations", lambda conn, stations, create=True: len(stations))
     monkeypatch.setattr(loader, "get_crawler_sensor_mapping", lambda conn: sensors)
 
     conn = MagicMock()
@@ -103,7 +103,7 @@ def test_loader_inserts_matched_rows_and_reports_unmatched(features_file, monkey
 
 
 def test_dry_run_rolls_back(features_file, monkeypatch):
-    monkeypatch.setattr(loader, "upsert_stations", lambda conn, stations: 0)
+    monkeypatch.setattr(loader, "upsert_stations", lambda conn, stations, create=True: 0)
     monkeypatch.setattr(loader, "get_crawler_sensor_mapping",
                         lambda conn: pd.DataFrame(columns=["station_code", "station_id", "metric_type", "sensor_id", "unit"]))
     conn = MagicMock()
@@ -178,3 +178,30 @@ def test_upsert_skips_province_assignment_before_the_provinces_table_exists():
     upsert_stations(conn, stations)
 
     assert not any("SET province" in str(c.args[0]) for c in conn.execute.call_args_list)
+
+
+def test_upsert_without_create_only_touches_existing_stations():
+    from app.ingest.stations import upsert_stations
+
+    conn = MagicMock()
+    conn.execute.return_value.scalar_one.return_value = 1
+    conn.execute.return_value.scalars.return_value = ["A001"]       # chỉ A001 đã có trong DB
+    stations = pd.DataFrame([
+        {"station_code": "A001", "station_name": "Trạm A", "latitude": 9.5, "longitude": 105.2},
+        {"station_code": "NEW9", "station_name": "Trạm RYNAN khác", "latitude": 9.7, "longitude": 105.4},
+    ])
+
+    assert upsert_stations(conn, stations, create=False) == 1
+
+    calls = [(str(c.args[0]), c.args[1] if len(c.args) > 1 else None) for c in conn.execute.call_args_list]
+    upserted = [row["code"] for sql, rows in calls if "INSERT INTO stations" in sql for row in rows]
+    assert upserted == ["A001"]
+    assert not any("INSERT INTO alert_rules" in sql for sql, _ in calls)
+
+
+def test_rynan_raw_files_do_not_create_stations(tmp_path):
+    path = tmp_path / "rynan_2026-10-07.csv"
+    path.write_text("station_code,station_name,latitude,longitude,recorded_at,metric,value\n"
+                    "A001,Trạm A,9.5,105.2,2026-10-07T00:00:00+07:00,salinity,1.2\n", encoding="utf-8")
+
+    assert parse_file(path).creates_stations is False

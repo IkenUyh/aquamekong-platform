@@ -1,11 +1,11 @@
 """
-Predictor service — Runs inference using trained models or generates
-simulated predictions when no model is available.
+Predictor service: chọn mô hình dự báo cho trạm (ST-GNN, Prophet, Hybrid, xu hướng thống kê).
 """
 
 import json
 import logging
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 from typing import List, Optional
 from app.cache import get_redis
 from app.config import get_settings
@@ -16,6 +16,16 @@ from app.models.salinity_model import SalinityModel
 from app.stgnn.forecaster import forecaster as stgnn_forecaster
 
 logger = logging.getLogger(__name__)
+
+TIMEZONE = ZoneInfo("Asia/Ho_Chi_Minh")
+# Dự báo thống kê cần ít nhất ngần này ngày có số đo trong khoảng lookback
+MIN_STATISTICAL_DAYS = 3
+# Độ dốc yếu đi mỗi ngày (damped trend): xu hướng gần đây không bị kéo thẳng tới 0 hay tăng mãi
+TREND_DAMPING = 0.8
+
+
+class InsufficientDataError(ValueError):
+    """Trạm không có đủ số đo gần đây cho mô hình nào, nên không dự báo (thay vì bịa số)."""
 
 
 class Predictor:
@@ -28,8 +38,8 @@ class Predictor:
 
     @staticmethod
     def _cache_key(station_id, days_ahead: int) -> str:
-        # Gắn ngày hiện tại vào key để dự báo tự làm mới khi sang ngày mới
-        return f"forecast:{station_id}:{days_ahead}:{date.today().isoformat()}"
+        # Gắn ngày hiện tại (giờ VN) vào key để dự báo tự làm mới khi sang ngày mới
+        return f"forecast:{station_id}:{days_ahead}:{datetime.now(TIMEZONE).date().isoformat()}"
 
     def _get_cached(self, key: str) -> Optional[List[PredictionItem]]:
         try:
@@ -69,15 +79,15 @@ class Predictor:
             return cached
 
         predictions = self._predict_uncached(station_id, days_ahead)
-        if predictions and predictions[0].model_version != "simulated-v1.0":
+        if predictions:
             self._set_cached(key, predictions)
         return predictions
 
     def _predict_uncached(self, station_id, days_ahead: int) -> List[PredictionItem]:
         """
         Thứ tự: ST-GNN (trạm có trong model và tốt hơn giữ nguyên giá trị cũ) -> Prophet riêng của trạm
-        -> Hybrid ARIMA-CNN (global) -> thống kê -> mô phỏng.
-        Mỗi tầng lỗi thì rơi xuống tầng sau, không làm hỏng cả request.
+        -> Hybrid ARIMA-CNN (global) -> xu hướng thống kê.
+        Mỗi mô hình lỗi thì rơi xuống tầng sau. Không đủ số đo cho tầng cuối thì InsufficientDataError.
         """
         stgnn = self._stgnn_forecast(station_id, days_ahead)
         if stgnn:
@@ -96,32 +106,22 @@ class Predictor:
             except Exception as e:
                 logger.error(f"Hybrid prediction failed for station {station_id}: {e}")
 
-        try:
-            # Try to load historical data for statistical fallback
-            df = load_station_metrics(station_id, lookback_days=90)
-            station_info = load_station_info(station_id)
-
-            if df.empty or len(df) < 3:
-                logger.warning(
-                    f"Insufficient data for station {station_id}, using simulation"
-                )
-                return self._simulate_predictions(station_id, days_ahead)
-
-            # Fallback: statistical estimation based on recent trends
-            logger.info(
-                f"No trained model for station {station_id}, using statistical estimation"
-            )
-            return self._statistical_forecast(df, days_ahead)
-
-        except Exception as e:
-            logger.error(f"Prediction failed for station {station_id}: {e}")
-            return self._simulate_predictions(station_id, days_ahead)
+        df = load_station_metrics(station_id, lookback_days=get_settings().default_lookback_days)
+        if df.empty or "salinity" not in df:
+            raise InsufficientDataError(f"Trạm {station_id} không có số đo độ mặn trong "
+                                        f"{get_settings().default_lookback_days} ngày qua")
+        logger.info(f"No trained model for station {station_id}, using statistical estimation")
+        return self._statistical_forecast(df, days_ahead)
 
     def _stgnn_forecast(self, station_id, days_ahead: int) -> Optional[List[PredictionItem]]:
         try:
             code = load_station_info(station_id)["code"]
             graph = stgnn_forecaster.forecast(code, days_ahead)
             if graph is None:
+                return None
+            age = (datetime.now(TIMEZONE).date() - graph.data_end).days
+            if age > get_settings().stgnn_max_data_age_days:
+                logger.info(f"ST-GNN data ends {graph.data_end} ({age} days ago), using another model for station {station_id}")
                 return None
             version = stgnn_forecaster.meta()["model_version"]
             logger.info(f"Using ST-GNN for station {station_id} ({code}), data until {graph.data_end}")
@@ -134,101 +134,43 @@ class Predictor:
             logger.error(f"ST-GNN prediction failed for station {station_id}: {e}", exc_info=True)
             return None
 
-    def _statistical_forecast(
-        self, df, days_ahead: int
-    ) -> List[PredictionItem]:
+    @staticmethod
+    def _statistical_forecast(df, days_ahead: int, today: Optional[date] = None) -> List[PredictionItem]:
         """
-        Simple statistical forecast using rolling mean and trend.
-        Used when no ML model is trained yet.
+        Xu hướng ngắn hạn tắt dần: mức hiện tại (trung bình 3 ngày cuối) cộng độ dốc của 14 ngày cuối
+        (tính theo ngày thật, có chỗ trống vẫn đúng) nhân hệ số giảm dần, cho các ngày sau hôm nay giờ VN.
         """
         import numpy as np
 
-        salinity = df["salinity"].dropna()
+        daily = df["salinity"].dropna()
+        daily = daily.groupby(daily.index.tz_convert(TIMEZONE).date).max()
+        if len(daily) < MIN_STATISTICAL_DAYS:
+            raise InsufficientDataError(f"Trạm chỉ có {len(daily)} ngày số đo độ mặn gần đây, chưa đủ để dự báo")
 
-        if salinity.empty:
-            return []
+        recent = daily.tail(14)
+        offsets = np.array([(d - recent.index[-1]).days for d in recent.index], dtype=float)
+        slope = np.polyfit(offsets, recent.values, 1)[0] if len(recent) >= 3 else 0.0
+        level = float(daily.tail(3).mean())
+        spread = float(recent.std()) if len(recent) > 1 else 0.0
+        spread = spread if spread > 0 else max(level * 0.1, 0.05)
 
-        # Calculate statistics
-        recent_mean = salinity.tail(10).mean()
-        recent_std = salinity.tail(10).std()
-        if np.isnan(recent_std) or recent_std == 0:
-            recent_std = recent_mean * 0.1  # 10% of mean as default std
-
-        # Simple linear trend
-        if len(salinity) > 1:
-            x = np.arange(len(salinity))
-            coeffs = np.polyfit(x, salinity.values, 1)
-            trend_per_day = coeffs[0]
-        else:
-            trend_per_day = 0
-
+        today = today or datetime.now(TIMEZONE).date()
+        last_day = daily.index[-1]
         predictions = []
-        today = date.today()
-
         for i in range(1, days_ahead + 1):
             forecast_date = today + timedelta(days=i)
-            predicted = recent_mean + trend_per_day * i
-
-            # Add increasing uncertainty
-            uncertainty = recent_std * (1 + 0.1 * i)
-            confidence = max(0.5, 0.95 - 0.03 * i)
-
-            predictions.append(
-                PredictionItem(
-                    date=forecast_date,
-                    salinity=round(max(0, predicted), 2),
-                    confidence=round(confidence, 2),
-                    lower_bound=round(max(0, predicted - 1.96 * uncertainty), 2),
-                    upper_bound=round(predicted + 1.96 * uncertainty, 2),
-                    model_version="statistical-v1.0",
-                )
-            )
-
-        return predictions
-
-    def _simulate_predictions(
-        self, station_id: int, days_ahead: int
-    ) -> List[PredictionItem]:
-        """
-        Generate simulated predictions for demo purposes.
-        Based on typical salinity patterns for each station.
-        """
-        import numpy as np
-
-        # Base salinity levels per station (matching seed data)
-        base_salinity = {
-            1: 0.35,   # Cần Thơ
-            2: 2.5,    # Mỹ Tho
-            3: 5.7,    # Bến Tre
-            4: 3.8,    # Trà Vinh
-            5: 5.1,    # Sóc Trăng
-            6: 9.0,    # Cà Mau
-        }
-
-        base = base_salinity.get(station_id, 3.0)
-        predictions = []
-        today = date.today()
-
-        np.random.seed(station_id * 100)  # Reproducible
-
-        for i in range(1, days_ahead + 1):
-            noise = np.random.normal(0, base * 0.08)
-            trend = 0.05 * i  # Slight upward trend
-            predicted = base + noise + trend
-            uncertainty = base * 0.12 * (1 + 0.05 * i)
-            confidence = max(0.5, 0.92 - 0.02 * i)
-
-            predictions.append(
-                PredictionItem(
-                    date=today + timedelta(days=i),
-                    salinity=round(max(0, predicted), 2),
-                    confidence=round(confidence, 2),
-                    lower_bound=round(max(0, predicted - 1.96 * uncertainty), 2),
-                    upper_bound=round(predicted + 1.96 * uncertainty, 2),
-                    model_version="simulated-v1.0",
-                )
-            )
-
+            steps = (forecast_date - last_day).days
+            damped_steps = sum(TREND_DAMPING ** k for k in range(1, steps + 1))
+            predicted = max(0.0, level + slope * damped_steps)
+            uncertainty = spread * (1 + 0.1 * steps)
+            predictions.append(PredictionItem(
+                date=forecast_date,
+                salinity=round(predicted, 2),
+                confidence=round(max(0.5, 0.95 - 0.03 * steps), 2),
+                lower_bound=round(max(0.0, predicted - 1.96 * uncertainty), 2),
+                upper_bound=round(predicted + 1.96 * uncertainty, 2),
+                model_version="statistical-v1.1",
+            ))
         return predictions
 
 
