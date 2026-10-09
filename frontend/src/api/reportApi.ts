@@ -24,6 +24,16 @@ export interface TrendPoint {
   previous: number | null;
 }
 
+/** Dữ liệu có về đúng hạn không (sau 09:00 phải có số đo của hôm qua) */
+export interface DataFreshness {
+  latestMeasurementAt: string | null;
+  /** YYYY-MM-DD, ngày mà lẽ ra đã phải có số đo */
+  expectedDate: string;
+  stale: boolean;
+  stationsReporting: number;
+  activeStations: number;
+}
+
 export interface TopStation {
   rank: number;
   stationId: number;
@@ -58,4 +68,8 @@ export const reportApi = {
       apiClient.get<TopStation[]>('/reports/top-stations', { params: { days, limit } }).then((r) => r.data),
       MOCK_TOP_STATIONS
     ),
+
+  // Không có dữ liệu giả: lỗi thì không hiện cảnh báo trễ
+  getDataFreshness: () =>
+    apiClient.get<DataFreshness>('/reports/data-freshness').then((r) => r.data),
 };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatMeasuredAt, isReporting, ONLINE_WINDOW_MS } from './salinity';
+import { formatDay, formatMeasuredAt, isReporting, ONLINE_WINDOW_MS } from './salinity';
 
 describe('formatMeasuredAt', () => {
   it('shows only the date for daily readings stamped at midnight', () => {
@@ -11,6 +11,12 @@ describe('formatMeasuredAt', () => {
 
   it('keeps the time for readings taken during the day', () => {
     expect(formatMeasuredAt(new Date(2026, 9, 7, 14, 30).toISOString())).toBe('lúc 14:30 07-10');
+  });
+});
+
+describe('formatDay', () => {
+  it('formats a plain date like the daily readings, without shifting it by the timezone', () => {
+    expect(formatDay('2026-10-08')).toBe('08-10');
   });
 });
 
