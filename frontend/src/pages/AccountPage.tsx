@@ -5,6 +5,7 @@ import { BottomNav } from '../components/BottomNav';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { ZaloButton } from '../components/ZaloButton';
 import { PushSettings } from '../components/PushSettings';
+import { StationWatchSettings } from '../components/StationWatchSettings';
 import { useAuth } from '../contexts/AuthContext';
 import { authApi, type LinkedIdentity } from '../api/authApi';
 import { apiErrorMessage } from '../api/client';
@@ -254,6 +255,7 @@ export function AccountPage() {
           </div>
 
           <PushSettings />
+          <StationWatchSettings />
           <PasswordForm />
           {config?.passkeyEnabled && passkeySupported() && <Passkeys />}
           {(config?.googleClientId || config?.zaloAppId) && (

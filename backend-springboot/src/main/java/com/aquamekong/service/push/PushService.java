@@ -30,8 +30,8 @@ import java.util.regex.Pattern;
 
 /**
  * Thông báo đẩy khi có cảnh báo mới: Web Push cho trình duyệt, FCM cho app điện thoại.
- * Mọi tài khoản đã bật thông báo trên thiết bị đều nhận mọi cảnh báo mới; thông báo vận hành (vd. dữ liệu trễ)
- * chỉ gửi cho Quản trị và Vận hành.
+ * Cảnh báo mới gửi tới tài khoản theo dõi trạm đó, tài khoản chưa theo dõi trạm nào, và Quản trị/Vận hành.
+ * Thông báo vận hành (vd. dữ liệu trễ) chỉ gửi cho Quản trị và Vận hành.
  */
 @Slf4j
 @Service
@@ -113,7 +113,7 @@ public class PushService {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onAlertCreated(AlertCreatedEvent event) {
         if (!webPushSender.isEnabled() && !fcmSender.isEnabled()) return;
-        List<PushSubscription> subscriptions = subscriptionRepository.findAll();
+        List<PushSubscription> subscriptions = subscriptionRepository.findAlertRecipients(event.stationId(), STAFF_ROLES);
         if (subscriptions.isEmpty()) return;
         List<PushResult> results = deliver(subscriptions, alertMessage(event));
         log.info("Thông báo cảnh báo #{}: {}/{} thiết bị nhận được", event.alertId(),
@@ -124,6 +124,14 @@ public class PushService {
     public int notifyStaff(PushMessage message) {
         if (!webPushSender.isEnabled() && !fcmSender.isEnabled()) return 0;
         List<PushSubscription> subscriptions = subscriptionRepository.findByUserRoleIn(STAFF_ROLES);
+        if (subscriptions.isEmpty()) return 0;
+        return (int) deliver(subscriptions, message).stream().filter(r -> r == PushResult.SENT).count();
+    }
+
+    /** Gửi tới mọi thiết bị của một tài khoản, trả về số thiết bị nhận được */
+    public int notifyUser(Long userId, PushMessage message) {
+        if (!webPushSender.isEnabled() && !fcmSender.isEnabled()) return 0;
+        List<PushSubscription> subscriptions = subscriptionRepository.findByUserId(userId);
         if (subscriptions.isEmpty()) return 0;
         return (int) deliver(subscriptions, message).stream().filter(r -> r == PushResult.SENT).count();
     }

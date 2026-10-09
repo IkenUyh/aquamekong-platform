@@ -143,7 +143,7 @@ public class AlertService {
 
                 Alert saved = alertRepository.save(alert);
                 // Thông báo đẩy được gửi sau khi transaction commit (PushService)
-                eventPublisher.publishEvent(new AlertCreatedEvent(saved.getId(), rule.getStation().getName(),
+                eventPublisher.publishEvent(new AlertCreatedEvent(saved.getId(), rule.getStation().getId(), rule.getStation().getName(),
                         saved.getMetricType(), rule.getOperator(), val, thresh, saved.getSeverity()));
             }
         }
