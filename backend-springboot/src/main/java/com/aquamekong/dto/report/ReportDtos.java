@@ -1,6 +1,7 @@
 package com.aquamekong.dto.report;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -33,5 +34,17 @@ public final class ReportDtos {
     }
 
     public record TopStation(int rank, Long stationId, String name, String province, Double salinity, Double previous, Double diff) {
+    }
+
+    /**
+     * Dữ liệu có về đúng hạn không.
+     *
+     * @param latestMeasurementAt số đo mới nhất của các trạm đang hoạt động, null = chưa có số nào
+     * @param expectedDate        ngày mà lẽ ra đã phải có số đo (hôm qua, hoặc hôm kia khi chưa tới giờ hẹn)
+     * @param stale               số đo mới nhất cũ hơn expectedDate
+     * @param stationsReporting   số trạm đang hoạt động đã có số đo từ expectedDate
+     */
+    public record DataFreshness(OffsetDateTime latestMeasurementAt, LocalDate expectedDate, boolean stale,
+                                long stationsReporting, long activeStations) {
     }
 }
