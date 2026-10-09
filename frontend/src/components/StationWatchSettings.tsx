@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { apiErrorMessage } from '../api/client';
+import { useMyLocation } from '../hooks/useMyLocation';
 import { useStationsList } from '../hooks/useStations';
 import { useRemoveWatch, useSaveWatch, useWatches } from '../hooks/useWatches';
 import { CROP_PRESETS, CUSTOM_CROP } from '../utils/crops';
+import { formatDistance, nearestStations, type LatLng } from '../utils/geo';
 import { formatNumber } from '../utils/salinity';
 import { watchStatus } from '../utils/watchStatus';
 
@@ -20,6 +22,8 @@ export function StationWatchSettings() {
   const [crop, setCrop] = useState(CROP_PRESETS[2].crop);
   const [threshold, setThreshold] = useState(String(CROP_PRESETS[2].threshold));
   const [error, setError] = useState<string | null>(null);
+  const [nearestNote, setNearestNote] = useState<string | null>(null);
+  const myLocation = useMyLocation();
 
   const existing = watches.find((w) => w.stationId === stationId);
   const sortedStations = [...stations].sort((a, b) => a.name.localeCompare(b.name, 'vi'));
@@ -32,6 +36,19 @@ export function StationWatchSettings() {
       setCrop(current.crop ?? CUSTOM_CROP);
       setThreshold(String(current.threshold));
     }
+  };
+
+  const pickNearest = (from: LatLng) => {
+    const nearest = nearestStations(stations.filter((s) => s.status === 'ACTIVE'), from, 1)[0];
+    if (!nearest) return;
+    pickStation(nearest.station.id);
+    setNearestNote(`Trạm gần bạn nhất, cách ${formatDistance(nearest.km)}`);
+  };
+
+  const onPickNearest = () => {
+    setError(null);
+    if (myLocation.position) pickNearest(myLocation.position);
+    else myLocation.locate(pickNearest);
   };
 
   const pickCrop = (value: string) => {
@@ -49,6 +66,7 @@ export function StationWatchSettings() {
     try {
       await save.mutateAsync({ stationId, threshold: value, crop: crop === CUSTOM_CROP ? null : crop });
       setStationId('');
+      setNearestNote(null);
     } catch (err) {
       setError(apiErrorMessage(err, 'Không lưu được, vui lòng thử lại.'));
     }
@@ -102,12 +120,23 @@ export function StationWatchSettings() {
         <div>
           <label htmlFor="watch-station" className="field-label">Trạm</label>
           <select id="watch-station" className="field" value={stationId}
-            onChange={(e) => pickStation(e.target.value === '' ? '' : Number(e.target.value))}>
+            onChange={(e) => { setNearestNote(null); pickStation(e.target.value === '' ? '' : Number(e.target.value)); }}>
             <option value="">Chọn trạm...</option>
             {sortedStations.map((s) => (
               <option key={s.id} value={s.id}>{s.name}{watches.some((w) => w.stationId === s.id) ? ' (đang theo dõi)' : ''}</option>
             ))}
           </select>
+          <div className="mt-1 flex flex-wrap items-baseline justify-between gap-2 text-xs">
+            <span className="text-gray-500 num">
+              {myLocation.status === 'denied' ? 'Chưa được phép lấy vị trí, hãy chọn trạm trong danh sách.'
+                : myLocation.status === 'unavailable' ? 'Không lấy được vị trí trên thiết bị này.'
+                : nearestNote ?? ''}
+            </span>
+            <button type="button" onClick={onPickNearest} disabled={myLocation.status === 'locating'}
+              className="font-medium text-primary hover:underline">
+              {myLocation.status === 'locating' ? 'Đang lấy vị trí...' : 'Chọn trạm gần tôi nhất'}
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
