@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { DateRangeFilter } from './DateRangeFilter';
 import { StationDropdown } from './StationDropdown';
 import { MapLayerToggles, DEFAULT_LAYERS } from './MapLayerToggles';
 import { ColorMetricPicker } from './ColorMetricPicker';
 import { useFilters } from '../../contexts/FilterContext';
 import { useStationsList } from '../../hooks/useStations';
+import { COLOR_METRICS, METRIC_SCALES } from '../../utils/metricScales';
 
 export function FilterPanel() {
   const { startDate, endDate, setDateRange,
@@ -12,6 +13,12 @@ export function FilterPanel() {
           activeLayers, toggleLayer, colorMetric, setColorMetric } = useFilters();
 
   const { data: stations } = useStationsList();
+  // Chỉ số không trạm nào có số đo (vd. lưu lượng với dữ liệu RYNAN) thì tô màu chỉ ra toàn xám: ẩn đi
+  const metrics = COLOR_METRICS.filter((m) => m === 'salinity' || stations?.some((s) => METRIC_SCALES[m].value(s) != null));
+  const colorMetricAvailable = !stations || metrics.includes(colorMetric);
+  useEffect(() => {
+    if (!colorMetricAvailable) setColorMetric('salinity');
+  }, [colorMetricAvailable, setColorMetric]);
 
   const layers = DEFAULT_LAYERS.map(l => ({
     ...l,
@@ -38,7 +45,7 @@ export function FilterPanel() {
         onChange={setSelectedStation}
       />
 
-      <ColorMetricPicker value={colorMetric} onChange={setColorMetric} />
+      <ColorMetricPicker value={colorMetric} onChange={setColorMetric} metrics={metrics} />
 
       {/* Map layers */}
       <MapLayerToggles

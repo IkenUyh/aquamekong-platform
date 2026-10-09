@@ -16,10 +16,15 @@ export function HistoryChart({ metrics, stationName, threshold = SALINITY_THRESH
     sorted.length > 1 &&
     new Date(sorted[sorted.length - 1].recordedAt).toDateString() !== new Date(sorted[0].recordedAt).toDateString();
 
+  // Số đo theo ngày (RYNAN, ghi lúc 00:00): giờ không mang thông tin, chỉ hiện ngày
+  const daily = sorted.every((m) => { const d = new Date(m.recordedAt); return d.getHours() === 0 && d.getMinutes() === 0; });
+
   const data = sorted.map((m) => {
     const d = new Date(m.recordedAt);
     return {
-      time: spansDays
+      time: daily && spansDays
+        ? d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
+        : spansDays
         ? d.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
         : d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       salinity: Math.round(m.value * 100) / 100,
