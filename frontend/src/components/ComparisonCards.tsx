@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MetricCompareCard } from './MetricCompareCard';
 import { metricApi } from '../api/client';
-import { SALINITY_THRESHOLD, formatNumber } from '../utils/salinity';
+import { SALINITY_THRESHOLD, formatMeasuredAt, formatNumber } from '../utils/salinity';
 
 interface ComparisonCardsProps {
   stationId: number;
@@ -10,27 +10,22 @@ interface ComparisonCardsProps {
   threshold?: number;
 }
 
-const HOUR = 3600_000;
+const DAY = 24 * 3600_000;
 
-/** Độ mặn hiện tại so với ~24h trước và so với ngưỡng. */
+/** Độ mặn hiện tại so với lần đo trước đó (số liệu RYNAN theo ngày, nên thường là hôm trước) và so với ngưỡng. */
 export function ComparisonCards({ stationId, currentSalinity, threshold = SALINITY_THRESHOLD }: ComparisonCardsProps) {
-  // Số đo độ mặn gần mốc 24h trước nhất (trong cửa sổ 23h–25h)
-  const { data: around24hAgo = [] } = useQuery({
-    queryKey: ['metrics', 'salinity-24h-ago', stationId],
+  const { data: recent = [] } = useQuery({
+    queryKey: ['metrics', 'salinity-recent', stationId],
     queryFn: () => {
       const now = Date.now();
-      return metricApi.getByStationWithDateRange(
-        stationId,
-        new Date(now - 25 * HOUR).toISOString(),
-        new Date(now - 23 * HOUR).toISOString(),
-        'salinity'
-      );
+      return metricApi.getByStationWithDateRange(stationId, new Date(now - 10 * DAY).toISOString(), new Date(now).toISOString(), 'salinity');
     },
     staleTime: 5 * 60_000,
   });
 
-  const value24hAgo = around24hAgo[0]?.value;
-  const delta24h = currentSalinity != null && value24hAgo != null ? currentSalinity - value24hAgo : null;
+  // API trả mới nhất trước: [0] là số đo hiện tại, [1] là lần đo trước
+  const previous = recent[1];
+  const delta = currentSalinity != null && previous ? currentSalinity - previous.value : null;
   const deltaThreshold = currentSalinity != null ? currentSalinity - threshold : null;
 
   return (
@@ -40,9 +35,9 @@ export function ComparisonCards({ stationId, currentSalinity, threshold = SALINI
         value={`${formatNumber(currentSalinity)}‰`}
       />
       <MetricCompareCard
-        label="So với 24h trước"
-        value={delta24h !== null ? `${delta24h > 0 ? '↑' : '↓'} ${formatNumber(Math.abs(delta24h))}‰` : '—'}
-        trend={delta24h !== null ? (delta24h > 0 ? 'up' : 'down') : 'neutral'}
+        label={previous ? `So với ${formatMeasuredAt(previous.recordedAt)}` : 'So với lần đo trước'}
+        value={delta !== null ? `${delta > 0 ? '↑' : '↓'} ${formatNumber(Math.abs(delta))}‰` : '—'}
+        trend={delta !== null ? (delta > 0 ? 'up' : 'down') : 'neutral'}
       />
       <MetricCompareCard
         label={`So với ngưỡng ${threshold}‰`}

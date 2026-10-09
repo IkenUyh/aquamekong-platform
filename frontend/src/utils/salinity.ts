@@ -37,9 +37,17 @@ export const SALINITY_CLASS_SHORT_LABELS: Record<SalinityClass, string> = {
 };
 
 /** Định dạng số đo kiểu Việt Nam (dấu phẩy thập phân), tối đa `digits` chữ số lẻ; null -> "—" */
-export function formatNumber(value: number | null | undefined, digits = 2): string {
-  return value == null ? '—' : value.toLocaleString('vi-VN', { maximumFractionDigits: digits });
+/** fixed: luôn đủ số chữ số thập phân (chỉ số trung bình: "1,00" chứ không phải "1") */
+export function formatNumber(value: number | null | undefined, digits = 2, fixed = false): string {
+  return value == null ? '—' : value.toLocaleString('vi-VN', { maximumFractionDigits: digits, minimumFractionDigits: fixed ? digits : 0 });
 }
+
+/** Sông mặc định ml-service gán khi nạp trạm không có thông tin sông (ingest/stations.py DEFAULT_RIVER) */
+const UNCLASSIFIED_RIVER = 'Chưa phân loại';
+
+/** Tên sông của trạm, bỏ sông mặc định "Chưa phân loại" (không mang thông tin) */
+export const riverOf = (station: { riverName?: string | null }) =>
+  station.riverName && station.riverName !== UNCLASSIFIED_RIVER ? station.riverName : undefined;
 
 /** Nhãn + đơn vị của từng loại chỉ số đo */
 export const METRIC_LABELS: Record<string, { label: string; unit: string }> = {
@@ -52,9 +60,25 @@ export function metricLabel(metricType: string): { label: string; unit: string }
   return METRIC_LABELS[metricType] ?? { label: metricType, unit: '' };
 }
 
-/** Trạm được coi là "đang truyền dữ liệu" nếu có số đo trong khoảng này (dữ liệu RYNAN về theo ngày) */
-export const ONLINE_WINDOW_HOURS = 48;
+/**
+ * Trạm được coi là "đang truyền dữ liệu" nếu có số đo trong khoảng này. Số liệu RYNAN theo ngày ghi lúc 00:00
+ * của ngày đó và về sáng hôm sau (06:00), nên số mới nhất bình thường đã cũ tới ~54 giờ.
+ */
+export const ONLINE_WINDOW_HOURS = 72;
 export const ONLINE_WINDOW_MS = ONLINE_WINDOW_HOURS * 3600_000;
+
+/**
+ * Thời điểm đo để hiển thị. Số liệu RYNAN theo ngày ghi lúc 00:00 (giờ không mang thông tin): "ngày 07/10";
+ * số đo có giờ thật: "lúc 14:30, 07/10". prefix=false bỏ chữ "ngày"/"lúc" (cột bảng).
+ */
+export function formatMeasuredAt(iso: string, prefix = true): string {
+  const d = new Date(iso);
+  const daily = d.getHours() === 0 && d.getMinutes() === 0;
+  const text = daily
+    ? d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
+    : d.toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+  return prefix ? `${daily ? 'ngày' : 'lúc'} ${text}` : text;
+}
 
 export function isReporting(lastMeasuredAt: string | null | undefined, now = Date.now()): boolean {
   return !!lastMeasuredAt && now - new Date(lastMeasuredAt).getTime() <= ONLINE_WINDOW_MS;

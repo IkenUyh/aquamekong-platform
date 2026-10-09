@@ -17,6 +17,7 @@ import type { AlertDto, AlertStatus } from '../types';
 import { formatNumber, isReporting, metricLabel, SALINITY_THRESHOLD } from '../utils/salinity';
 
 const HOUR = 3600_000;
+const DAY = 24 * HOUR;
 const ALL = '';
 
 type Level = 'CRITICAL' | 'WARNING' | 'INFO';
@@ -50,7 +51,7 @@ function StatusPill({ status }: { status?: AlertStatus }) {
   return <span className={`text-xs font-medium px-2 py-1 rounded whitespace-nowrap ${s.className}`}>{s.label}</span>;
 }
 
-/** Số đo độ mặn của trạm trong 24h trước thời điểm cảnh báo (tới hiện tại nếu cảnh báo còn mới). */
+/** Số đo độ mặn của trạm 14 ngày trước cảnh báo tới 7 ngày sau (hoặc tới nay). Số đo RYNAN theo ngày. */
 function AlertHistoryChart({ alert }: { alert: AlertDto }) {
   const triggeredAt = new Date(alert.createdAt).getTime();
   const { data: metrics = [], isLoading } = useQuery({
@@ -58,8 +59,8 @@ function AlertHistoryChart({ alert }: { alert: AlertDto }) {
     queryFn: () =>
       metricApi.getByStationWithDateRange(
         alert.stationId,
-        new Date(triggeredAt - 24 * HOUR).toISOString(),
-        new Date(Math.min(Date.now(), triggeredAt + 6 * HOUR)).toISOString(),
+        new Date(triggeredAt - 14 * DAY).toISOString(),
+        new Date(Math.min(Date.now(), triggeredAt + 7 * DAY)).toISOString(),
         'salinity'
       ),
   });
