@@ -13,7 +13,7 @@
 
     <groupId>com.aquamekong</groupId>
     <artifactId>aquamekong-backend</artifactId>
-    <version>0.2.1</version>
+    <version>0.3.0</version>
     <name>AquaMekong Backend</name>
     <description>Hydrology Monitoring &amp; Salinity Forecasting Platform — Mekong Delta</description>
 
