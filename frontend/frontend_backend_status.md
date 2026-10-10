@@ -35,6 +35,7 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
   - `GET /api/v1/stations` (GeoJSON), `GET /api/v1/stations/list`, `GET /api/v1/stations/{id}`, `GET /api/v1/stations/nearby` 🌐
   - `POST/PUT /api/v1/stations` 🛠️, `DELETE` 🔑 (giao diện: `/admin`)
 - Mỗi trạm có `latestSalinity`, `latestWaterLevel`, `latestFlowRate`: là giá trị mới nhất **theo từng chỉ số**.
+- **Trạm gần tôi** (Tổng quan, và nút "Chọn trạm gần tôi nhất" ở Trạm theo dõi): tính trên máy từ `GET /api/v1/stations/list`, vị trí người dùng không gửi lên backend. `GET /api/v1/stations/nearby` vẫn có nhưng frontend không dùng.
 
 ### 3. Số liệu đo (Measurements) & Realtime
 - **Trang:** `/map` (bảng lịch sử, heatmap)
@@ -53,6 +54,11 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
   - `POST /api/v1/forecasts/predict` `{stationId, daysAhead (1-30)}` 👤: backend gọi ML service rồi lưu kết quả thành `forecast_run`. Người chưa đăng nhập chỉ xem lượt dự báo đã lưu, không tự chạy mô hình.
   - `GET /api/v1/forecasts/runs?limit=` 🌐
 
+### 4b. Độ chính xác dự báo
+- **Trang:** `/forecast`, thẻ "Độ chính xác dự báo" và nút "So với thực tế" trên mỗi trạm (`components/ForecastAccuracy.tsx`, `api/accuracyApi.ts`)
+- **Trạng thái:** 🟢 Đã liên kết
+- **Endpoints:** `GET /api/v1/forecasts/accuracy?days=` 🌐 (backtest: chạy lại mô hình cho từng ngày đã qua, chỉ dùng số đo có tới hôm đó, so với số đo thật và với cách giữ nguyên số mới nhất), `GET /api/v1/forecasts/station/{id}/verification?days=` 🌐 (dự báo đã lưu đặt cạnh số đo thật)
+
 ### 5. Cảnh báo (Alerts)
 - **Trang:** `/alerts`, panel cảnh báo trên bản đồ
 - **Trạng thái:** 🟢 Đã liên kết. `api/alertApi.ts` (`toAlertDto`) map dữ liệu backend sang dạng UI hiển thị.
@@ -61,6 +67,14 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
   - `PUT /api/v1/alerts/{id}/status?status=` 🛠️ (các nút Xác nhận / Đã xử lý / Mở lại trên trang Cảnh báo)
   - `GET/POST/DELETE /api/v1/alerts/rules...` (GET 👤, ghi 🛠️; giao diện: `/admin`)
 - Backend tự sinh cảnh báo cho mọi số liệu mới, kể cả dữ liệu do ML pipeline crawl về. Mỗi rule chỉ có tối đa 1 cảnh báo chưa xử lý (ACTIVE hoặc ACKNOWLEDGED) tại một thời điểm.
+
+### 5b. Trạm theo dõi (Watches)
+- **Trang:** `/account`, mục "Trạm theo dõi" (`components/StationWatchSettings.tsx`, `api/watchApi.ts`)
+- **Trạng thái:** 🟢 Đã liên kết
+- **Endpoints:** `GET /api/v1/watches` 👤 (kèm số đo mới nhất và dự báo so với ngưỡng), `POST /api/v1/watches` `{stationId, threshold, crop}` 👤 (theo dõi, hoặc đổi ngưỡng nếu đã theo dõi; tối đa 20 trạm), `DELETE /api/v1/watches/{id}` 👤
+- Ngưỡng gợi ý theo loại cây (`utils/crops.ts`): sầu riêng 0,5‰, cây ăn trái 1‰, lúa 2‰, rau màu 2‰; người dùng sửa được.
+- Sau mỗi lượt dự báo (backend chạy lại dự báo khi có số đo mới), backend báo khi trạm đổi trạng thái: số đo mới nhất hoặc dự báo 7 ngày bắt đầu vượt ngưỡng, hoặc đã xuống dưới ngưỡng. Không báo lặp mỗi ngày.
+- Tài khoản đã theo dõi ít nhất một trạm thì chỉ nhận cảnh báo đo được (mục 5) của các trạm đó; chưa theo dõi trạm nào thì nhận mọi trạm. Quản trị/Vận hành luôn nhận mọi trạm.
 
 ### 6. Khuyến nghị (Recommendations)
 - **Trang:** `/` (Tổng quan), panel trên bản đồ
@@ -74,6 +88,7 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
   - `GET /api/v1/reports/overview?days=`: độ mặn, mực nước, lưu lượng trung bình; số trạm vượt 4‰; phân bố trạm theo mức độ mặn
   - `GET /api/v1/reports/trend?days=`: độ mặn trung bình toàn vùng theo từng ngày
   - `GET /api/v1/reports/top-stations?days=&limit=`: các trạm có độ mặn trung bình cao nhất
+  - `GET /api/v1/reports/data-freshness`: dữ liệu có về đúng hạn không (sau 12:00 phải có số đo của hôm qua, vì lịch GitHub Actions có thể trễ vài giờ). Trang Tổng quan hiện dải cảnh báo khi `stale`; lúc 09:00 backend báo cho Quản trị/Vận hành.
 - Hệ thống chưa có cảm biến đo **lượng mưa**, nên không có số liệu lượng mưa.
 
 ---

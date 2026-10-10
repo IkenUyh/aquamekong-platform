@@ -62,7 +62,7 @@ export function metricLabel(metricType: string): { label: string; unit: string }
 
 /**
  * Trạm được coi là "đang truyền dữ liệu" nếu có số đo trong khoảng này. Số liệu RYNAN theo ngày ghi lúc 00:00
- * của ngày đó và về sáng hôm sau (06:00), nên số mới nhất bình thường đã cũ tới ~54 giờ.
+ * của ngày đó và về sáng hôm sau (thường 06:00, có hôm trễ tới gần trưa), nên số mới nhất bình thường đã cũ tới ~60 giờ.
  */
 export const ONLINE_WINDOW_HOURS = 72;
 export const ONLINE_WINDOW_MS = ONLINE_WINDOW_HOURS * 3600_000;
@@ -78,6 +78,12 @@ export function formatMeasuredAt(iso: string, prefix = true): string {
     ? d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
     : d.toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
   return prefix ? `${daily ? 'ngày' : 'lúc'} ${text}` : text;
+}
+
+/** Ngày dạng YYYY-MM-DD (không có giờ) theo cùng kiểu với formatMeasuredAt, vd. "08-10" */
+export function formatDay(isoDate: string): string {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
 }
 
 export function isReporting(lastMeasuredAt: string | null | undefined, now = Date.now()): boolean {

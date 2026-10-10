@@ -25,6 +25,19 @@ def test_real_predictions_are_cached(fake_redis, monkeypatch):
     assert second == first
 
 
+def test_new_readings_invalidate_todays_cached_forecast(fake_redis, monkeypatch):
+    # File RYNAN về trễ: dự báo buổi sáng đã cache trên số đo cũ, số đo mới nạp lúc 09:12 phải được dùng
+    p = Predictor()
+    calls = []
+    monkeypatch.setattr(p, "_predict_uncached", lambda s, d: calls.append(s) or _items("statistical-v2"))
+
+    p.predict(1, 7)
+    fake_redis.data_version = 2
+    p.predict(1, 7)
+
+    assert calls == [1, 1]
+
+
 def test_no_forecast_is_invented_without_recent_measurements(monkeypatch):
     import app.services.predictor as predictor_module
     from app.services.predictor import InsufficientDataError
@@ -56,23 +69,26 @@ def test_statistical_forecast_starts_tomorrow_from_the_recent_level():
     assert all(abs(i.salinity - 0.5) < 0.01 for i in items)
 
 
-def test_statistical_forecast_follows_the_trend_from_the_last_data_day():
+def test_statistical_forecast_keeps_the_latest_reading_instead_of_extrapolating():
     today = date(2026, 10, 9)
-    df = _daily([1.0, 1.1, 1.2, 1.3, 1.4], today - timedelta(days=1))   # +0,1‰/ngày, số cuối ngày 8
+    df = _daily([1.0, 1.1, 1.2, 1.3, 1.4], today - timedelta(days=1))   # đang tăng 0,1‰/ngày, số cuối 1,4
 
-    items = Predictor._statistical_forecast(df, 2, today=today)
+    items = Predictor._statistical_forecast(df, 3, today=today)
 
-    # mức hiện tại 1,3 (trung bình 3 ngày cuối) + 0,1‰/ngày tắt dần ×0,8 mỗi ngày, tính từ ngày 8
-    assert [i.salinity for i in items] == [1.44, 1.5]
+    # Backtest 360 ngày: kéo dài xu hướng sai nhiều hơn giữ nguyên số mới nhất ở mọi số ngày dự báo trước
+    assert [i.salinity for i in items] == [1.4, 1.4, 1.4]
+    assert items[0].model_version == "statistical-v2"
 
 
-def test_statistical_forecast_does_not_run_a_falling_station_down_to_zero():
+def test_statistical_forecast_band_widens_with_the_days_ahead():
     today = date(2026, 10, 9)
-    falling = [2.0 - 0.12 * i for i in range(14)]          # 2,0 → 0,44‰ trong 14 ngày
+    df = _daily([1.0, 1.3, 0.9, 1.4, 1.1, 1.2], today - timedelta(days=1))
 
-    items = Predictor._statistical_forecast(_daily(falling, today - timedelta(days=2)), 7, today=today)
+    items = Predictor._statistical_forecast(df, 7, today=today)
 
-    assert all(i.salinity > 0.1 for i in items)
+    widths = [i.upper_bound - i.lower_bound for i in items]
+    assert widths == sorted(widths) and widths[0] < widths[-1]
+    assert all(i.lower_bound >= 0 for i in items)
 
 
 def test_statistical_forecast_needs_a_few_days_of_data():

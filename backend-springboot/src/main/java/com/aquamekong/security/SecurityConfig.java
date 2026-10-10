@@ -72,6 +72,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").authenticated()
                         // Mọi tài khoản (kể cả tự đăng ký) bật/tắt thông báo đẩy cho thiết bị của mình
                         .requestMatchers("/api/v1/push/**").hasAnyRole("USER", "OPERATOR", "ADMIN")
+                        // Mọi tài khoản tự chọn trạm theo dõi của mình
+                        .requestMatchers("/api/v1/watches/**").hasAnyRole("USER", "OPERATOR", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/forecasts/predict").hasAnyRole("USER", "OPERATOR", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("USER", "OPERATOR", "ADMIN")
                         .requestMatchers("/api/**").hasAnyRole("OPERATOR", "ADMIN")

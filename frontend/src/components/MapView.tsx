@@ -16,7 +16,7 @@ const riversGeoJson = riversData as GeoJsonObject;
 interface MapViewProps {
   features: GeoJsonFeature[];
   selectedStationId: number | null;
-  onSelectStation: (id: number) => void;
+  onSelectStation: (id: number | null) => void;
   activeLayers: Record<string, boolean>;
   colorMetric: ColorMetric;
 }
@@ -49,6 +49,7 @@ export function MapView({ features, selectedStationId, onSelectStation, activeLa
   const flyToCenter: [number, number] | null = selectedFeature 
     ? [selectedFeature.geometry.coordinates[1], selectedFeature.geometry.coordinates[0]] // Leaflet takes [lat, lng]
     : null;
+  const allStations = features.map((f) => [f.geometry.coordinates[1], f.geometry.coordinates[0]] as [number, number]);
 
   return (
     <MapContainer
@@ -90,7 +91,13 @@ export function MapView({ features, selectedStationId, onSelectStation, activeLa
         />
       ))}
 
-      <MapFlyToStation center={flyToCenter} />
+      <MapFlyToStation center={flyToCenter} overview={allStations} />
+      {selectedStationId != null && (
+        <button type="button" onClick={() => onSelectStation(null)}
+          className="absolute top-3 right-3 z-[1000] btn-secondary px-3 py-1.5 text-sm shadow-md">
+          Xem toàn vùng
+        </button>
+      )}
       <ZoomWatcher onZoom={setZoom} />
       <MapLegend metric={colorMetric} />
     </MapContainer>
