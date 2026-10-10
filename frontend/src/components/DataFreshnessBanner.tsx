@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { formatDay, formatMeasuredAt } from '../utils/salinity';
 
 /**
- * Cảnh báo khi sau 09:00 vẫn chưa có số đo của hôm qua: dữ liệu RYNAN đi qua GitHub Actions, Google Drive và
+ * Cảnh báo khi sau 12:00 vẫn chưa có số đo của hôm qua: dữ liệu RYNAN đi qua GitHub Actions, Google Drive và
  * ml-service, khâu nào hỏng thì số liệu đứng yên. Quản trị/Vận hành thấy thêm chỗ cần kiểm tra.
  */
 export function DataFreshnessBanner() {
