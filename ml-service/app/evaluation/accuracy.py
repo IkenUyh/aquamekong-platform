@@ -38,7 +38,7 @@ def salinity_class(value: float) -> int:
 def backtest(daily_by_station: Dict[int, pd.Series], first_issue: date, last_issue: date,
              forecaster: Forecaster = statistical_forecast, lookback_days: int = 90) -> pd.DataFrame:
     """
-    Mỗi ngày phát hành dự báo D (như job 07:30), mô hình thấy số đo tới hết D-1 trong lookback_days ngày,
+    Mỗi ngày phát hành dự báo D (như job dự báo buổi sáng của backend), mô hình thấy số đo tới hết D-1 trong lookback_days ngày,
     dự báo D+1..D+7. Trả về mỗi dòng một cặp (dự báo, số thật) kèm persistence = số đo mới nhất lúc phát hành.
     """
     rows = []
