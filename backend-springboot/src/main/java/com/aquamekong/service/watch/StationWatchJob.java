@@ -3,12 +3,13 @@ package com.aquamekong.service.watch;
 import com.aquamekong.dto.watch.WatchDtos.Outlook;
 import com.aquamekong.entity.user.StationWatch;
 import com.aquamekong.repository.user.StationWatchRepository;
+import com.aquamekong.service.forecast.ForecastsRefreshedEvent;
 import com.aquamekong.service.push.PushMessage;
 import com.aquamekong.service.push.PushService;
 import com.aquamekong.service.watch.StationWatchService.StationSnapshot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.text.DecimalFormat;
@@ -23,7 +24,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Mỗi sáng sau khi chạy dự báo (DailyForecastJob 07:30), so từng trạm theo dõi với ngưỡng của người theo dõi.
+ * Sau mỗi lượt dự báo (DailyForecastJob chạy khi có số đo mới), so từng trạm theo dõi với ngưỡng của người theo dõi.
  * Chỉ báo khi kết quả đổi so với lần trước: bắt đầu vượt ngưỡng (để kịp trữ nước), hoặc đã xuống dưới ngưỡng
  * (có thể lấy nước). Mùa khô trạm vượt ngưỡng nhiều tuần liền, báo lặp mỗi ngày thì người dùng sẽ tắt thông báo.
  */
@@ -39,7 +40,16 @@ public class StationWatchJob {
     private final StationWatchService watchService;
     private final PushService pushService;
 
-    @Scheduled(cron = "${app.watch.check-cron:0 0 8 * * *}", zone = "Asia/Ho_Chi_Minh")
+    @EventListener
+    public void onForecastsRefreshed(ForecastsRefreshedEvent event) {
+        try {
+            check();
+        } catch (RuntimeException e) {
+            // Không để lỗi báo người theo dõi làm hỏng lượt dự báo vừa chạy xong
+            log.error("So trạm theo dõi sau lượt dự báo thất bại: {}", e.getMessage(), e);
+        }
+    }
+
     public void check() {
         Instant now = Instant.now();
         Map<Long, StationSnapshot> snapshots = new HashMap<>();

@@ -24,7 +24,7 @@ export interface TrendPoint {
   previous: number | null;
 }
 
-/** Dữ liệu có về đúng hạn không (sau 09:00 phải có số đo của hôm qua) */
+/** Dữ liệu có về đúng hạn không (sau 12:00 phải có số đo của hôm qua) */
 export interface DataFreshness {
   latestMeasurementAt: string | null;
   /** YYYY-MM-DD, ngày mà lẽ ra đã phải có số đo */

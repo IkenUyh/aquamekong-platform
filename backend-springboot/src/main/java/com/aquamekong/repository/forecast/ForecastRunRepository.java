@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ForecastRunRepository extends JpaRepository<ForecastRun, Long> {
@@ -20,5 +21,5 @@ public interface ForecastRunRepository extends JpaRepository<ForecastRun, Long> 
 
     List<ForecastRun> findByRunAtBetweenOrderByRunAtDesc(OffsetDateTime from, OffsetDateTime to);
 
-    boolean existsByRunAtAfter(OffsetDateTime from);
+    Optional<ForecastRun> findFirstByOrderByRunAtDesc();
 }
