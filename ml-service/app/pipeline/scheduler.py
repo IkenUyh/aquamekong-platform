@@ -92,9 +92,10 @@ def start_scheduler():
     # Máy mới clone: tự tải dữ liệu ban đầu từ SEED_DATA_URL (chạy nền, không chặn khởi động)
     if settings.seed_data_url:
         scheduler.add_job(seed_if_empty, 'date', id='seed_data_job', replace_existing=True)
-    # File RYNAN hằng ngày trên Google Drive → inbox (job inbox ở trên nạp vào DB)
+    # File RYNAN hằng ngày trên Google Drive → inbox (job inbox ở trên nạp vào DB). 20 phút: giờ GitHub tải file
+    # lên không cố định, và mỗi lần chỉ là một lệnh liệt kê folder
     if settings.gdrive_folder_id and settings.gdrive_api_key:
-        scheduler.add_job(sync_drive, 'interval', hours=1, id='drive_sync_job',
+        scheduler.add_job(sync_drive, 'interval', minutes=20, id='drive_sync_job',
                           replace_existing=True, max_instances=1, coalesce=True,
                           next_run_time=datetime.now(timezone.utc))
     # Crawler sinh số ngẫu nhiên, chỉ bật khi demo không có dữ liệu thật
