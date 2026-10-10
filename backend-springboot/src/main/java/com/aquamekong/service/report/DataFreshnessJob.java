@@ -26,7 +26,7 @@ public class DataFreshnessJob {
     private final DataFreshnessService freshnessService;
     private final PushService pushService;
 
-    @Scheduled(cron = "${app.freshness.check-cron:0 0 9 * * *}", zone = "Asia/Ho_Chi_Minh")
+    @Scheduled(cron = "${app.freshness.check-cron:0 0 12 * * *}", zone = "Asia/Ho_Chi_Minh")
     public void check() {
         DataFreshness status = freshnessService.status();
         if (!status.stale()) return;

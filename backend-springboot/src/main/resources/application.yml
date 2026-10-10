@@ -74,17 +74,16 @@ app:
     allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173,https://localhost,http://localhost,capacitor://localhost}
   ml-service:
     base-url: ${ML_SERVICE_URL:http://localhost:8000}
-  # Dự báo cho mọi trạm mỗi sáng (giờ VN), sau khi dữ liệu RYNAN về lúc ~06:00. "-" = tắt
+  # Dự báo cho mọi trạm (giờ VN): mỗi lần kiểm tra, chạy nếu hôm nay chưa chạy hoặc có số đo mới nạp sau lượt trước.
+  # Số liệu RYNAN về theo lịch GitHub Actions, có hôm trễ vài giờ. "-" = tắt
   forecast:
-    daily-cron: ${FORECAST_DAILY_CRON:0 30 7 * * *}
+    refresh-cron: ${FORECAST_REFRESH_CRON:0 */30 6-22 * * *}
   # Sau giờ hẹn (giờ VN) mà chưa có số đo của hôm qua thì coi là dữ liệu trễ: trang Tổng quan hiện cảnh báo,
-  # và lúc check-cron gửi thông báo cho Quản trị/Vận hành. "-" = tắt thông báo (trang Tổng quan vẫn hiện)
+  # và lúc check-cron gửi thông báo cho Quản trị/Vận hành. 12:00 vì lịch GitHub Actions (05:41, dự phòng 10:41)
+  # có thể trễ vài giờ. "-" = tắt thông báo (trang Tổng quan vẫn hiện)
   freshness:
-    expected-by: ${FRESHNESS_EXPECTED_BY:09:00}
-    check-cron: ${FRESHNESS_CHECK_CRON:0 0 9 * * *}
-  # So trạm người dùng theo dõi với ngưỡng của họ, sau khi chạy dự báo lúc 07:30 (giờ VN). "-" = tắt
-  watch:
-    check-cron: ${WATCH_CHECK_CRON:0 0 8 * * *}
+    expected-by: ${FRESHNESS_EXPECTED_BY:12:00}
+    check-cron: ${FRESHNESS_CHECK_CRON:0 0 12 * * *}
   telemetry:
     broadcast-interval-ms: ${TELEMETRY_INTERVAL:10000}
     # Số đo cũ hơn mốc này (nạp dữ liệu lịch sử) không tạo cảnh báo, không đẩy SSE
