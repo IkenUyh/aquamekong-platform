@@ -53,7 +53,7 @@ public class ReportController {
     }
 
     @GetMapping("/data-freshness")
-    @Operation(summary = "Dữ liệu có về đúng hạn không", description = "stale = sau 09:00 (giờ VN) vẫn chưa có số đo của hôm qua")
+    @Operation(summary = "Dữ liệu có về đúng hạn không", description = "stale = sau 12:00 (giờ VN) vẫn chưa có số đo của hôm qua")
     public ResponseEntity<DataFreshness> dataFreshness() {
         return ResponseEntity.ok(dataFreshnessService.status());
     }

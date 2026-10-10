@@ -2,7 +2,11 @@ name: RYNAN daily fetch
 
 on:
   schedule:
-    - cron: '0 23 * * *'  # 06:00 giờ Việt Nam, lấy số đo của hôm qua
+    # Giờ Việt Nam: 05:41 lấy số đo của hôm qua, 10:41 chạy lại phòng khi lượt sáng bị GitHub bỏ.
+    # GitHub có thể trễ lịch vài giờ (10/10/2026 lượt 06:00 chạy lúc 09:01) và hay nghẽn ở phút 0, nên chọn phút lẻ.
+    # Chạy lại cùng ngày chỉ ghi đè file trên Drive; ml-service nạp lại không tạo số đo trùng.
+    - cron: '41 22 * * *'
+    - cron: '41 3 * * *'
   workflow_dispatch:
     inputs:
       from_date:

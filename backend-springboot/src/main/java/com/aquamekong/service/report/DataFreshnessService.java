@@ -24,8 +24,8 @@ import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 /**
- * Kiểm tra dữ liệu có về đúng hạn không. Số đo RYNAN theo ngày gắn mốc 00:00 giờ VN và về lúc ~06:00 sáng hôm
- * sau (GitHub Actions → Drive → ml-service), nên sau giờ hẹn (mặc định 09:00) phải có số đo của hôm qua.
+ * Kiểm tra dữ liệu có về đúng hạn không. Số đo RYNAN theo ngày gắn mốc 00:00 giờ VN và về sáng hôm sau
+ * (GitHub Actions → Drive → ml-service; lịch GitHub có thể trễ vài giờ), nên sau giờ hẹn (mặc định 12:00) phải có số đo của hôm qua.
  */
 @Service
 public class DataFreshnessService {
@@ -39,7 +39,7 @@ public class DataFreshnessService {
     @Autowired
     public DataFreshnessService(MeasurementRepository measurementRepository,
                                 StationRepository stationRepository,
-                                @Value("${app.freshness.expected-by:09:00}") String expectedBy) {
+                                @Value("${app.freshness.expected-by:12:00}") String expectedBy) {
         this(measurementRepository, stationRepository, LocalTime.parse(expectedBy));
     }
 
