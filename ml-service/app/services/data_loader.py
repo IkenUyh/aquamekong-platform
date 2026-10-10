@@ -14,6 +14,12 @@ def get_db_engine():
     return get_engine()
 
 
+def latest_measurement_id() -> int:
+    """Id số đo mới nhất (khoá chính, rất nhanh): đổi mỗi khi có số đo mới, dùng làm phiên bản dữ liệu cho cache dự báo."""
+    with get_db_engine().connect() as conn:
+        return int(conn.execute(text("SELECT COALESCE(MAX(id), 0) FROM measurements")).scalar())
+
+
 def load_station_metrics(
     station_id: int,
     lookback_days: int = 90,

@@ -25,6 +25,19 @@ def test_real_predictions_are_cached(fake_redis, monkeypatch):
     assert second == first
 
 
+def test_new_readings_invalidate_todays_cached_forecast(fake_redis, monkeypatch):
+    # File RYNAN về trễ: dự báo buổi sáng đã cache trên số đo cũ, số đo mới nạp lúc 09:12 phải được dùng
+    p = Predictor()
+    calls = []
+    monkeypatch.setattr(p, "_predict_uncached", lambda s, d: calls.append(s) or _items("statistical-v2"))
+
+    p.predict(1, 7)
+    fake_redis.data_version = 2
+    p.predict(1, 7)
+
+    assert calls == [1, 1]
+
+
 def test_no_forecast_is_invented_without_recent_measurements(monkeypatch):
     import app.services.predictor as predictor_module
     from app.services.predictor import InsufficientDataError

@@ -10,7 +10,7 @@ from typing import List, Optional
 from app.cache import get_redis
 from app.config import get_settings
 from app.schemas.forecast import PredictionItem
-from app.services.data_loader import load_station_metrics, load_station_info
+from app.services.data_loader import latest_measurement_id, load_station_metrics, load_station_info
 from app.models.hybrid_salinity_model import HybridSalinityModel
 from app.models.salinity_model import SalinityModel
 from app.stgnn.forecaster import forecaster as stgnn_forecaster
@@ -37,8 +37,10 @@ class Predictor:
 
     @staticmethod
     def _cache_key(station_id, days_ahead: int) -> str:
-        # Gắn ngày hiện tại (giờ VN) vào key để dự báo tự làm mới khi sang ngày mới
-        return f"forecast:{station_id}:{days_ahead}:{datetime.now(TIMEZONE).date().isoformat()}"
+        # Ngày hiện tại (giờ VN): sang ngày mới thì dự báo làm mới. Phiên bản dữ liệu (id số đo mới nhất): số đo mới
+        # nạp vào giữa ngày (file RYNAN về trễ) thì dự báo tính lại, không trả kết quả tính trên số đo cũ
+        return (f"forecast:{station_id}:{days_ahead}:{datetime.now(TIMEZONE).date().isoformat()}"
+                f":{latest_measurement_id()}")
 
     def _get_cached(self, key: str) -> Optional[List[PredictionItem]]:
         try:
@@ -71,14 +73,19 @@ class Predictor:
         Generate salinity predictions for a station (cached in Redis).
         Simulated fallbacks are not cached so real data/models take over as soon as available.
         """
-        key = self._cache_key(station_id, days_ahead)
-        cached = self._get_cached(key)
+        try:
+            key = self._cache_key(station_id, days_ahead)
+        except Exception as e:
+            # Không biết phiên bản dữ liệu thì không dùng cache, tránh trả dự báo tính trên số đo cũ
+            logger.warning(f"Cannot read data version, skip forecast cache: {e}")
+            key = None
+        cached = self._get_cached(key) if key else None
         if cached is not None:
             logger.info(f"Forecast cache hit for station {station_id}")
             return cached
 
         predictions = self._predict_uncached(station_id, days_ahead)
-        if predictions:
+        if predictions and key:
             self._set_cached(key, predictions)
         return predictions
 
