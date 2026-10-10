@@ -62,7 +62,7 @@ export function metricLabel(metricType: string): { label: string; unit: string }
 
 /**
  * Trạm được coi là "đang truyền dữ liệu" nếu có số đo trong khoảng này. Số liệu RYNAN theo ngày ghi lúc 00:00
- * của ngày đó và về sáng hôm sau (06:00), nên số mới nhất bình thường đã cũ tới ~54 giờ.
+ * của ngày đó và về sáng hôm sau (thường 06:00, có hôm trễ tới gần trưa), nên số mới nhất bình thường đã cũ tới ~60 giờ.
  */
 export const ONLINE_WINDOW_HOURS = 72;
 export const ONLINE_WINDOW_MS = ONLINE_WINDOW_HOURS * 3600_000;
