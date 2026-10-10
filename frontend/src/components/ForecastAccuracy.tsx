@@ -51,7 +51,8 @@ export function StationAccuracy({ stationId, accuracy, seriesLead }: {
   const lead = accuracy?.byLead.find((l) => l.lead === seriesLead);
   if (!accuracy || !lead) return null;
 
-  const stored = verification.filter((v) => v.leadDays === seriesLead);
+  // Mọi dự báo đã lưu đã có số thật, mới nhất trước (không chỉ mốc seriesLead: những ngày đầu chỉ có dự báo trước 1-2 ngày)
+  const stored = [...verification].sort((a, b) => b.forecastDate.localeCompare(a.forecastDate) || a.leadDays - b.leadDays);
   const storedMae = stored.length > 0 ? stored.reduce((s, v) => s + Math.abs(v.predicted - v.actual), 0) / stored.length : null;
   const data = accuracy.series.map((p) => ({ ...p, label: shortDate(p.date) }));
 
@@ -85,10 +86,43 @@ export function StationAccuracy({ stationId, accuracy, seriesLead }: {
           </div>
           <p className="mt-1 text-[11px] text-gray-400">
             Đường nét đứt là dự báo mô hình đưa ra {seriesLead} ngày trước mỗi ngày, khi chạy lại trên số đo đã qua.
-            {storedMae != null
-              ? ` Dự báo đã lưu trong 30 ngày qua: ${stored.length} ngày đã có số thật, sai trung bình ${formatNumber(storedMae)}‰.`
-              : ' Dự báo lưu hằng ngày sẽ được so với số thật khi số đo của ngày đó về.'}
           </p>
+          <div className="mt-3">
+            <p className="text-xs font-medium text-gray-700">Dự báo đã lưu so với số đo thật</p>
+            {stored.length === 0 ? (
+              <p className="mt-1 text-[11px] text-gray-400">
+                Chưa có: mỗi ngày app lưu dự báo, và so với số thật khi số đo của ngày được dự báo về (sáng hôm sau).
+              </p>
+            ) : (
+              <>
+                <table className="mt-1 w-full text-xs num">
+                  <thead>
+                    <tr className="text-left text-gray-500">
+                      <th className="font-normal py-1">Ngày</th>
+                      <th className="font-normal py-1">Dự báo trước</th>
+                      <th className="font-normal py-1 text-right">Dự báo</th>
+                      <th className="font-normal py-1 text-right">Thực tế</th>
+                      <th className="font-normal py-1 text-right">Lệch</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 text-gray-700">
+                    {stored.slice(0, 7).map((v) => (
+                      <tr key={`${v.forecastDate}-${v.leadDays}`}>
+                        <td className="py-1">{shortDate(v.forecastDate)}</td>
+                        <td className="py-1">{v.leadDays} ngày</td>
+                        <td className="py-1 text-right">{formatNumber(v.predicted)}‰</td>
+                        <td className="py-1 text-right">{formatNumber(v.actual)}‰</td>
+                        <td className="py-1 text-right">{formatNumber(Math.abs(v.predicted - v.actual))}‰</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="mt-1 text-[11px] text-gray-400">
+                  {stored.length} dự báo đã có số thật trong 30 ngày qua, lệch trung bình {formatNumber(storedMae)}‰.
+                </p>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
