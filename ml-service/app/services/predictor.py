@@ -10,7 +10,7 @@ from typing import List, Optional
 from app.cache import get_redis
 from app.config import get_settings
 from app.schemas.forecast import PredictionItem
-from app.services.data_loader import load_station_metrics, load_station_info
+from app.services.data_loader import latest_measurement_id, load_station_metrics, load_station_info
 from app.models.hybrid_salinity_model import HybridSalinityModel
 from app.models.salinity_model import SalinityModel
 from app.stgnn.forecaster import forecaster as stgnn_forecaster
@@ -20,8 +20,7 @@ logger = logging.getLogger(__name__)
 TIMEZONE = ZoneInfo("Asia/Ho_Chi_Minh")
 # Dự báo thống kê cần ít nhất ngần này ngày có số đo trong khoảng lookback
 MIN_STATISTICAL_DAYS = 3
-# Độ dốc yếu đi mỗi ngày (damped trend): xu hướng gần đây không bị kéo thẳng tới 0 hay tăng mãi
-TREND_DAMPING = 0.8
+STATISTICAL_VERSION = "statistical-v2"
 
 
 class InsufficientDataError(ValueError):
@@ -38,8 +37,10 @@ class Predictor:
 
     @staticmethod
     def _cache_key(station_id, days_ahead: int) -> str:
-        # Gắn ngày hiện tại (giờ VN) vào key để dự báo tự làm mới khi sang ngày mới
-        return f"forecast:{station_id}:{days_ahead}:{datetime.now(TIMEZONE).date().isoformat()}"
+        # Ngày hiện tại (giờ VN): sang ngày mới thì dự báo làm mới. Phiên bản dữ liệu (id số đo mới nhất): số đo mới
+        # nạp vào giữa ngày (file RYNAN về trễ) thì dự báo tính lại, không trả kết quả tính trên số đo cũ
+        return (f"forecast:{station_id}:{days_ahead}:{datetime.now(TIMEZONE).date().isoformat()}"
+                f":{latest_measurement_id()}")
 
     def _get_cached(self, key: str) -> Optional[List[PredictionItem]]:
         try:
@@ -72,14 +73,19 @@ class Predictor:
         Generate salinity predictions for a station (cached in Redis).
         Simulated fallbacks are not cached so real data/models take over as soon as available.
         """
-        key = self._cache_key(station_id, days_ahead)
-        cached = self._get_cached(key)
+        try:
+            key = self._cache_key(station_id, days_ahead)
+        except Exception as e:
+            # Không biết phiên bản dữ liệu thì không dùng cache, tránh trả dự báo tính trên số đo cũ
+            logger.warning(f"Cannot read data version, skip forecast cache: {e}")
+            key = None
+        cached = self._get_cached(key) if key else None
         if cached is not None:
             logger.info(f"Forecast cache hit for station {station_id}")
             return cached
 
         predictions = self._predict_uncached(station_id, days_ahead)
-        if predictions:
+        if predictions and key:
             self._set_cached(key, predictions)
         return predictions
 
@@ -136,42 +142,48 @@ class Predictor:
 
     @staticmethod
     def _statistical_forecast(df, days_ahead: int, today: Optional[date] = None) -> List[PredictionItem]:
-        """
-        Xu hướng ngắn hạn tắt dần: mức hiện tại (trung bình 3 ngày cuối) cộng độ dốc của 14 ngày cuối
-        (tính theo ngày thật, có chỗ trống vẫn đúng) nhân hệ số giảm dần, cho các ngày sau hôm nay giờ VN.
-        """
-        import numpy as np
-
+        """Dự báo thống kê từ các số đo của trạm (DataFrame theo recorded_at), cho các ngày sau hôm nay giờ VN."""
         daily = df["salinity"].dropna()
         daily = daily.groupby(daily.index.tz_convert(TIMEZONE).date).max()
-        if len(daily) < MIN_STATISTICAL_DAYS:
-            raise InsufficientDataError(f"Trạm chỉ có {len(daily)} ngày số đo độ mặn gần đây, chưa đủ để dự báo")
+        return statistical_forecast(daily, days_ahead, today or datetime.now(TIMEZONE).date())
 
-        recent = daily.tail(14)
-        offsets = np.array([(d - recent.index[-1]).days for d in recent.index], dtype=float)
-        slope = np.polyfit(offsets, recent.values, 1)[0] if len(recent) >= 3 else 0.0
-        level = float(daily.tail(3).mean())
-        spread = float(recent.std()) if len(recent) > 1 else 0.0
-        spread = spread if spread > 0 else max(level * 0.1, 0.05)
 
-        today = today or datetime.now(TIMEZONE).date()
-        last_day = daily.index[-1]
-        predictions = []
-        for i in range(1, days_ahead + 1):
-            forecast_date = today + timedelta(days=i)
-            steps = (forecast_date - last_day).days
-            damped_steps = sum(TREND_DAMPING ** k for k in range(1, steps + 1))
-            predicted = max(0.0, level + slope * damped_steps)
-            uncertainty = spread * (1 + 0.1 * steps)
-            predictions.append(PredictionItem(
-                date=forecast_date,
-                salinity=round(predicted, 2),
-                confidence=round(max(0.5, 0.95 - 0.03 * steps), 2),
-                lower_bound=round(max(0.0, predicted - 1.96 * uncertainty), 2),
-                upper_bound=round(predicted + 1.96 * uncertainty, 2),
-                model_version="statistical-v1.1",
-            ))
-        return predictions
+def statistical_forecast(daily, days_ahead: int, today: date) -> List[PredictionItem]:
+    """
+    Giữ nguyên số đo mới nhất (persistence), khoảng tin cậy rộng dần theo độ dao động ngày-qua-ngày của 14 ngày cuối.
+    Backtest (app/evaluation/accuracy.py, 360 ngày, chia đôi để chọn và kiểm tra) cho thấy kéo dài xu hướng gần đây
+    (v1.1: trung bình 3 ngày + độ dốc 14 ngày tắt dần) sai nhiều hơn cách này ở mọi số ngày dự báo trước:
+    độ mặn theo ngày lên xuống liên tục nên xu hướng vài ngày thường đổi chiều. Mô hình mới phải thắng được mức này.
+
+    daily: Series độ mặn cao nhất theo ngày (index là date, tăng dần). Backtest gọi trực tiếp hàm này
+    với chuỗi cắt tới một ngày trong quá khứ, nên đánh giá đúng công thức đang chạy thật.
+    """
+    import math
+    import numpy as np
+
+    if len(daily) < MIN_STATISTICAL_DAYS:
+        raise InsufficientDataError(f"Trạm chỉ có {len(daily)} ngày số đo độ mặn gần đây, chưa đủ để dự báo")
+
+    level = float(daily.iloc[-1])
+    changes = np.diff(daily.tail(14).values)
+    step_spread = max(float(np.std(changes)) if len(changes) > 1 else 0.0, level * 0.05, 0.05)
+
+    last_day = daily.index[-1]
+    predictions = []
+    for i in range(1, days_ahead + 1):
+        forecast_date = today + timedelta(days=i)
+        steps = (forecast_date - last_day).days
+        # Thay đổi ngẫu nhiên cộng dồn qua từng ngày: sai số lớn dần theo căn bậc hai số ngày
+        uncertainty = step_spread * math.sqrt(steps)
+        predictions.append(PredictionItem(
+            date=forecast_date,
+            salinity=round(level, 2),
+            confidence=round(max(0.5, 0.95 - 0.03 * steps), 2),
+            lower_bound=round(max(0.0, level - 1.96 * uncertainty), 2),
+            upper_bound=round(level + 1.96 * uncertainty, 2),
+            model_version=STATISTICAL_VERSION,
+        ))
+    return predictions
 
 
 # Singleton

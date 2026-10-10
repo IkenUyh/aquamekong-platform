@@ -34,4 +34,7 @@ def fake_redis(monkeypatch):
     r = FakeRedis()
     import app.services.predictor as predictor_module
     monkeypatch.setattr(predictor_module, "get_redis", lambda: r)
+    # Phiên bản dữ liệu của cache dự báo; test đổi giá trị này để giả lập số đo mới
+    r.data_version = 1
+    monkeypatch.setattr(predictor_module, "latest_measurement_id", lambda: r.data_version)
     return r

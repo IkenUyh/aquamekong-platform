@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Navbar } from '../components/Navbar';
 import { BottomNav } from '../components/BottomNav';
 import { MetricCard } from '../components/MetricCard';
+import { DataFreshnessBanner } from '../components/DataFreshnessBanner';
+import { NearbyStations } from '../components/NearbyStations';
 import { RecommendationList } from '../components/RecommendationList';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
 import { useStationsList } from '../hooks/useStations';
@@ -67,6 +69,12 @@ export function OverviewPage() {
   const { data: stations = [] } = useStationsList();
   const [onlyAbove, setOnlyAbove] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const mapSection = useRef<HTMLElement>(null);
+  // Chọn trạm gần tôi: đưa bản đồ tới trạm đó (trên điện thoại bản đồ nằm bên dưới nên cuộn tới)
+  const focusStation = (id: number) => {
+    setSelectedId(id);
+    mapSection.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
   const { data: openAlerts = [] } = useUnresolvedAlerts();
   const { data: recommendations = [] } = useQuery({
     queryKey: ['recommendations'],
@@ -108,6 +116,9 @@ export function OverviewPage() {
             </p>
           </div>
 
+          <DataFreshnessBanner />
+          <NearbyStations stations={stations} onSelect={focusStation} />
+
           {/* Chỉ số chính */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
             <MetricCard
@@ -137,10 +148,17 @@ export function OverviewPage() {
 
           {/* Bản đồ + xếp hạng trạm */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <section className="card overflow-hidden lg:col-span-2 flex flex-col">
+            <section ref={mapSection} className="card overflow-hidden lg:col-span-2 flex flex-col">
               <div className="flex items-baseline justify-between px-4 py-3 border-b border-gray-200">
                 <h2 className="text-sm font-semibold text-gray-900">Độ mặn tại các trạm</h2>
-                <Link to="/map" className="text-xs font-medium text-primary hover:underline">Mở bản đồ chi tiết</Link>
+                <div className="flex items-baseline gap-3">
+                  {selectedId != null && (
+                    <button type="button" onClick={() => setSelectedId(null)} className="text-xs font-medium text-primary hover:underline">
+                      Xem toàn vùng
+                    </button>
+                  )}
+                  <Link to="/map" className="text-xs font-medium text-primary hover:underline">Mở bản đồ chi tiết</Link>
+                </div>
               </div>
               <div className="h-[520px]">
                 <StationsMiniMap

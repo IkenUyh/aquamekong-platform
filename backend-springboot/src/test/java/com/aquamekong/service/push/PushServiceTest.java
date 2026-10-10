@@ -126,21 +126,43 @@ class PushServiceTest {
     }
 
     @Test
-    void alertGoesToEveryDeviceAndDropsUnsubscribedOnes() {
+    void alertGoesToTheStationsRecipientsAndDropsUnsubscribedDevices() {
         PushSubscription browser = PushSubscription.builder().id(1L).channel(PushSubscription.Channel.WEBPUSH).endpoint(ENDPOINT).build();
         PushSubscription phone = PushSubscription.builder().id(2L).channel(PushSubscription.Channel.FCM).endpoint("fcm-token").build();
-        when(subscriptionRepository.findAll()).thenReturn(List.of(browser, phone));
+        when(subscriptionRepository.findAlertRecipients(3L, PushService.STAFF_ROLES)).thenReturn(List.of(browser, phone));
         when(webPushSender.send(eq(browser), any())).thenReturn(PushResult.SENT);
         when(fcmSender.send(eq("fcm-token"), any())).thenReturn(PushResult.GONE);
 
-        pushService.onAlertCreated(new AlertCreatedEvent(9L, "Mỹ Tho", "salinity", ">", 5.2, 4.0, AlertSeverity.HIGH));
+        pushService.onAlertCreated(new AlertCreatedEvent(9L, 3L, "Mỹ Tho", "salinity", ">", 5.2, 4.0, AlertSeverity.HIGH));
 
         verify(subscriptionRepository).deleteAll(List.of(phone));
+        verify(subscriptionRepository, never()).findAll();
+    }
+
+    @Test
+    void userNotificationGoesToThatUsersDevices() {
+        PushSubscription phone = PushSubscription.builder().channel(PushSubscription.Channel.FCM).endpoint("alice-token").build();
+        when(subscriptionRepository.findByUserId(1L)).thenReturn(List.of(phone));
+        when(fcmSender.send(eq("alice-token"), any())).thenReturn(PushResult.SENT);
+
+        assertThat(pushService.notifyUser(1L, new PushMessage("Cảnh báo mặn: Mỹ Tho", "…", "/forecast", "watch-1"))).isEqualTo(1);
+    }
+
+    @Test
+    void staffNotificationsGoOnlyToAdminAndOperatorDevices() {
+        PushSubscription admin = PushSubscription.builder().channel(PushSubscription.Channel.FCM).endpoint("admin-token").build();
+        when(subscriptionRepository.findByUserRoleIn(List.of("ROLE_ADMIN", "ROLE_OPERATOR"))).thenReturn(List.of(admin));
+        when(fcmSender.send(eq("admin-token"), any())).thenReturn(PushResult.SENT);
+
+        int sent = pushService.notifyStaff(new PushMessage("Dữ liệu chưa về", "…", "/", "data-freshness"));
+
+        assertThat(sent).isEqualTo(1);
+        verify(subscriptionRepository, never()).findAll();
     }
 
     @Test
     void alertMessageIsVietnamese() {
-        PushMessage message = PushService.alertMessage(new AlertCreatedEvent(9L, "Mỹ Tho", "salinity", ">", 5.25, 4.0, AlertSeverity.HIGH));
+        PushMessage message = PushService.alertMessage(new AlertCreatedEvent(9L, 3L, "Mỹ Tho", "salinity", ">", 5.25, 4.0, AlertSeverity.HIGH));
 
         assertThat(message.title()).isEqualTo("Cảnh báo mức cao: Mỹ Tho");
         assertThat(message.body()).isEqualTo("Độ mặn 5,25‰, vượt ngưỡng 4‰");
