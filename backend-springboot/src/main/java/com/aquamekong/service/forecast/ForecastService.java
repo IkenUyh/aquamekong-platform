@@ -107,6 +107,7 @@ public class ForecastService {
                 .lowerBound(dto.getLowerBound())
                 .upperBound(dto.getUpperBound())
                 .confidenceLevel(dto.getConfidenceLevel() != null ? dto.getConfidenceLevel() : 0.95)
+                .riskSalinity(dto.getRiskSalinity())
                 .build();
 
         SalinityForecast saved = salinityForecastRepository.save(forecast);
@@ -146,6 +147,7 @@ public class ForecastService {
                             .lowerBound(p.lowerBound())
                             .upperBound(p.upperBound())
                             .confidenceLevel(p.confidence() != null ? p.confidence() : 0.95)
+                            .riskSalinity(p.riskSalinity())
                             .build())
                     .collect(Collectors.toList());
 
@@ -182,6 +184,7 @@ public class ForecastService {
                 .lowerBound(entity.getLowerBound())
                 .upperBound(entity.getUpperBound())
                 .confidenceLevel(entity.getConfidenceLevel())
+                .riskSalinity(entity.getRiskSalinity())
                 .createdAt(entity.getCreatedAt())
                 .runAt(entity.getRun() != null ? entity.getRun().getRunAt() : null)
                 .dataUntil(entity.getRun() != null && entity.getRun().getInputTo() != null

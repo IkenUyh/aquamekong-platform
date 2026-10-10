@@ -24,6 +24,8 @@ public class SalinityForecastDto {
     private Double lowerBound;
     private Double upperBound;
     private Double confidenceLevel;
+    /** Mức có thể lên tới (mô hình rủi ro); null với mô hình khác */
+    private Double riskSalinity;
 
     private OffsetDateTime createdAt;
 

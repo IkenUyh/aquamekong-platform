@@ -26,6 +26,16 @@ public class ForecastAccuracyController {
         return ResponseEntity.ok(accuracyService.accuracy(days));
     }
 
+    @GetMapping("/early-warning")
+    @Operation(summary = "Cảnh báo sớm trên các mùa khô cũ",
+            description = "Mỗi mùa: số lần trạm bắt đầu vượt ngưỡng, số lần app đã cảnh báo từ trước, số lần báo sớm đúng/nhầm, "
+                    + "theo các ngưỡng 4, 2, 1, 0,5‰. Mô hình của mỗi mùa chỉ học số đo trước mùa đó. 404 khi chưa học xong lần đầu")
+    public ResponseEntity<Map<String, Object>> earlyWarning() {
+        return accuracyService.earlyWarning()
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/station/{stationId}/verification")
     @Operation(summary = "Dự báo đã lưu của trạm đặt cạnh số đo thật", description = "days: 1-90 (mặc định 30)")
     public ResponseEntity<List<VerificationPointDto>> verification(@PathVariable Long stationId,
