@@ -2,6 +2,30 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [0.3.0] - 2026-10-10
+
+### Thêm mới
+- **Trạm theo dõi theo loại cây**: người dùng đã đăng nhập chọn trạm gần nơi canh tác và ngưỡng mặn riêng (gợi ý: sầu riêng 0,5‰, cây ăn trái 1‰, lúa và rau màu 2‰). Khi số đo mới nhất hoặc dự báo 7 ngày tới bắt đầu vượt ngưỡng, app báo kèm ngày vượt đầu tiên để kịp trữ nước; khi độ mặn giảm xuống dưới ngưỡng, app báo có thể lấy nước. Chỉ báo khi tình hình thay đổi, không lặp mỗi ngày.
+- **Cảnh báo theo trạm**: tài khoản đã theo dõi trạm chỉ nhận cảnh báo của các trạm đó. Tài khoản chưa theo dõi trạm nào vẫn nhận mọi trạm; Quản trị và Vận hành luôn nhận tất cả.
+- **Trạm gần tôi**: trang Tổng quan tìm 3 trạm gần người dùng nhất, kèm khoảng cách và độ mặn mới nhất. Vị trí chỉ dùng trên máy, không gửi lên máy chủ. Form Trạm theo dõi có nút chọn trạm gần nhất.
+- **Độ chính xác dự báo**: trang Dự báo cho biết dự báo trước 1, 3, 7 ngày thường sai bao nhiêu và đoán đúng mức mặn bao nhiêu phần trăm, tính bằng cách chạy lại mô hình trên 180 ngày đã qua (chỉ dùng số đo có tới từng ngày). Mỗi trạm có biểu đồ dự báo đặt cạnh số đo thật, và bảng các dự báo đã lưu so với số đo về sau.
+- **Báo khi dữ liệu ngừng về**: sau 12:00 mà chưa có số đo của hôm qua, trang Tổng quan hiện cảnh báo và Quản trị/Vận hành nhận thông báo.
+- Nút **Xem toàn vùng** trên bản đồ (trang Bản đồ và Tổng quan) để thoát khỏi trạm đang chọn.
+
+### Thay đổi
+- Dự báo dự phòng (khi trạm không có mô hình riêng) giữ nguyên số đo mới nhất, thay cho kéo dài xu hướng gần đây: chạy lại trên 360 ngày đã qua, cách cũ sai nhiều hơn ở mọi số ngày dự báo trước (dự báo trước 1 ngày: 0,69‰ so với 0,51‰).
+- Dự báo, báo cho trạm theo dõi và lấy dữ liệu chạy khi có số liệu mới thay vì giờ cố định: lịch GitHub Actions có hôm trễ vài giờ, máy chủ có thể bật muộn. Lấy dữ liệu RYNAN lúc 05:41 và chạy lại lúc 10:41; ml-service kiểm tra Google Drive mỗi 20 phút; dự báo chạy lại trong vòng 30 phút sau khi có số đo mới.
+- Lấy dữ liệu RYNAN báo lỗi Google Drive rõ ràng (vd. Client ID/secret sai) và kiểm tra quyền Drive trước khi lấy dữ liệu.
+
+### Sửa lỗi
+- Dự báo chạy lại sau khi số liệu về trễ vẫn trả kết quả tính trên số đo cũ.
+- Biểu đồ dự báo của từng trạm cao hơn khung chứa, che các nút bên dưới.
+
+### Hạn chế đã biết
+- Dự báo dự phòng là đường thẳng (giữ nguyên số mới nhất), nên chưa báo trước được đợt mặn tăng ở các trạm không có mô hình riêng. Mô hình mới phải vượt được mức này mới được dùng.
+- ST-GNN vẫn chưa dùng được với dữ liệu RYNAN hằng ngày (thiếu mưa, lưu lượng, thuỷ triều).
+- App Android cần build lại để có các tính năng mới; thông báo trên app cần cấu hình Firebase.
+
 ## [0.2.1] - 2026-10-09
 
 ### Sửa lỗi
@@ -58,6 +82,7 @@ Bản phát hành đầu tiên.
 - Cảnh báo và khuyến nghị dựa trên số đo mới nhất, chưa dựa trên dự báo.
 - Dữ liệu RYNAN hiện có đến 31/08/2026; trạm hiện "mất tín hiệu" tới khi nạp dữ liệu mới.
 
+[0.3.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/IkenUyh/aquamekong-platform/releases/tag/v0.1.0
