@@ -3,9 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { DashboardLayout } from '../layouts/DashboardLayout';
-import { DataTable, Column } from '../components/shared/DataTable';
-import { StatusBadge } from '../components/shared/StatusBadge';
-import { SummaryCounter } from '../components/shared/SummaryCounter';
+import { AlertCardList } from '../components/AlertCardList';
 import { HistoryChart } from '../components/HistoryChart';
 import { useAlerts } from '../hooks/useAlerts';
 import { useStationsList } from '../hooks/useStations';
@@ -14,7 +12,7 @@ import { metricApi } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { PushSettings } from '../components/PushSettings';
 import type { AlertDto, AlertStatus } from '../types';
-import { formatNumber, isReporting, metricLabel, SALINITY_THRESHOLD } from '../utils/salinity';
+import { formatMeasuredAt, formatNumber, formatSalinity, isReporting, metricLabel, SALINITY_THRESHOLD } from '../utils/salinity';
 
 const HOUR = 3600_000;
 const DAY = 24 * HOUR;
@@ -43,8 +41,8 @@ const STATUS_LABELS: Record<AlertStatus, { label: string; className: string }> =
 
 const levelOf = (a: AlertDto): Level => (a.alertLevel === 'CRITICAL' || a.alertLevel === 'WARNING' ? a.alertLevel : 'INFO');
 
-const formatTime = (iso: string) =>
-  new Date(iso).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+/** Số đo RYNAN theo ngày ghi lúc 00:00 thì chỉ hiện ngày; có giờ thật thì kèm giờ */
+const formatTime = (iso: string) => formatMeasuredAt(iso, false, true);
 
 function StatusPill({ status }: { status?: AlertStatus }) {
   const s = STATUS_LABELS[status ?? 'ACTIVE'];
@@ -79,7 +77,7 @@ function StaleDataNotice() {
   const days = Math.floor((Date.now() - new Date(latest).getTime()) / 86_400_000);
   return (
     <p className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
-      Số đo mới nhất là ngày <span className="num">{new Date(latest).toLocaleDateString('vi-VN')}</span> ({days} ngày trước).
+      Số đo mới nhất là ngày <span className="num">{formatMeasuredAt(latest, false, true)}</span> ({days} ngày trước).
       Cảnh báo chỉ được tạo khi có số đo mới, nên danh sách sẽ trống tới khi nạp dữ liệu RYNAN mới.
       Xem lại cảnh báo trong quá khứ ở trang{' '}
       <Link to="/replay" className="font-medium text-primary hover:underline">Phát lại</Link>.
@@ -92,6 +90,8 @@ export function AlertsPage() {
   const { hasRole } = useAuth();
   const canManage = hasRole('ROLE_OPERATOR', 'ROLE_ADMIN');
   const { data: alerts = [], isLoading, isError } = useAlerts();
+  // Số đo mới nhất của từng trạm: số lúc cảnh báo có thể đã cũ nhiều ngày
+  const { data: stationList = [] } = useStationsList();
 
   const [periodHours, setPeriodHours] = useState(24 * 7);
   const [levels, setLevels] = useState<Level[]>(['CRITICAL', 'WARNING', 'INFO']);
@@ -155,26 +155,6 @@ export function AlertsPage() {
   };
   const toggleLevel = (l: Level) => setLevels((prev) => (prev.includes(l) ? prev.filter((x) => x !== l) : [...prev, l]));
 
-  const columns: Column<AlertDto>[] = [
-    { key: 'severity', header: 'Mức độ', render: (a) => <StatusBadge level={levelOf(a)} /> },
-    { key: 'station', header: 'Trạm', render: (a) => <span className="font-semibold text-gray-800">{a.stationName ?? `Trạm ${a.stationId}`}</span> },
-    { key: 'province', header: 'Tỉnh/Thành', render: (a) => a.province || '—' },
-    {
-      key: 'value',
-      header: 'Giá trị đo',
-      render: (a) => {
-        const m = metricLabel(a.metricType ?? '');
-        const lvl = levelOf(a);
-        return (
-          <span className={`font-bold ${lvl === 'CRITICAL' ? 'text-red-500' : lvl === 'WARNING' ? 'text-yellow-600' : 'text-gray-700'}`}>
-            {m.label} {formatNumber(a.measuredValue)}{m.unit}
-          </span>
-        );
-      },
-    },
-    { key: 'time', header: 'Thời gian', render: (a) => formatTime(a.createdAt) },
-    { key: 'status', header: 'Trạng thái', render: (a) => <StatusPill status={a.status} /> },
-  ];
 
   const selectClass = 'field';
 
@@ -184,6 +164,10 @@ export function AlertsPage() {
 
   const metric = selectedAlert ? metricLabel(selectedAlert.metricType ?? '') : null;
   const selectedLevel = selectedAlert ? levelOf(selectedAlert) : 'INFO';
+  const currentSalinity = selectedAlert?.metricType === 'salinity'
+    ? stationList.find((s) => s.id === selectedAlert.stationId)?.latestSalinity ?? null
+    : null;
+  const currentAt = selectedAlert ? stationList.find((s) => s.id === selectedAlert.stationId)?.lastMeasuredAt : null;
 
   return (
     <DashboardLayout
@@ -245,7 +229,7 @@ export function AlertsPage() {
         </div>
       }
       centerContent={
-        <div className="h-full bg-white p-4 lg:p-5 flex flex-col gap-4 overflow-hidden">
+        <div className="h-full bg-gray-50 p-4 lg:p-5 flex flex-col gap-4 overflow-hidden">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Danh sách cảnh báo</h2>
             <p className="text-xs text-gray-500">Cảnh báo sinh tự động khi số đo vượt ngưỡng của rule cảnh báo</p>
@@ -253,19 +237,24 @@ export function AlertsPage() {
 
           <StaleDataNotice />
 
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-2">
+          {/* Một dòng tóm tắt thay cho 3 thẻ đếm: phần lớn thời gian chỉ có 0–1 trạm mỗi mức */}
+          <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
+            <span>Trạm có cảnh báo chưa xử lý:</span>
             {LEVELS.map(({ level, label, dot }) => (
-              <SummaryCounter key={level} count={stationsByLevel[level]} label={`Trạm ${label.toLowerCase()}`} dotClass={dot} />
+              <span key={level} className="flex items-center gap-1.5">
+                <span className={`dot ${dot}`} />
+                <span className="num font-semibold text-gray-900">{stationsByLevel[level]}</span> {label.toLowerCase()}
+              </span>
             ))}
-          </div>
+            <span className="text-gray-500 num">· {filtered.length} cảnh báo khớp bộ lọc</span>
+          </p>
 
-          <div className="flex-1 overflow-hidden mt-2">
-            <DataTable
-              data={filtered}
-              columns={columns}
-              keyExtractor={(a) => a.id}
-              selectedRowKey={selectedAlert?.id}
-              onRowClick={(a) => setSelectedId(a.id)}
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <AlertCardList
+              alerts={filtered}
+              stations={stationList}
+              selectedId={selectedAlert?.id ?? null}
+              onSelect={setSelectedId}
               emptyText={
                 isError ? 'Không tải được danh sách cảnh báo. Trang sẽ tự thử lại.'
                   : alerts.length === 0 ? 'Chưa có cảnh báo nào' : 'Không có cảnh báo khớp bộ lọc'
@@ -292,8 +281,16 @@ export function AlertsPage() {
             <div className="card p-4">
               <div className="flex justify-between items-start mb-4 gap-2">
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">{metric.label} khi cảnh báo</p>
-                  <p className="text-3xl font-bold text-red-600">{formatNumber(selectedAlert.measuredValue)}{metric.unit}</p>
+                  <p className="text-xs text-gray-500 mb-1">{metric.label} lúc cảnh báo</p>
+                  <p className="text-2xl font-semibold text-red-600">
+                    {selectedAlert.metricType === 'salinity' ? formatSalinity(selectedAlert.measuredValue) : formatNumber(selectedAlert.measuredValue)}{metric.unit}
+                  </p>
+                  {currentSalinity != null && (
+                    <p className="text-sm text-gray-700 mt-1">
+                      Hiện tại <span className={`font-semibold num ${currentSalinity > (selectedAlert.thresholdValue ?? SALINITY_THRESHOLD) ? 'text-red-700' : 'text-gray-900'}`}>{formatSalinity(currentSalinity)}{metric.unit}</span>
+                      {currentAt && <span className="text-xs text-gray-500 num whitespace-nowrap"> ({formatMeasuredAt(currentAt)})</span>}
+                    </p>
+                  )}
                   <p className="text-xs text-gray-500 mt-1">Ngưỡng: {formatNumber(selectedAlert.thresholdValue)}{metric.unit}</p>
                 </div>
                 <div className="text-right text-[11px] text-gray-500 space-y-0.5">
