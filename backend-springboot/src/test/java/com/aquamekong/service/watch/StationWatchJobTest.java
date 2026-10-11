@@ -65,7 +65,7 @@ class StationWatchJobTest {
     void forecastMessageTellsWhenToStoreWater() {
         PushMessage message = StationWatchJob.message(watch(1, 10, 2.0, false),
                 new Outlook(1.2, OffsetDateTime.of(2026, 10, 8, 0, 0, 0, 0, ZoneOffset.ofHours(7)),
-                        LocalDate.of(2026, 10, 12), 2.85, true));
+                        LocalDate.of(2026, 10, 12), 2.85, null, null, null, true));
 
         assertThat(message.title()).isEqualTo("Cảnh báo mặn: Mỹ Tho");
         assertThat(message.body()).isEqualTo("Dự báo vượt 2‰ cho lúa từ ngày 12/10, cao nhất 2,85‰. Nên trữ nước ngọt trước ngày này.");
@@ -73,9 +73,37 @@ class StationWatchJobTest {
 
     @Test
     void backBelowMessageSaysWaterCanBeTaken() {
-        PushMessage message = StationWatchJob.message(watch(1, 10, 2.0, true), new Outlook(1.2, null, null, 1.5, false));
+        PushMessage message = StationWatchJob.message(watch(1, 10, 2.0, true),
+                new Outlook(1.2, null, null, 1.5, null, 1.9, null, false));
 
         assertThat(message.title()).isEqualTo("Độ mặn đã giảm: Mỹ Tho");
         assertThat(message.body()).contains("dưới ngưỡng 2‰ cho lúa");
+    }
+
+    @Test
+    void riskMessageWarnsBeforeTheForecastItself() {
+        PushMessage message = StationWatchJob.message(watch(1, 10, 2.0, false),
+                new Outlook(1.2, OffsetDateTime.of(2026, 10, 8, 0, 0, 0, 0, ZoneOffset.ofHours(7)),
+                        null, 1.2, LocalDate.of(2026, 10, 11), 2.6, LocalDate.of(2026, 10, 13), true));
+
+        assertThat(message.title()).isEqualTo("Nguy cơ mặn: Mỹ Tho");
+        assertThat(message.body()).isEqualTo("Có thể vượt 2‰ cho lúa từ ngày 11/10 (có thể lên tới 2,6‰). Nên trữ nước ngọt trước ngày này.");
+    }
+
+    @Test
+    void storesTheRiskWindowWithoutReportingWhenTheStateStaysTheSame() {
+        LocalDate tomorrow = LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).plusDays(1);
+        when(watchService.snapshot(3L)).thenReturn(new StationSnapshot(
+                Measurement.builder().value(1.0).recordedAt(OffsetDateTime.now()).build(),
+                List.of(com.aquamekong.entity.forecast.SalinityForecast.builder()
+                        .forecastDate(tomorrow).predictedSalinity(1.0).riskSalinity(2.4).build())));
+        StationWatch alreadyWarned = watch(1, 10, 2.0, true);
+        when(watchRepository.findAllByOrderByStationIdAsc()).thenReturn(List.of(alreadyWarned));
+
+        new StationWatchJob(watchRepository, watchService, pushService).check();
+
+        verify(pushService, never()).notifyUser(any(), any());
+        assertThat(alreadyWarned.getRiskUntil()).isEqualTo(tomorrow);
+        verify(watchRepository).saveAll(List.of(alreadyWarned));
     }
 }

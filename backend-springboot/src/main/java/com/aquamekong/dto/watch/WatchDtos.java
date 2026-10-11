@@ -30,14 +30,18 @@ public final class WatchDtos {
     }
 
     /**
-     * Tình hình của trạm so với ngưỡng.
+     * Tình hình của trạm so với ngưỡng, trong 7 ngày tới (tính cả hôm nay).
      *
      * @param latestSalinity  số đo mới nhất, null khi không có hoặc đã cũ hơn 3 ngày
-     * @param firstExceedDate ngày đầu tiên dự báo vượt ngưỡng (từ hôm nay), null = không vượt
-     * @param forecastMax     độ mặn dự báo cao nhất từ hôm nay, null = chưa có dự báo
-     * @param exceeding       số đo mới nhất hoặc dự báo vượt ngưỡng
+     * @param firstExceedDate ngày đầu tiên dự báo vượt ngưỡng, null = không vượt
+     * @param forecastMax     độ mặn dự báo cao nhất, null = chưa có dự báo
+     * @param firstRiskDate   ngày đầu tiên mức có thể lên tới (mô hình rủi ro) vượt ngưỡng, null = không
+     * @param riskMax         mức có thể lên tới cao nhất, null = dự báo không có mức rủi ro
+     * @param riskUntil       cảnh báo nguy cơ giữ tới hết ngày này (ngày cuối từng được báo có thể vượt), null = không
+     * @param exceeding       số đo mới nhất hoặc dự báo vượt ngưỡng, hoặc còn ngày có thể vượt chưa qua
      */
     public record Outlook(Double latestSalinity, OffsetDateTime latestAt, LocalDate firstExceedDate,
-                          Double forecastMax, boolean exceeding) {
+                          Double forecastMax, LocalDate firstRiskDate, Double riskMax, LocalDate riskUntil,
+                          boolean exceeding) {
     }
 }

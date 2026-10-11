@@ -43,6 +43,10 @@ public class SalinityForecast {
     @Column(name = "confidence_level")
     private Double confidenceLevel;
 
+    /** Mức có thể lên tới (phân vị 80% của mô hình rủi ro); null với mô hình khác. Vượt ngưỡng thì báo sớm */
+    @Column(name = "risk_salinity")
+    private Double riskSalinity;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 

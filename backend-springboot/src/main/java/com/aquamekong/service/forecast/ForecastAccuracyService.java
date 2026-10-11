@@ -12,6 +12,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Dự báo đúng tới đâu. Hai nguồn: backtest của ML service (chạy lại mô hình trên số đo quá khứ, có kết quả ngay)
@@ -28,6 +29,11 @@ public class ForecastAccuracyService {
 
     public Map<String, Object> accuracy(int days) {
         return mlServiceClient.accuracy(Math.max(30, Math.min(days, 365)));
+    }
+
+    /** Cảnh báo sớm trên từng mùa khô cũ (mô hình rủi ro); rỗng khi ML service chưa học xong lần đầu */
+    public Optional<Map<String, Object>> earlyWarning() {
+        return mlServiceClient.earlyWarning();
     }
 
     /**

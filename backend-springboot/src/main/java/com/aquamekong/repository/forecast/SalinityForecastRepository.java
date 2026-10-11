@@ -29,6 +29,18 @@ public interface SalinityForecastRepository extends JpaRepository<SalinityForeca
         """)
     List<SalinityForecast> findLatestRunByStationId(@Param("stationId") Long stationId);
 
+    /**
+     * Dự báo trong [from, to] của lượt chạy mới nhất của từng trạm (khuyến nghị vận hành xét mọi trạm một lần).
+     */
+    @Query("""
+        SELECT f FROM SalinityForecast f
+        JOIN FETCH f.station
+        WHERE f.forecastDate BETWEEN :from AND :to
+          AND f.run.id = (SELECT MAX(f2.run.id) FROM SalinityForecast f2 WHERE f2.station.id = f.station.id)
+        ORDER BY f.forecastDate ASC
+        """)
+    List<SalinityForecast> findLatestRunForecastsBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
+
     List<SalinityForecast> findByStationIdAndRunModelVersionOrderByForecastDateAsc(
             Long stationId, String modelVersion
     );

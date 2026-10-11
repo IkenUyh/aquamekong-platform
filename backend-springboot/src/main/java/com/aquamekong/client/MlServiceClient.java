@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * HTTP client gọi sang ML service (FastAPI) — POST /api/v1/predict.
@@ -58,6 +59,48 @@ public class MlServiceClient {
         }
     }
 
+    /**
+     * Điểm cảnh báo sớm trên từng mùa khô cũ (GET /api/v1/evaluation/early-warning), JSON chuyển thẳng cho frontend;
+     * rỗng khi mô hình rủi ro chưa học xong lần đầu.
+     */
+    public Optional<Map<String, Object>> earlyWarning() {
+        try {
+            return Optional.ofNullable(restClient.get()
+                    .uri("/api/v1/evaluation/early-warning")
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<Map<String, Object>>() {}));
+        } catch (HttpClientErrorException.NotFound e) {
+            return Optional.empty();
+        } catch (RestClientException e) {
+            log.error("Gọi ML service lấy điểm cảnh báo sớm thất bại: {}", e.getMessage());
+            throw new MlServiceException("Không gọi được ML service: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Cảnh báo sớm lẽ ra đã gửi trong [from, to] (chạy lại mô hình rủi ro trên mùa khô cũ), mỗi trạm theo ngưỡng của nó.
+     * Lỗi thì ném MlServiceException: trang Phát lại vẫn chạy được, chỉ không có cảnh báo sớm.
+     */
+    public EarlyWarningEpisodes earlyWarningEpisodes(LocalDate from, LocalDate to, Map<Long, Double> thresholds) {
+        String param = thresholds.entrySet().stream()
+                .map(e -> e.getKey() + ":" + e.getValue())
+                .collect(Collectors.joining(","));
+        try {
+            EarlyWarningEpisodes body = restClient.get()
+                    .uri(uri -> uri.path("/api/v1/evaluation/early-warning/episodes")
+                            .queryParam("from", from).queryParam("to", to).queryParam("thresholds", param).build())
+                    .retrieve()
+                    .body(EarlyWarningEpisodes.class);
+            if (body == null) {
+                throw new MlServiceException("ML service trả về dữ liệu rỗng cho cảnh báo sớm");
+            }
+            return body;
+        } catch (RestClientException e) {
+            log.error("Gọi ML service lấy cảnh báo sớm cho Phát lại thất bại: {}", e.getMessage());
+            throw new MlServiceException("Không gọi được ML service: " + e.getMessage(), e);
+        }
+    }
+
     public PredictionResponse predict(Long stationId, int daysAhead) {
         try {
             PredictionResponse response = restClient.post()
@@ -96,6 +139,27 @@ public class MlServiceClient {
             Double confidence,
             @JsonProperty("lower_bound") Double lowerBound,
             @JsonProperty("upper_bound") Double upperBound,
+            @JsonProperty("risk_salinity") Double riskSalinity,
             @JsonProperty("model_version") String modelVersion) {
+    }
+
+    /**
+     * available: đã có kết quả chạy lại mùa khô; seasons: các mùa khô giao với khoảng ngày (chỉ trong đó mới có cảnh báo sớm);
+     * stations: id trạm -> cảnh báo sớm.
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record EarlyWarningEpisodes(boolean available, List<Season> seasons, Map<Long, List<Episode>> stations) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Season(String label, LocalDate from, LocalDate to) {
+    }
+
+    /**
+     * start: sáng app báo; end: sáng số đo xác nhận đã vượt (HIT) hoặc sáng báo hết nguy cơ (MISS), null = chưa rõ (OPEN);
+     * firstRiskDate: ngày đầu tiên có thể vượt; peak: mức có thể lên tới cao nhất lúc báo.
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Episode(LocalDate start, LocalDate end, String outcome, LocalDate firstRiskDate, Double peak) {
     }
 }

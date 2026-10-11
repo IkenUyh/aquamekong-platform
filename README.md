@@ -195,9 +195,22 @@ Số đo cũ hơn 3 ngày (`TELEMETRY_MAX_LIVE_AGE`) không tạo cảnh báo v�
 
 ---
 
+## Cảnh báo sớm (mô hình rủi ro)
+
+Dự báo độ mặn giữ nguyên số đo mới nhất, vì chạy lại trên các ngày đã qua thì cách này sai ít nhất. Nhưng như vậy app không bao giờ báo trước được lần độ mặn bắt đầu vượt ngưỡng. Mô hình rủi ro (gradient boosting, `ml-service/app/early_warning/`) dự báo mức độ mặn **có thể lên tới** (phân vị 80%) của từng ngày trong 16 ngày tới. Mức này vượt ngưỡng thì:
+
+* người theo dõi trạm nhận thông báo "Có thể vượt ... từ ngày ..., nên trữ nước ngọt trước ngày này", và cảnh báo giữ tới hết ngày đã báo;
+* khuyến nghị vận hành (trang Tổng quan, Cảnh báo) nêu trạm cần trữ nước trước ngày nào;
+* trang **Dự báo** vẽ đường "Có thể lên tới" và nêu trạm có nguy cơ.
+
+ml-service tự học lại khi có số đo mới (khoảng một phút) và chạy lại từng mùa khô cũ: mỗi mùa một mô hình chỉ học số đo trước mùa đó, rồi mô phỏng từng sáng như app thật. Kết quả hiện ở thẻ "Cảnh báo sớm trên các mùa khô đã qua" (trang Dự báo) và trên trang **Phát lại**. Học lại ngay và in điểm từng mùa:
+```bash
+docker compose exec ml-service python -m app.early_warning
+```
+
 ## Dự báo ST-GNN
 
-Trang **Dự báo** dùng ST-GNN cho các trạm có trong mô hình, nếu trên tập kiểm tra mô hình dự báo 7 ngày tốt hơn cách "giữ nguyên giá trị cũ". Các trạm còn lại dùng Prophet hoặc xu hướng thống kê. Weights không nằm trong git: nhóm gửi nhau thư mục `trained_models` (`st_gnn_horizon_1.pth`, `st_gnn_horizon_7.pth`, `st_gnn_scaler.pkl`).
+Trang **Dự báo** dùng ST-GNN cho các trạm có trong mô hình, nếu trên tập kiểm tra mô hình dự báo 7 ngày tốt hơn cách "giữ nguyên giá trị cũ". Các trạm còn lại dùng mô hình rủi ro ở trên (hoặc Prophet nếu đã train cho trạm đó), không có thì giữ nguyên số đo mới nhất. Weights không nằm trong git: nhóm gửi nhau thư mục `trained_models` (`st_gnn_horizon_1.pth`, `st_gnn_horizon_7.pth`, `st_gnn_scaler.pkl`).
 
 1. Nạp dữ liệu RYNAN trước (mục trên). ST-GNN đọc mưa, lưu lượng, thủy triều từ kho feature `data/features/`, kho này được tạo khi nạp file features.
 2. Cài weights:
