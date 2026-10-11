@@ -77,14 +77,108 @@ jobs:
         run: python -m pytest -q tests
 
   docker:
-    name: Docker Build
+    name: Docker Build (${{ matrix.service }})
     runs-on: ubuntu-latest
     needs: [backend, frontend, ml-service]
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: [backend, ml-service, frontend]
+        include:
+          - service: backend
+            context: backend-springboot
+          - service: ml-service
+            context: ml-service
+          - service: frontend
+            context: frontend
+    env:
+      # Chỉ main (bản release) mới đẩy image lên GHCR; develop và PR chỉ build để kiểm tra
+      PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Verify Docker Compose config
-        run: docker compose config -q
+        if: matrix.service == 'backend'
+        run: |
+          docker compose config -q
+          DOMAIN=example.com docker compose -f docker-compose.yml -f docker-compose.prod.yml config -q
 
-      - name: Build images
-        run: docker compose build
+      - name: Image name and version
+        id: meta
+        run: |
+          echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/aquamekong-${{ matrix.service }}" >> "$GITHUB_OUTPUT"
+          echo "version=$(jq -r .version frontend/package.json)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: env.PUSH == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: ${{ env.PUSH == 'true' }}
+          # Tag theo commit (deploy dùng tag này), theo phiên bản, và latest
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ github.sha }}
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.image }}:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Hai lần deploy không chạy chồng lên nhau
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Set up SSH
+        id: ssh
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          # Chưa cấu hình server (deploy/README.md) thì bỏ qua, không làm đỏ CI
+          if [ -z "$DEPLOY_SSH_KEY" ]; then
+            echo "::notice::Chưa có secret DEPLOY_SSH_KEY, bỏ qua deploy"
+            exit 0
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Pull images and restart
+        if: steps.ssh.outputs.ready == 'true'
+        env:
+          TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          remote() { ssh -i ~/.ssh/deploy_key "$TARGET" "$@"; }
+          # Token của job hết hạn khi job xong: đủ để server kéo image kể cả khi package GHCR để private
+          echo "$TOKEN" | remote docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          status=0
+          remote ./aquamekong-platform/deploy/deploy.sh "${{ github.sha }}" || status=$?
+          remote docker logout ghcr.io
+          exit $status

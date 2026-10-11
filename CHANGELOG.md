@@ -2,6 +2,11 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [Unreleased]
+
+### Thêm mới
+- **Chạy production trên AWS EC2** tại `aquamekong.kienhuy-dev.name.vn`: GitHub Actions build image và đẩy lên GHCR mỗi khi `main` có bản release, rồi SSH vào server để kéo image mới và khởi động lại. Server không tự build. Caddy lo HTTPS (Let's Encrypt), chỉ cổng 80/443 mở ra ngoài. Hướng dẫn cài và vận hành ở `deploy/README.md`.
+
 ## [0.4.0] - 2026-10-11
 
 ### Thêm mới
