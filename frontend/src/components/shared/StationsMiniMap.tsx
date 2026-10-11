@@ -1,7 +1,7 @@
 import React from 'react';
 import { MiniMap } from './MiniMap';
 import {
-  classifySalinity, formatNumber, SALINITY_CLASS_COLORS, SALINITY_CLASS_LABELS, type SalinityClass,
+  classifySalinity, formatSalinity, SALINITY_CLASS_COLORS, SALINITY_CLASS_LABELS, type SalinityClass,
 } from '../../utils/salinity';
 
 export interface StationPoint {
@@ -22,7 +22,7 @@ export function StationsMiniMap({ stations, height = '100%', focusId = null }: {
     lat: s.latitude,
     lng: s.longitude,
     color: SALINITY_CLASS_COLORS[classifySalinity(s.salinity)],
-    label: `${s.name}: ${formatNumber(s.salinity)}‰`,
+    label: `${s.name}: ${formatSalinity(s.salinity)}‰`,
   }));
 
   return (

@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, Area, AreaChart, ReferenceLine
 } from 'recharts';
 import type { SalinityForecast } from '../types';
-import { formatNumber, SALINITY_CLASS_COLORS, SALINITY_THRESHOLD } from '../utils/salinity';
+import { formatDay, formatSalinity, SALINITY_CLASS_COLORS, SALINITY_THRESHOLD } from '../utils/salinity';
 
 interface ForecastChartProps {
   forecasts: SalinityForecast[];
@@ -14,10 +14,7 @@ interface ForecastChartProps {
 
 export function ForecastChart({ forecasts, heightClass = 'h-[180px]' }: ForecastChartProps) {
   const data = forecasts.map((f) => ({
-    date: new Date(f.forecastDate).toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-    }),
+    date: formatDay(f.forecastDate),
     salinity: f.predictedSalinity,
     lower: f.lowerBound,
     upper: f.upperBound,
@@ -70,7 +67,7 @@ export function ForecastChart({ forecasts, heightClass = 'h-[180px]' }: Forecast
                 lower: 'Cận dưới',
                 risk: 'Có thể lên tới',
               };
-              return [`${formatNumber(value)}‰`, labels[name] || name];
+              return [`${formatSalinity(value)}‰`, labels[name] || name];
             }}
           />
           {/* Confidence band */}
