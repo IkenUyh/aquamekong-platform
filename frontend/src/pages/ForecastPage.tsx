@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { RefreshCw } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { ForecastChart } from '../components/ForecastChart';
-import { StatusBadge } from '../components/shared/StatusBadge';
+import { ForecastGrid, type StationForecast } from '../components/ForecastGrid';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
 import { EarlyWarningCard, ForecastAccuracyCard, StationAccuracy } from '../components/ForecastAccuracy';
 import { forecastApi } from '../api/client';
@@ -12,24 +12,18 @@ import { useAuth } from '../contexts/AuthContext';
 import { useStationsList } from '../hooks/useStations';
 import { forecastQueryKey, useStgnnModelInfo } from '../hooks/useForecast';
 import { useEarlyWarningEvaluation, useForecastAccuracy } from '../hooks/useForecastAccuracy';
-import type { SalinityForecast, Station, StgnnModelInfo } from '../types';
-import { classifySalinity, formatNumber, riverOf, SALINITY_THRESHOLD } from '../utils/salinity';
+import type { StationAccuracy as StationAccuracyData } from '../api/accuracyApi';
+import type { SalinityForecast, StgnnModelInfo } from '../types';
+import { formatDay, formatFullDate, formatNumber, formatSalinity, SALINITY_THRESHOLD } from '../utils/salinity';
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const HORIZONS = [7, 14];
 const ALL = '';
 
-const dayLabel = (iso: string) => {
-  const d = new Date(`${iso}T00:00:00`);
-  return { weekday: WEEKDAYS[d.getDay()], label: d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) };
-};
+const dayLabel = (iso: string) => ({ weekday: WEEKDAYS[new Date(`${iso}T00:00:00`).getDay()], label: formatDay(iso) });
 
-const levelOf = (v: number | null | undefined) => {
-  const c = classifySalinity(v);
-  return c === 'HIGH' ? 'CRITICAL' : c === 'MEDIUM' ? 'WARNING' : 'SAFE';
-};
-
-const formatDay = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('vi-VN');
+/** Ngày YYYY-MM-DD dạng "07/10/2026" */
+const fullDay = (iso: string) => formatFullDate(new Date(`${iso}T00:00:00`));
 
 /** Tên mô hình theo model_version mà ML service ghi vào lượt dự báo */
 function modelLabel(version?: string): string {
@@ -65,18 +59,11 @@ function StgnnScoreCard({ info }: { info: StgnnModelInfo }) {
         );
       })}
       <p className="text-gray-400">
-        Chấm trên {info.evaluation[`h${info.horizons[0]}`]?.test_days ?? '—'} ngày cuối của dữ liệu (tập kiểm tra), dữ liệu tới {formatDay(info.trained_until)}.
+        Chấm trên {info.evaluation[`h${info.horizons[0]}`]?.test_days ?? '—'} ngày cuối của dữ liệu (tập kiểm tra), dữ liệu tới {fullDay(info.trained_until)}.
         Trạm còn lại dùng mô hình khác.
       </p>
     </div>
   );
-}
-
-interface StationForecast {
-  station: Station;
-  forecasts: SalinityForecast[];
-  isLoading: boolean;
-  isError: boolean;
 }
 
 /** Nhận xét sinh từ dự báo: trạm sẽ vượt ngưỡng (ngày đầu tiên) và trạm có xu hướng tăng. */
@@ -91,7 +78,7 @@ function buildInsights(items: StationForecast[]): string[] {
   if (exceeding.length > 0) {
     insights.push(
       `Dự báo vượt ngưỡng ${SALINITY_THRESHOLD}‰: ` +
-        exceeding.map(({ i, first }) => `${i.station.name} (từ ${dayLabel(first!.forecastDate).label}, ${formatNumber(first!.predictedSalinity)}‰)`).join('; ') + '.'
+        exceeding.map(({ i, first }) => `${i.station.name} (từ ${dayLabel(first!.forecastDate).label}, ${formatSalinity(first!.predictedSalinity)}‰)`).join('; ') + '.'
     );
   } else {
     insights.push(`Không trạm nào được dự báo vượt ngưỡng ${SALINITY_THRESHOLD}‰ trong kỳ dự báo.`);
@@ -110,7 +97,7 @@ function buildInsights(items: StationForecast[]): string[] {
   if (atRisk.length > 0) {
     insights.push(
       `Có thể vượt ${SALINITY_THRESHOLD}‰, nên trữ nước ngọt trước: ` +
-        atRisk.map(({ i, first, peak }) => `${i.station.name} (từ ${dayLabel(first!.forecastDate).label}, có thể tới ${formatNumber(peak)}‰)`).join('; ') + '.'
+        atRisk.map(({ i, first, peak }) => `${i.station.name} (từ ${dayLabel(first!.forecastDate).label}, có thể tới ${formatSalinity(peak)}‰)`).join('; ') + '.'
     );
   }
 
@@ -123,13 +110,48 @@ function buildInsights(items: StationForecast[]): string[] {
   const peak = ready
     .flatMap((i) => i.forecasts.map((f) => ({ name: i.station.name, f })))
     .reduce((a, b) => (b.f.predictedSalinity > a.f.predictedSalinity ? b : a));
-  insights.push(`Cao nhất: ${peak.name} ${formatNumber(peak.f.predictedSalinity)}‰ vào ${dayLabel(peak.f.forecastDate).label}.`);
+  insights.push(`Cao nhất: ${peak.name} ${formatSalinity(peak.f.predictedSalinity)}‰ vào ${dayLabel(peak.f.forecastDate).label}.`);
 
   const simulated = ready.filter((i) => i.forecasts[0].modelVersion?.startsWith('simulated'));
   if (simulated.length > 0) {
     insights.push(`Lưu ý: ${simulated.map((i) => i.station.name).join(', ')} chưa đủ dữ liệu, đang dùng dự báo mô phỏng.`);
   }
   return insights;
+}
+
+/** Chi tiết một trạm, mở ngay dưới dòng của trạm trong lưới */
+function StationForecastDetail({ item, date, accuracy, compare }: {
+  item: StationForecast;
+  date?: string;
+  accuracy: { seriesLead: number; station: StationAccuracyData | undefined } | null;
+  /** Mở bằng cột sai số: hiện sẵn biểu đồ dự báo đặt cạnh số đo thật */
+  compare: boolean;
+}) {
+  const { station, forecasts } = item;
+  const day = forecasts.find((f) => f.forecastDate === date);
+  const model = modelLabel(forecasts[0]?.modelVersion);
+  const mayExceed = day?.riskSalinity != null && day.riskSalinity > SALINITY_THRESHOLD && day.predictedSalinity <= SALINITY_THRESHOLD;
+  return (
+    <div className="space-y-3 p-4">
+      <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-gray-600">
+        <span>Hiện tại <span className="font-semibold text-gray-900 num">{formatSalinity(station.latestSalinity)}‰</span></span>
+        {day && (
+          <span><span className="num">{dayLabel(day.forecastDate).label}</span>: <span className="font-semibold text-gray-900 num">{formatSalinity(day.predictedSalinity)}‰</span></span>
+        )}
+        {day?.riskSalinity != null && (
+          <span className={mayExceed ? 'text-red-700' : undefined}>
+            Có thể lên tới <span className="num">{formatSalinity(day.riskSalinity)}‰</span>
+            {mayExceed && ` · nguy cơ vượt ${SALINITY_THRESHOLD}‰`}
+          </span>
+        )}
+        {model && <span className="text-gray-500">Mô hình: {model}</span>}
+      </p>
+      <div className="h-[180px] rounded-md bg-white p-2">
+        <ForecastChart forecasts={forecasts} heightClass="h-full" />
+      </div>
+      {accuracy && <StationAccuracy stationId={station.id} seriesLead={accuracy.seriesLead} accuracy={accuracy.station} defaultOpen={compare} />}
+    </div>
+  );
 }
 
 export function ForecastPage() {
@@ -142,6 +164,10 @@ export function ForecastPage() {
   const [picked, setPicked] = useState<number[] | null>(null);
   const [selectedDay, setSelectedDay] = useState(0);
   const [rerunning, setRerunning] = useState(false);
+  // Trạm đang mở biểu đồ chi tiết trong lưới (cũng là trạm bản đồ bay tới)
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  // Trạm mở bằng cột sai số: hiện sẵn phần so với thực tế
+  const [compareId, setCompareId] = useState<number | null>(null);
   const { user } = useAuth();
 
   const provinces = useMemo(
@@ -175,10 +201,15 @@ export function ForecastPage() {
   // Ngày dữ liệu cuối của ST-GNN, khi đã cũ hơn hôm nay
   const dataUntil = items.flatMap((i) => i.forecasts).find((f) => f.dataUntil)?.dataUntil ?? null;
   const insights = buildInsights(items);
+  const pending = items.filter((i) => i.isLoading).length;
+  // Xếp theo số đo hiện tại: biết ngay từ đầu nên các dòng không nhảy chỗ khi từng dự báo về; trạm mặn nhất lên đầu
+  const sortedItems = [...items].sort((a, b) => (b.station.latestSalinity ?? -1) - (a.station.latestSalinity ?? -1));
   // Thẻ điểm ST-GNN chỉ khi có trạm đang hiển thị dự báo của nó (dữ liệu ST-GNN cũ thì ML dùng mô hình khác)
   const { data: accuracy } = useForecastAccuracy();
   const { data: earlyWarning } = useEarlyWarningEvaluation();
   const usesStgnn = items.some((i) => i.forecasts.some((f) => f.modelVersion?.startsWith('st-gnn')));
+  // Độ tin cậy toàn vùng ở mốc của chuỗi so sánh (cùng mốc với cột sai số từng trạm)
+  const overallSkill = accuracy?.byLead.find((l) => l.lead === accuracy.seriesLead);
 
   const togglePicked = (id: number) =>
     setPicked((prev) => {
@@ -269,100 +300,83 @@ export function ForecastPage() {
       }
       centerContent={
         <div className="h-full flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
-          {/* Biểu đồ từng trạm */}
-          <div className="lg:flex-1 p-4 lg:p-5 lg:overflow-y-auto bg-gray-50 flex flex-col gap-4">
-            <div className="flex flex-col gap-1">
+          <div className="lg:flex-1 min-w-0 p-4 lg:p-5 lg:overflow-y-auto bg-gray-50 flex flex-col gap-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <h2 className="text-lg font-semibold text-gray-900">Dự báo độ mặn {days} ngày tới</h2>
-              <p className="text-xs text-gray-500">Chọn một ngày để xem bản đồ dự báo của ngày đó</p>
+              {pending > 0 && (
+                <p className="text-xs text-gray-500 num" role="status">
+                  Đang chạy dự báo: {items.length - pending}/{items.length} trạm
+                </p>
+              )}
             </div>
 
             {dataUntil && (
               <p className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700">
-                Dự báo ST-GNN tính từ dữ liệu ngày <span className="num">{formatDay(dataUntil)}</span> (dữ liệu mới nhất),
+                Dự báo ST-GNN tính từ dữ liệu ngày <span className="num">{fullDay(dataUntil)}</span> (dữ liệu mới nhất),
                 nên các ngày dự báo có thể đã qua. Mô hình chỉ có 2 mốc: sau 1 ngày và sau 7 ngày.
               </p>
             )}
-            {modelInfo && usesStgnn && <StgnnScoreCard info={modelInfo} />}
-            {accuracy && <ForecastAccuracyCard accuracy={accuracy} />}
-            {earlyWarning && earlyWarning.seasons.length > 0 && <EarlyWarningCard evaluation={earlyWarning} />}
 
-            {dates.length > 0 && (
-              <div className="flex shrink-0 gap-2 bg-white p-2 rounded-lg border border-gray-200 overflow-x-auto">
-                {dates.map((d, i) => {
-                  const { weekday, label } = dayLabel(d);
-                  const active = i === dayIndex;
-                  return (
-                    <button
-                      key={d}
-                      onClick={() => setSelectedDay(i)}
-                      aria-pressed={active}
-                      className={`flex-1 min-w-[56px] text-center py-2 rounded-lg ${active ? 'bg-primary-50 border border-primary-200' : 'hover:bg-gray-50'}`}
-                    >
-                      <p className={`text-xs font-bold ${active ? 'text-primary-600' : 'text-gray-500'}`}>{weekday}</p>
-                      <p className={`text-[10px] ${active ? 'text-primary-400' : 'text-gray-400'}`}>{label}</p>
-                    </button>
-                  );
-                })}
-              </div>
+            {/* Kết luận trước, chi tiết sau: trạm vượt hoặc có thể vượt ngưỡng nằm ngay đầu trang */}
+            {insights.length > 0 && (
+              <section className="card p-4 shrink-0" aria-labelledby="forecast-insights">
+                <h3 id="forecast-insights" className="text-sm font-semibold text-gray-900 mb-2">Nhận xét chung</h3>
+                <ul className="text-sm text-gray-700 space-y-1 list-disc pl-5 marker:text-gray-400 text-pretty">
+                  {insights.map((text) => <li key={text}>{text}</li>)}
+                </ul>
+                {accuracy && overallSkill && (
+                  <p className="mt-3 border-t border-gray-100 pt-2 text-xs text-gray-600 num text-pretty">
+                    So với thực tế: dự báo trước {accuracy.seriesLead} ngày thường sai ±{formatSalinity(overallSkill.mae)}‰,
+                    đoán đúng mức mặn {Math.round(overallSkill.levelAccuracy * 100)}% (chạy lại từ {formatDay(accuracy.from)} đến {formatDay(accuracy.to)}).
+                    Từng trạm ở cột cuối của bảng.
+                  </p>
+                )}
+              </section>
             )}
 
-            {selected.length === 0 && (
-              <div className="text-sm text-gray-400 text-center py-10">Chọn ít nhất một trạm ở bộ lọc bên trái</div>
+            {selected.length === 0 ? (
+              <div className="text-sm text-gray-500 text-center py-10">Chọn ít nhất một trạm ở bộ lọc bên trái</div>
+            ) : (
+              <ForecastGrid
+                items={sortedItems}
+                dates={dates}
+                dayIndex={dayIndex}
+                onSelectDay={setSelectedDay}
+                expandedId={expandedId}
+                onToggle={(id) => { setCompareId(null); setExpandedId((prev) => (prev === id ? null : id)); }}
+                renderDetail={(item) => (
+                  <StationForecastDetail item={item} date={selectedDate} compare={compareId === item.station.id}
+                    accuracy={accuracy ? { seriesLead: accuracy.seriesLead, station: accuracy.stations.find((a) => a.stationId === item.station.id) } : null} />
+                )}
+                skill={accuracy ? {
+                  lead: accuracy.seriesLead,
+                  of: (id) => accuracy.stations.find((a) => a.stationId === id)?.byLead.find((l) => l.lead === accuracy.seriesLead),
+                  onCompare: (id) => { setCompareId(id); setExpandedId(id); },
+                } : undefined}
+              />
             )}
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              {items.map(({ station, forecasts, isLoading, isError }) => {
-                const dayForecast = forecastOn(forecasts, selectedDate);
-                const dayValue = dayForecast?.predictedSalinity;
-                const dayRisk = dayForecast?.riskSalinity;
-                const model = modelLabel(forecasts[0]?.modelVersion);
-                return (
-                  <div key={station.id} className="card p-4">
-                    <div className="flex justify-between items-start mb-4 gap-2">
-                      <div className="min-w-0">
-                        <h4 className="font-semibold text-gray-900 flex items-center gap-1 truncate">{station.name}</h4>
-                        <p className="text-xs text-gray-500">{model ? `Mô hình: ${model}` : riverOf(station) ?? '—'}</p>
-                        <p className="text-sm mt-1 text-gray-600">
-                          Hiện tại <span className="font-semibold text-gray-900">{formatNumber(station.latestSalinity)}‰</span>
-                          {dayValue != null && (
-                            <> · {dayLabel(dayForecast!.forecastDate).label}: <span className="font-semibold text-gray-900">{formatNumber(dayValue)}‰</span></>
-                          )}
-                        </p>
-                        {dayRisk != null && (
-                          <p className={`text-xs num ${dayRisk > SALINITY_THRESHOLD && (dayValue ?? 0) <= SALINITY_THRESHOLD ? 'text-red-700' : 'text-gray-500'}`}>
-                            Có thể lên tới {formatNumber(dayRisk)}‰
-                            {dayRisk > SALINITY_THRESHOLD && (dayValue ?? 0) <= SALINITY_THRESHOLD && ` · nguy cơ vượt ${SALINITY_THRESHOLD}‰`}
-                          </p>
-                        )}
-                      </div>
-                      <StatusBadge level={levelOf(dayValue ?? station.latestSalinity)} />
-                    </div>
-                    <div className="h-[140px] -mx-2">
-                      {isLoading ? (
-                        <div className="h-full flex items-center justify-center text-xs text-gray-400">Đang chạy dự báo...</div>
-                      ) : isError ? (
-                        <div className="h-full flex items-center justify-center text-xs text-red-400">Không lấy được dự báo</div>
-                      ) : forecasts.length === 0 ? (
-                        <div className="h-full flex items-center justify-center text-xs text-gray-400">Chưa có dữ liệu dự báo</div>
-                      ) : (
-                        <ForecastChart forecasts={forecasts} heightClass="h-full" />
-                      )}
-                    </div>
-                    {accuracy && (
-                      <StationAccuracy stationId={station.id} seriesLead={accuracy.seriesLead}
-                        accuracy={accuracy.stations.find((a) => a.stationId === station.id)} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            {/* Độ tin cậy: cho cán bộ kỹ thuật, gập lại để không chen lên trước dự báo */}
+            {(accuracy || (earlyWarning && earlyWarning.seasons.length > 0) || (modelInfo && usesStgnn)) && (
+              <details className="shrink-0">
+                <summary className="cursor-pointer select-none py-1 text-sm font-semibold text-gray-700 hover:text-gray-900">
+                  Độ tin cậy của dự báo
+                  <span className="font-normal text-gray-500"> · độ chính xác toàn vùng, cảnh báo sớm các mùa khô</span>
+                </summary>
+                <div className="mt-3 space-y-4">
+                  {modelInfo && usesStgnn && <StgnnScoreCard info={modelInfo} />}
+                  {accuracy && <ForecastAccuracyCard accuracy={accuracy} />}
+                  {earlyWarning && earlyWarning.seasons.length > 0 && <EarlyWarningCard evaluation={earlyWarning} />}
+                </div>
+              </details>
+            )}
           </div>
 
           {/* Bản đồ dự báo của ngày đang chọn */}
           <div className="w-full lg:w-[40%] lg:min-w-[320px] h-[480px] lg:h-auto shrink-0 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col">
             <div className="p-4 border-b border-gray-200">
               <h3 className="font-semibold text-gray-900">
-                Bản đồ dự báo độ mặn {dates[dayIndex] ? `ngày ${dayLabel(dates[dayIndex]).label}` : ''}
+                Bản đồ dự báo độ mặn {selectedDate ? <span className="num">ngày {dayLabel(selectedDate).label}</span> : ''}
               </h3>
             </div>
             <div className="flex-1 relative">
@@ -374,17 +388,8 @@ export function ForecastPage() {
                   longitude: station.longitude,
                   salinity: forecastOn(forecasts, selectedDate)?.predictedSalinity,
                 }))}
+                focusId={expandedId}
               />
-              {insights.length > 0 && (
-                <div className="absolute top-4 left-4 right-4 bg-white/95 backdrop-blur rounded-lg p-4 shadow-lg border border-gray-200 z-[1000]">
-                  <h4 className="font-bold text-sm text-gray-800 mb-2 flex items-center gap-2">
-                    Nhận xét chung
-                  </h4>
-                  <ul className="text-xs text-gray-600 space-y-1 pl-4 list-disc marker:text-primary-500">
-                    {insights.map((text) => <li key={text}>{text}</li>)}
-                  </ul>
-                </div>
-              )}
             </div>
           </div>
         </div>

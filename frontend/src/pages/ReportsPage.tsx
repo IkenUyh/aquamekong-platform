@@ -3,7 +3,7 @@ import { Navbar } from '../components/Navbar';
 import { BottomNav } from '../components/BottomNav';
 import { MetricCard, type MetricChange } from '../components/MetricCard';
 import { DonutChart } from '../components/shared/DonutChart';
-import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
+import { DailySalinityChart } from '../components/DailySalinityChart';
 import { useQuery } from '@tanstack/react-query';
 import { reportApi, percentChange, type PeriodValue } from '../api/reportApi';
 import { formatNumber, SALINITY_CLASS_COLORS } from '../utils/salinity';
@@ -33,20 +33,12 @@ export function ReportsPage() {
   });
 
   const hasFlow = overview?.avgFlowRate.current != null || overview?.avgFlowRate.previous != null;
-  const { data: trendData = [] } = useQuery({
-    queryKey: ['reports', 'trend', days],
-    queryFn: () => reportApi.getTrend(days),
-  });
 
   const { data: topStations = [] } = useQuery({
     queryKey: ['reports', 'topStations', days],
     queryFn: () => reportApi.getTopStations(days),
   });
 
-  const chartData = trendData.map((p) => ({
-    ...p,
-    label: new Date(p.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
-  }));
   const distribution = overview?.levelDistribution ?? [];
   const totalStations = overview?.totalStations ?? 0;
   const percents = roundedPercents(distribution.map((d) => d.count));
@@ -97,37 +89,13 @@ export function ReportsPage() {
 
         {/* Row 2: Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-2 card p-5">
-            <div className="flex flex-wrap justify-between items-center gap-2 mb-6">
-              <h3 className="font-semibold text-gray-900">Xu hướng độ mặn theo thời gian</h3>
-              <div className="flex gap-4 text-xs font-medium">
-                <span className="flex items-center gap-1.5"><div className="w-3 h-3 bg-primary rounded-full"/> Trung bình toàn vùng</span>
-                <span className="flex items-center gap-1.5"><div className="w-3 h-3 bg-gray-300 rounded-full"/> Kỳ trước</span>
-                <span className="flex items-center gap-1.5"><div className="w-3 h-1 border-b-2 border-red-500 border-dashed"/> Ngưỡng 4‰</span>
-              </div>
-            </div>
-            <div className="h-[250px] w-full">
-              {chartData.every((p) => p.current == null && p.previous == null) ? (
-                <div className="h-full flex items-center justify-center text-sm text-gray-400">Chưa có dữ liệu độ mặn trong kỳ</div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                    <ReferenceLine y={overview?.salinityThreshold ?? 4} stroke="#ef4444" strokeDasharray="3 3" />
-                    <Line type="monotone" dataKey="previous" name="Kỳ trước" stroke="#cbd5e1" strokeWidth={2} dot={false} connectNulls />
-                    <Line type="monotone" dataKey="current" name="Kỳ này" stroke="#0F3D5E" strokeWidth={3} activeDot={{ r: 6 }} connectNulls />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </div>
+          <div className="lg:col-span-2">
+            <DailySalinityChart days={days} />
           </div>
 
           <div className="card p-5 flex flex-col">
             <h3 className="font-semibold text-gray-900 mb-6">Tỷ lệ trạm theo mức độ mặn</h3>
-            <div className="flex-1">
+            <div className="flex-1 flex flex-col justify-center">
               <DonutChart
                 data={distribution.map((d) => ({ name: d.label, value: d.count, color: SALINITY_CLASS_COLORS[d.level] }))}
                 totalLabel="Trạm"
@@ -150,15 +118,17 @@ export function ReportsPage() {
         {/* Row 3: Top Stations Table */}
         <div className="card p-5">
           <h3 className="font-semibold text-gray-900 mb-4">Top {topStations.length || 5} trạm có độ mặn trung bình cao nhất</h3>
-          <div className="overflow-hidden rounded-lg border border-gray-100">
+          <div className="overflow-x-auto rounded-lg border border-gray-100">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-gray-500 font-semibold border-b border-gray-100">
                 <tr>
-                  <th className="px-4 py-3">#</th>
-                  <th className="px-4 py-3">Tên trạm</th>
-                  <th className="px-4 py-3">Tỉnh/Thành</th>
-                  <th className="px-4 py-3">Độ mặn TB (‰)</th>
-                  <th className="px-4 py-3 text-right">So với kỳ trước</th>
+                  <th className="px-3 sm:px-4 py-3">#</th>
+                  <th className="px-3 sm:px-4 py-3">Tên trạm</th>
+                  <th className="hidden sm:table-cell px-4 py-3">Tỉnh/Thành</th>
+                  <th className="px-3 sm:px-4 py-3 text-right whitespace-nowrap">
+                    <span className="sm:hidden">TB (‰)</span><span className="hidden sm:inline">Độ mặn TB (‰)</span>
+                  </th>
+                  <th className="hidden sm:table-cell px-4 py-3 text-right whitespace-nowrap">So với kỳ trước</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-gray-700">
@@ -167,13 +137,21 @@ export function ReportsPage() {
                 )}
                 {topStations.map((s) => (
                   <tr key={s.stationId} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-gray-400">{s.rank}</td>
-                    <td className="px-4 py-3 font-semibold text-gray-900">{s.name}</td>
-                    <td className="px-4 py-3">{s.province || '—'}</td>
-                    <td className={`px-4 py-3 font-bold ${(s.salinity ?? 0) > (overview?.salinityThreshold ?? 4) ? 'text-red-500' : 'text-gray-800'}`}>
-                      {fmt(s.salinity)}
+                    <td className="px-3 sm:px-4 py-3 text-gray-400">{s.rank}</td>
+                    <td className="px-3 sm:px-4 py-3 font-semibold text-gray-900">
+                      {s.name}
+                      {/* Điện thoại: tỉnh nằm dưới tên trạm thay cho một cột riêng */}
+                      {s.province && <span className="block text-xs font-normal text-gray-500 sm:hidden">{s.province}</span>}
                     </td>
-                    <td className={`px-4 py-3 text-right text-xs font-bold ${s.diff == null ? 'text-gray-400' : s.diff > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                    <td className="hidden sm:table-cell px-4 py-3">{s.province || '—'}</td>
+                    <td className={`px-3 sm:px-4 py-3 text-right num font-bold ${(s.salinity ?? 0) > (overview?.salinityThreshold ?? 4) ? 'text-red-500' : 'text-gray-800'}`}>
+                      {fmt(s.salinity)}
+                      {/* Điện thoại: mức thay đổi nằm dưới số, thay cho cột riêng */}
+                      {s.diff != null && (
+                        <span className={`block text-xs sm:hidden ${s.diff > 0 ? 'text-red-500' : 'text-green-600'}`}>{s.diff > 0 ? '+' : ''}{fmt(s.diff)}‰</span>
+                      )}
+                    </td>
+                    <td className={`hidden sm:table-cell px-4 py-3 text-right text-xs num font-bold whitespace-nowrap ${s.diff == null ? 'text-gray-400' : s.diff > 0 ? 'text-red-500' : 'text-green-600'}`}>
                       {s.diff == null ? '—' : `${s.diff > 0 ? '+' : ''}${fmt(s.diff)}‰`}
                     </td>
                   </tr>

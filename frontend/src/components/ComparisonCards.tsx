@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MetricCompareCard } from './MetricCompareCard';
 import { metricApi } from '../api/client';
-import { SALINITY_THRESHOLD, formatMeasuredAt, formatNumber } from '../utils/salinity';
+import { SALINITY_THRESHOLD, formatMeasuredAt, formatSalinity } from '../utils/salinity';
 
 interface ComparisonCardsProps {
   stationId: number;
@@ -32,16 +32,16 @@ export function ComparisonCards({ stationId, currentSalinity, threshold = SALINI
     <div className="flex flex-col gap-2 p-4 h-full justify-center">
       <MetricCompareCard
         label="Độ mặn hiện tại"
-        value={`${formatNumber(currentSalinity)}‰`}
+        value={`${formatSalinity(currentSalinity)}‰`}
       />
       <MetricCompareCard
         label={previous ? `So với ${formatMeasuredAt(previous.recordedAt)}` : 'So với lần đo trước'}
-        value={delta !== null ? `${delta > 0 ? '↑' : '↓'} ${formatNumber(Math.abs(delta))}‰` : '—'}
+        value={delta !== null ? `${delta > 0 ? '↑' : '↓'} ${formatSalinity(Math.abs(delta))}‰` : '—'}
         trend={delta !== null ? (delta > 0 ? 'up' : 'down') : 'neutral'}
       />
       <MetricCompareCard
         label={`So với ngưỡng ${threshold}‰`}
-        value={deltaThreshold !== null ? `${deltaThreshold > 0 ? '↑' : '↓'} ${formatNumber(Math.abs(deltaThreshold))}‰` : '—'}
+        value={deltaThreshold !== null ? `${deltaThreshold > 0 ? '↑' : '↓'} ${formatSalinity(Math.abs(deltaThreshold))}‰` : '—'}
         trend={deltaThreshold !== null ? (deltaThreshold > 0 ? 'up' : 'down') : 'neutral'}
       />
     </div>
