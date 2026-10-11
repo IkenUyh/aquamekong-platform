@@ -59,6 +59,11 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
 - **Trạng thái:** 🟢 Đã liên kết
 - **Endpoints:** `GET /api/v1/forecasts/accuracy?days=` 🌐 (backtest: chạy lại mô hình cho từng ngày đã qua, chỉ dùng số đo có tới hôm đó, so với số đo thật và với cách giữ nguyên số mới nhất), `GET /api/v1/forecasts/station/{id}/verification?days=` 🌐 (dự báo đã lưu đặt cạnh số đo thật)
 
+### 4c. Cảnh báo sớm (mô hình rủi ro)
+- **Trang:** `/forecast`: đường nét đứt "Có thể lên tới" trên biểu đồ từng trạm, dòng "nguy cơ vượt 4‰" trên thẻ trạm, nhận xét "nên trữ nước ngọt trước", thẻ "Cảnh báo sớm trên các mùa khô đã qua" (`EarlyWarningCard`). `/replay`: cảnh báo sớm trong nhật ký, thẻ "Trạm có cảnh báo sớm", mục "Cảnh báo sớm trong giai đoạn".
+- **Trạng thái:** 🟢 Đã liên kết
+- **Endpoints:** dự báo có thêm `riskSalinity` (mức có thể lên tới, chỉ mô hình rủi ro điền); `GET /api/v1/forecasts/early-warning` 🌐 (404 khi ML service chưa học xong lần đầu); `GET /api/v1/reports/replay` có thêm sự kiện `WARNED`, `warnedDaysAhead` cho sự kiện `OPENED`, `warningCount` theo ngày và `earlyWarning` (tổng hợp).
+
 ### 5. Cảnh báo (Alerts)
 - **Trang:** `/alerts`, panel cảnh báo trên bản đồ
 - **Trạng thái:** 🟢 Đã liên kết. `api/alertApi.ts` (`toAlertDto`) map dữ liệu backend sang dạng UI hiển thị.
@@ -73,13 +78,13 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
 - **Trạng thái:** 🟢 Đã liên kết
 - **Endpoints:** `GET /api/v1/watches` 👤 (kèm số đo mới nhất và dự báo so với ngưỡng), `POST /api/v1/watches` `{stationId, threshold, crop}` 👤 (theo dõi, hoặc đổi ngưỡng nếu đã theo dõi; tối đa 20 trạm), `DELETE /api/v1/watches/{id}` 👤
 - Ngưỡng gợi ý theo loại cây (`utils/crops.ts`): sầu riêng 0,5‰, cây ăn trái 1‰, lúa 2‰, rau màu 2‰; người dùng sửa được.
-- Sau mỗi lượt dự báo (backend chạy lại dự báo khi có số đo mới), backend báo khi trạm đổi trạng thái: số đo mới nhất hoặc dự báo 7 ngày bắt đầu vượt ngưỡng, hoặc đã xuống dưới ngưỡng. Không báo lặp mỗi ngày.
+- Sau mỗi lượt dự báo (backend chạy lại dự báo khi có số đo mới), backend báo khi trạm đổi trạng thái: số đo mới nhất, dự báo hoặc mức có thể lên tới (mô hình rủi ro) của 7 ngày tới bắt đầu vượt ngưỡng, hoặc đã xuống dưới ngưỡng và hết nguy cơ. Đã báo có thể vượt ngày nào thì giữ cảnh báo tới hết ngày đó (`riskUntil`). Không báo lặp mỗi ngày.
 - Tài khoản đã theo dõi ít nhất một trạm thì chỉ nhận cảnh báo đo được (mục 5) của các trạm đó; chưa theo dõi trạm nào thì nhận mọi trạm. Quản trị/Vận hành luôn nhận mọi trạm.
 
 ### 6. Khuyến nghị (Recommendations)
 - **Trang:** `/` (Tổng quan), panel trên bản đồ
 - **Trạng thái:** 🟢 Đã liên kết
-- **Endpoint:** `GET /api/v1/recommendations` 🌐
+- **Endpoint:** `GET /api/v1/recommendations` 🌐: trạm đang vượt 4‰ (hạn chế lấy nước), trạm chưa vượt nhưng dự báo hoặc mức có thể lên tới vượt 4‰ trong 7 ngày (trữ nước ngọt trước ngày đó), chỉ dùng số đo không cũ hơn 3 ngày.
 
 ### 7. Báo cáo & Thống kê (Reports)
 - **Trang:** `/reports` (chọn kỳ 7/30/90 ngày), thẻ "Thông số tổng hợp (24 giờ qua)" trên bản đồ

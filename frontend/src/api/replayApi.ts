@@ -16,10 +16,19 @@ export interface ReplayStation {
   threshold: number;
 }
 
+/**
+ * OPENED/RESOLVED: value là độ mặn; OPENED có warnedDaysAhead = app đã cảnh báo sớm trước bao nhiêu ngày (null = không).
+ * WARNED: cảnh báo sớm (mô hình rủi ro), value là mức có thể lên tới, expectedDate là ngày đầu tiên có thể vượt,
+ * outcome HIT (vượt thật) | MISS (hết nguy cơ mà không vượt) | OPEN (chưa rõ), outcomeDate là ngày rõ kết quả.
+ */
 export interface ReplayEvent {
   stationId: number;
-  type: 'OPENED' | 'RESOLVED';
+  type: 'OPENED' | 'RESOLVED' | 'WARNED';
   value: number;
+  warnedDaysAhead: number | null;
+  expectedDate: string | null;
+  outcome: 'HIT' | 'MISS' | 'OPEN' | null;
+  outcomeDate: string | null;
 }
 
 export interface ReplayDay {
@@ -28,7 +37,26 @@ export interface ReplayDay {
   salinity: (number | null)[];
   aboveCount: number;
   openCount: number;
+  /** Số trạm đang có cảnh báo sớm (chưa có số đo vượt) */
+  warningCount: number;
   events: ReplayEvent[];
+}
+
+/**
+ * Cảnh báo sớm của giai đoạn, chỉ trong các mùa khô đã chạy lại mô hình rủi ro (mỗi mùa mô hình chỉ học số đo trước mùa đó).
+ * available = false khi ML service chưa có kết quả.
+ */
+export interface ReplayEarlyWarning {
+  available: boolean;
+  seasons: { label: string; from: string; to: string }[];
+  /** Số lần trạm bắt đầu vượt ngưỡng; warnedAhead: trong đó app đã cảnh báo sớm từ hôm trước */
+  opened: number;
+  warnedAhead: number;
+  medianLeadDays: number | null;
+  /** Số lần cảnh báo sớm: vượt thật (hits) / hết nguy cơ mà không vượt (misses) */
+  warnings: number;
+  hits: number;
+  misses: number;
 }
 
 export interface Replay {
@@ -37,6 +65,7 @@ export interface Replay {
   defaultThreshold: number;
   stations: ReplayStation[];
   days: ReplayDay[];
+  earlyWarning: ReplayEarlyWarning;
 }
 
 export interface DateRange {

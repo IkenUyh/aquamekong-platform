@@ -5,8 +5,8 @@ import { BottomNav } from '../components/BottomNav';
 import { MetricCard } from '../components/MetricCard';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
 import { useReplay, useReplayBounds } from '../hooks/useReplay';
-import { dryseasonPresets, type Replay, type ReplayEvent } from '../api/replayApi';
-import { formatNumber, SALINITY_CLASS_COLORS } from '../utils/salinity';
+import { dryseasonPresets, type Replay, type ReplayEarlyWarning, type ReplayEvent } from '../api/replayApi';
+import { formatNumber, formatSalinity, SALINITY_CLASS_COLORS } from '../utils/salinity';
 
 /** Số ngày phát mỗi giây */
 const SPEEDS = [1, 2, 5, 10];
@@ -23,30 +23,89 @@ interface LoggedEvent extends ReplayEvent {
   stationName: string;
 }
 
-function EventLog({ events }: { events: LoggedEvent[] }) {
+/** Dòng mô tả một sự kiện; kết quả của cảnh báo sớm chỉ hiện khi ngày đang xem đã tới ngày rõ kết quả */
+function eventDetail(e: LoggedEvent, today: string): { text: React.ReactNode; className: string; color: string } {
+  if (e.type === 'WARNED') {
+    const known = e.outcomeDate != null && e.outcomeDate <= today && e.outcome !== 'OPEN';
+    return {
+      color: SALINITY_CLASS_COLORS.MEDIUM,
+      className: 'text-yellow-800',
+      text: (
+        <>
+          Cảnh báo sớm · có thể vượt từ {e.expectedDate ? formatDate(e.expectedDate, false) : '—'} (tới <span className="num">{formatSalinity(e.value)}‰</span>)
+          {known && (e.outcome === 'HIT' ? ' · đã vượt thật' : ' · không vượt')}
+        </>
+      ),
+    };
+  }
+  const opened = e.type === 'OPENED';
+  return {
+    color: SALINITY_CLASS_COLORS[opened ? 'HIGH' : 'LOW'],
+    className: opened ? 'text-red-700' : 'text-green-700',
+    text: (
+      <>
+        {opened ? 'Vượt ngưỡng' : 'Về dưới ngưỡng'} · <span className="num">{formatSalinity(e.value)}‰</span>
+        {opened && e.warnedDaysAhead != null && ` · đã báo trước ${e.warnedDaysAhead} ngày`}
+      </>
+    ),
+  };
+}
+
+function EventLog({ events, today }: { events: LoggedEvent[]; today: string }) {
   if (events.length === 0) {
     return <p className="mt-3 text-sm text-gray-500">Chưa có cảnh báo nào tới ngày này.</p>;
   }
   return (
     <ul className="mt-2 divide-y divide-gray-100 overflow-y-auto max-h-[372px] pr-1">
       {events.map((e, i) => {
-        const opened = e.type === 'OPENED';
+        const { text, className, color } = eventDetail(e, today);
         return (
-          <li key={`${e.date}-${e.stationId}-${i}`} className="py-2 text-sm">
+          <li key={`${e.date}-${e.stationId}-${e.type}-${i}`} className="py-2 text-sm">
             <div className="flex items-baseline justify-between gap-2">
               <span className="flex items-center gap-2 min-w-0">
-                <span className="dot" style={{ backgroundColor: SALINITY_CLASS_COLORS[opened ? 'HIGH' : 'LOW'] }} />
+                <span className="dot" style={{ backgroundColor: color }} />
                 <span className="truncate text-gray-900">{e.stationName}</span>
               </span>
               <span className="text-xs text-gray-500 num shrink-0">{formatDate(e.date, false)}</span>
             </div>
-            <div className={`ml-4 text-xs ${opened ? 'text-red-700' : 'text-green-700'}`}>
-              {opened ? 'Vượt ngưỡng' : 'Về dưới ngưỡng'} · <span className="num">{formatNumber(e.value)}‰</span>
-            </div>
+            <div className={`ml-4 text-xs ${className}`}>{text}</div>
           </li>
         );
       })}
     </ul>
+  );
+}
+
+/** Cảnh báo sớm của cả giai đoạn: chỉ trong các mùa khô đã chạy lại mô hình rủi ro */
+function EarlyWarningSummary({ summary }: { summary: ReplayEarlyWarning }) {
+  let body: React.ReactNode;
+  if (!summary.available) {
+    body = 'Chưa có kết quả chạy lại mô hình rủi ro (ML service đang học hoặc không kết nối được).';
+  } else if (summary.seasons.length === 0) {
+    body = 'Giai đoạn này không thuộc mùa khô nào đã chạy lại mô hình rủi ro (cần ít nhất một năm số đo trước mùa đó).';
+  } else {
+    const lead = summary.medianLeadDays != null ? `, thường sớm ${formatNumber(summary.medianLeadDays)} ngày` : '';
+    body = (
+      <>
+        Trạm bắt đầu vượt ngưỡng <span className="num font-medium text-gray-900">{summary.opened}</span> lần; app đã cảnh báo sớm
+        trước <span className="num font-medium text-gray-900">{summary.warnedAhead}</span> lần trong đó{lead}.
+        {' '}Có <span className="num font-medium text-gray-900">{summary.warnings}</span> lần cảnh báo sớm:
+        {' '}<span className="num">{summary.hits}</span> lần mặn vượt thật, <span className="num">{summary.misses}</span> lần không vượt.
+      </>
+    );
+  }
+  return (
+    <section className="card p-4">
+      <h2 className="text-sm font-semibold text-gray-900">Cảnh báo sớm trong giai đoạn</h2>
+      <p className="mt-2 text-sm text-gray-600">{body}</p>
+      {summary.available && summary.seasons.length > 0 && (
+        <p className="mt-1 text-xs text-gray-500">
+          Mô hình rủi ro của {summary.seasons.map((s) => s.label.toLowerCase()).join(', ')} chỉ học số đo trước mùa đó, rồi chạy lại
+          từng sáng như app thật, theo ngưỡng của từng trạm. Cảnh báo sớm là khi mức có thể lên tới vượt ngưỡng trong 7 ngày tới
+          lúc số đo còn dưới ngưỡng; cảnh báo giữ tới hết ngày đã báo. Chỉ giữ nguyên số đo mới nhất thì không báo trước được lần nào.
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -97,9 +156,10 @@ function Player({ replay }: { replay: Replay }) {
   }, [day, stations]);
 
   const chartData = useMemo(
-    () => days.map((d, i) => ({ i, label: formatDate(d.date, false), above: d.aboveCount })),
+    () => days.map((d, i) => ({ i, label: formatDate(d.date, false), above: d.aboveCount, warned: d.warningCount })),
     [days],
   );
+  const hasWarnings = days.some((d) => d.warningCount > 0);
   const opened = day.events.filter((e) => e.type === 'OPENED').length;
   const reporting = day.salinity.filter((v) => v != null).length;
 
@@ -135,7 +195,7 @@ function Player({ replay }: { replay: Replay }) {
       </section>
 
       {/* Chỉ số trong ngày */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
         <MetricCard
           label="Trạm vượt ngưỡng trong ngày"
           value={`${day.aboveCount} / ${reporting}`}
@@ -145,8 +205,13 @@ function Player({ replay }: { replay: Replay }) {
         <MetricCard label="Cảnh báo đang mở" value={day.openCount} tone={day.openCount > 0 ? 'danger' : 'default'} hint="tính tới cuối ngày" />
         <MetricCard label="Cảnh báo mới trong ngày" value={opened} hint={opened > 0 ? undefined : 'không có trạm mới vượt ngưỡng'} />
         <MetricCard
+          label="Trạm có cảnh báo sớm"
+          value={day.warningCount}
+          hint="có thể vượt ngưỡng trong 7 ngày tới"
+        />
+        <MetricCard
           label="Độ mặn cao nhất"
-          value={formatNumber(peak?.value)}
+          value={formatSalinity(peak?.value)}
           unit={peak ? '‰' : undefined}
           hint={peak?.name ?? 'không có số đo'}
         />
@@ -166,7 +231,7 @@ function Player({ replay }: { replay: Replay }) {
         </section>
         <section className="card p-4">
           <h2 className="text-sm font-semibold text-gray-900">Nhật ký cảnh báo</h2>
-          <EventLog events={log} />
+          <EventLog events={log} today={day.date} />
         </section>
       </div>
 
@@ -183,14 +248,21 @@ function Player({ replay }: { replay: Replay }) {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis dataKey="label" tick={{ fill: '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} minTickGap={24} />
               <YAxis allowDecimals={false} tick={{ fill: '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <Tooltip formatter={(v: number) => [v, 'Trạm vượt ngưỡng']} />
+              <Tooltip formatter={(v: number, name: string) => [v, name === 'warned' ? 'Trạm có cảnh báo sớm' : 'Trạm vượt ngưỡng']} />
               <Area type="monotone" dataKey="above" stroke={SALINITY_CLASS_COLORS.HIGH} fill={SALINITY_CLASS_COLORS.HIGH} fillOpacity={0.15} isAnimationActive={false} />
+              {hasWarnings && (
+                <Area type="monotone" dataKey="warned" stroke={SALINITY_CLASS_COLORS.MEDIUM} strokeDasharray="5 4" fill="none" isAnimationActive={false} />
+              )}
               <ReferenceLine x={chartData[index]?.label} stroke="#0F3D5E" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        <p className="mt-2 text-xs text-gray-500">Bấm vào biểu đồ để nhảy tới ngày đó.</p>
+        <p className="mt-2 text-xs text-gray-500">
+          {hasWarnings ? 'Đường nét đứt: số trạm đang có cảnh báo sớm. ' : ''}Bấm vào biểu đồ để nhảy tới ngày đó.
+        </p>
       </section>
+
+      <EarlyWarningSummary summary={replay.earlyWarning} />
     </>
   );
 }

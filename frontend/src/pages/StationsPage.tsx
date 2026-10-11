@@ -6,7 +6,7 @@ import { StatusBadge } from '../components/shared/StatusBadge';
 import { useStationsList } from '../hooks/useStations';
 import { Search } from 'lucide-react';
 import type { Station } from '../types';
-import { formatMeasuredAt, formatNumber, isReporting, riverOf, ONLINE_WINDOW_HOURS, METRIC_LABELS, metricLabel, SALINITY_THRESHOLD } from '../utils/salinity';
+import { formatMeasuredAt, formatSalinity, isReporting, riverOf, ONLINE_WINDOW_HOURS, METRIC_LABELS, metricLabel, SALINITY_THRESHOLD } from '../utils/salinity';
 
 const ALL = '';
 
@@ -68,7 +68,7 @@ export function StationsPage() {
       header: 'Độ mặn (‰)',
       render: (s) => (
         <span className={(s.latestSalinity ?? 0) > SALINITY_THRESHOLD ? 'text-red-500 font-bold' : ''}>
-          {formatNumber(s.latestSalinity)}
+          {formatSalinity(s.latestSalinity)}
         </span>
       ),
       align: 'right',

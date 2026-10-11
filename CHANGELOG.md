@@ -2,6 +2,33 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [0.4.0] - 2026-10-11
+
+### Thêm mới
+- **Cảnh báo sớm bằng mô hình rủi ro**: mỗi ngày dự báo có thêm mức độ mặn có thể lên tới (phân vị 80%, gradient boosting học trên 5 năm số đo). Mức này vượt ngưỡng thì trạm theo dõi báo "có thể vượt từ ngày ..., nên trữ nước ngọt trước ngày này", khuyến nghị vận hành nêu trạm cần trữ nước trước ngày nào, trang Dự báo vẽ đường "Có thể lên tới" và nêu trạm có nguy cơ. ml-service tự học lại khi có số đo mới.
+- **Chấm cảnh báo sớm trên các mùa khô đã qua**: mỗi mùa một mô hình chỉ học số đo trước mùa đó, rồi mô phỏng từng sáng như app thật. Trang Dự báo có bảng theo mùa và theo ngưỡng (4‰ và ngưỡng theo cây trồng): số lần trạm bắt đầu vượt, số lần app đã cảnh báo từ trước, số lần báo sớm đúng. Mùa khô 2025–2026, ngưỡng 4‰: 52/70 lần vượt app đã cảnh báo từ trước (giữ nguyên số mới nhất: 0), 12/14 lần báo sớm đúng.
+- **Phát lại kèm cảnh báo sớm**: trong các mùa khô đã chạy lại, nhật ký có cảnh báo sớm app lẽ ra đã gửi (và kết quả khi tới ngày rõ), lần vượt ngưỡng ghi "đã báo trước N ngày", biểu đồ có số trạm đang có cảnh báo sớm, và mục tổng hợp của giai đoạn.
+- **Tình hình hôm nay** ở đầu trang Tổng quan: nêu tên từng trạm đang vượt ngưỡng 4‰, độ mặn, gấp mấy lần ngưỡng, vượt từ ngày nào và số đo lúc đó, trước mọi số trung bình. Các trạm còn lại tóm tắt bằng trung vị và mức cao nhất.
+- **Lưới dự báo** trên trang Dự báo: mỗi trạm một dòng theo 7 ngày, thay cho 40 biểu đồ gần như phẳng. Trạm mặn nhất lên đầu, ngày có thể vượt ngưỡng được viền đỏ. Bấm tên trạm để xem biểu đồ; cột "Sai số" mở dự báo đặt cạnh số đo thật. Nhận xét chung lên đầu trang kèm độ chính xác toàn vùng; bảng độ chính xác và cảnh báo sớm các mùa khô gập vào mục "Độ tin cậy".
+- **Diễn biến theo ngày** trên trang Báo cáo: số trạm vượt ngưỡng mỗi ngày, độ mặn cao nhất và trung vị các trạm, thay cho đường trung bình toàn vùng gần như đứng yên.
+- Trang Cảnh báo hiện mỗi cảnh báo thành một thẻ: số đo lúc cảnh báo và hiện tại, gấp mấy lần ngưỡng, đã kéo dài bao nhiêu ngày.
+
+### Thay đổi
+- Trạm theo dõi chỉ xét 7 ngày tới, và đã báo có thể vượt ngày nào thì giữ cảnh báo tới hết ngày đó, để app không báo "đã giảm" ngay trước khi mặn vượt thật.
+- Khuyến nghị vận hành bỏ qua số đo cũ hơn 3 ngày (trạm mất tín hiệu).
+- Độ mặn luôn có 2 chữ số thập phân và ngày luôn dạng dd/MM ở mọi màn hình (trước đây có chỗ "1,9" cạnh "1,87", ngày lúc "10-10" lúc "7/10/2026"). Số đo theo ngày không còn kèm giờ "00:00".
+- Cảnh báo trên trang Bản đồ và trang Cảnh báo hiện số đo hiện tại cạnh số đo lúc cảnh báo.
+- Dự báo bên phải trang Bản đồ ghi tên trạm đang chọn, thay cho chữ "THẤP" to dễ hiểu nhầm là cả vùng. Trang Dự báo gọi mức 1–4‰ là "Trung bình"; chữ "Cảnh báo" chỉ dành cho cảnh báo thật.
+- Biểu đồ trung bình toàn vùng luôn có đường ngưỡng 4‰.
+
+### Sửa lỗi
+- Bản đồ trang Dự báo có lúc mở ra ở mức zoom cả Đông Nam Á.
+- Trên điện thoại, các trang ba cột (Cảnh báo, Trạm, Dự báo) có khoảng trống lớn giữa danh sách và phần chi tiết; bảng 5 trạm mặn nhất trên trang Báo cáo tràn ngang.
+
+### Hạn chế đã biết
+- Mô hình rủi ro bắt được nhiều lần vượt hơn cách "giữ cảnh báo thêm vài ngày sau lần vượt cuối", nhưng cũng cảnh báo nhiều buổi sáng hơn; tỉ lệ buổi sáng cảnh báo có ích của hai cách gần bằng nhau. Dữ liệu RYNAN hằng ngày chưa có lưu lượng thượng nguồn và thủy triều để mô hình học thêm.
+- Mức có thể lên tới đặt ở phân vị 80% nhưng trên các mùa đã qua, số thật vượt mức này 17–37% số ngày (lý thuyết 20%).
+
 ## [0.3.0] - 2026-10-10
 
 ### Thêm mới
@@ -82,6 +109,7 @@ Bản phát hành đầu tiên.
 - Cảnh báo và khuyến nghị dựa trên số đo mới nhất, chưa dựa trên dự báo.
 - Dữ liệu RYNAN hiện có đến 31/08/2026; trạm hiện "mất tín hiệu" tới khi nạp dữ liệu mới.
 
+[0.4.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.1.0...v0.2.0

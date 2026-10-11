@@ -42,7 +42,7 @@ export function DashboardLayout({ leftPanel, centerContent, bottomContent, right
         </aside>
 
         {/* Center: nội dung chính + biểu đồ dưới */}
-        <main className="flex-1 flex flex-col relative z-0 min-w-0">
+        <main className="lg:flex-1 flex flex-col relative z-0 min-w-0">
           {/* lg:min-h-0: không thì vùng giữa cao theo nội dung, cột cuộn bên trong không cuộn được */}
           <div className={`relative ${mobileCenterHeight} lg:h-auto lg:flex-1 lg:min-h-0 shrink-0`}>{centerContent}</div>
           {bottomContent && (
