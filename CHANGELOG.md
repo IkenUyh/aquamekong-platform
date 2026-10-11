@@ -2,7 +2,7 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
-## [Unreleased]
+## [0.4.0] - 2026-10-11
 
 ### Thêm mới
 - **Cảnh báo sớm bằng mô hình rủi ro**: mỗi ngày dự báo có thêm mức độ mặn có thể lên tới (phân vị 80%, gradient boosting học trên 5 năm số đo). Mức này vượt ngưỡng thì trạm theo dõi báo "có thể vượt từ ngày ..., nên trữ nước ngọt trước ngày này", khuyến nghị vận hành nêu trạm cần trữ nước trước ngày nào, trang Dự báo vẽ đường "Có thể lên tới" và nêu trạm có nguy cơ. ml-service tự học lại khi có số đo mới.
@@ -109,6 +109,7 @@ Bản phát hành đầu tiên.
 - Cảnh báo và khuyến nghị dựa trên số đo mới nhất, chưa dựa trên dự báo.
 - Dữ liệu RYNAN hiện có đến 31/08/2026; trạm hiện "mất tín hiệu" tới khi nạp dữ liệu mới.
 
+[0.4.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.1.0...v0.2.0
