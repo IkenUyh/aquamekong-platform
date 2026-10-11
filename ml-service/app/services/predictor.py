@@ -1,5 +1,5 @@
 """
-Predictor service: chọn mô hình dự báo cho trạm (ST-GNN, Prophet, Hybrid, xu hướng thống kê).
+Predictor service: chọn mô hình dự báo cho trạm (ST-GNN, mô hình rủi ro, Prophet, Hybrid, giữ nguyên số mới nhất).
 """
 
 import json
@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 from typing import List, Optional
 from app.cache import get_redis
 from app.config import get_settings
+from app.early_warning.service import early_warning
 from app.schemas.forecast import PredictionItem
 from app.services.data_loader import latest_measurement_id, load_station_metrics, load_station_info
 from app.models.hybrid_salinity_model import HybridSalinityModel
@@ -38,9 +39,10 @@ class Predictor:
     @staticmethod
     def _cache_key(station_id, days_ahead: int) -> str:
         # Ngày hiện tại (giờ VN): sang ngày mới thì dự báo làm mới. Phiên bản dữ liệu (id số đo mới nhất): số đo mới
-        # nạp vào giữa ngày (file RYNAN về trễ) thì dự báo tính lại, không trả kết quả tính trên số đo cũ
+        # nạp vào giữa ngày (file RYNAN về trễ) thì dự báo tính lại, không trả kết quả tính trên số đo cũ.
+        # Lần học của mô hình rủi ro: học xong (vd. lần đầu sau khi khởi động) thì không trả dự báo chưa có mức rủi ro
         return (f"forecast:{station_id}:{days_ahead}:{datetime.now(TIMEZONE).date().isoformat()}"
-                f":{latest_measurement_id()}")
+                f":{latest_measurement_id()}:{early_warning.stamp()}")
 
     def _get_cached(self, key: str) -> Optional[List[PredictionItem]]:
         try:
@@ -91,13 +93,21 @@ class Predictor:
 
     def _predict_uncached(self, station_id, days_ahead: int) -> List[PredictionItem]:
         """
-        Thứ tự: ST-GNN (trạm có trong model và tốt hơn giữ nguyên giá trị cũ) -> Prophet riêng của trạm
-        -> Hybrid ARIMA-CNN (global) -> xu hướng thống kê.
+        Thứ tự: ST-GNN (trạm có trong model và tốt hơn giữ nguyên giá trị cũ) -> mô hình rủi ro (giữ nguyên số mới
+        nhất kèm mức có thể lên tới; đã chạy lại trên các mùa khô cũ) -> Prophet riêng của trạm -> Hybrid ARIMA-CNN
+        (global) -> giữ nguyên số mới nhất.
         Mỗi mô hình lỗi thì rơi xuống tầng sau. Không đủ số đo cho tầng cuối thì InsufficientDataError.
         """
         stgnn = self._stgnn_forecast(station_id, days_ahead)
         if stgnn:
             return stgnn
+        try:
+            risk = early_warning.forecast(station_id, days_ahead)
+            if risk:
+                logger.info(f"Using risk model for station {station_id}")
+                return risk
+        except Exception as e:
+            logger.error(f"Risk model prediction failed for station {station_id}: {e}", exc_info=True)
         if self.prophet.has_trained_model(station_id):
             try:
                 logger.info(f"Using Prophet model for station {station_id}")

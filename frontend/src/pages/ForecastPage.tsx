@@ -6,12 +6,12 @@ import { DashboardLayout } from '../layouts/DashboardLayout';
 import { ForecastChart } from '../components/ForecastChart';
 import { StatusBadge } from '../components/shared/StatusBadge';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
-import { ForecastAccuracyCard, StationAccuracy } from '../components/ForecastAccuracy';
+import { EarlyWarningCard, ForecastAccuracyCard, StationAccuracy } from '../components/ForecastAccuracy';
 import { forecastApi } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useStationsList } from '../hooks/useStations';
 import { forecastQueryKey, useStgnnModelInfo } from '../hooks/useForecast';
-import { useForecastAccuracy } from '../hooks/useForecastAccuracy';
+import { useEarlyWarningEvaluation, useForecastAccuracy } from '../hooks/useForecastAccuracy';
 import type { SalinityForecast, Station, StgnnModelInfo } from '../types';
 import { classifySalinity, formatNumber, riverOf, SALINITY_THRESHOLD } from '../utils/salinity';
 
@@ -35,6 +35,7 @@ const formatDay = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateStrin
 function modelLabel(version?: string): string {
   if (!version) return '';
   if (version.startsWith('st-gnn')) return 'ST-GNN';
+  if (version.startsWith('gb-risk')) return 'Số mới nhất + mô hình rủi ro';
   if (version.startsWith('prophet')) return 'Prophet';
   if (version.startsWith('hybrid')) return 'ARIMA-CNN';
   if (version.startsWith('statistical-v1')) return 'Xu hướng thống kê';
@@ -94,6 +95,23 @@ function buildInsights(items: StationForecast[]): string[] {
     );
   } else {
     insights.push(`Không trạm nào được dự báo vượt ngưỡng ${SALINITY_THRESHOLD}‰ trong kỳ dự báo.`);
+  }
+
+  // Mô hình rủi ro: dự báo giữ nguyên số mới nhất, nhưng mức có thể lên tới vượt ngưỡng thì báo trước
+  const exceedingIds = new Set(exceeding.map(({ i }) => i.station.id));
+  const atRisk = ready
+    .filter((i) => !exceedingIds.has(i.station.id))
+    .map((i) => {
+      const risky = i.forecasts.filter((f) => (f.riskSalinity ?? 0) > SALINITY_THRESHOLD);
+      return { i, first: risky[0], peak: Math.max(...risky.map((f) => f.riskSalinity ?? 0)) };
+    })
+    .filter((x) => x.first)
+    .sort((a, b) => a.first!.forecastDate.localeCompare(b.first!.forecastDate));
+  if (atRisk.length > 0) {
+    insights.push(
+      `Có thể vượt ${SALINITY_THRESHOLD}‰, nên trữ nước ngọt trước: ` +
+        atRisk.map(({ i, first, peak }) => `${i.station.name} (từ ${dayLabel(first!.forecastDate).label}, có thể tới ${formatNumber(peak)}‰)`).join('; ') + '.'
+    );
   }
 
   const rising = ready.filter((i) => {
@@ -159,6 +177,7 @@ export function ForecastPage() {
   const insights = buildInsights(items);
   // Thẻ điểm ST-GNN chỉ khi có trạm đang hiển thị dự báo của nó (dữ liệu ST-GNN cũ thì ML dùng mô hình khác)
   const { data: accuracy } = useForecastAccuracy();
+  const { data: earlyWarning } = useEarlyWarningEvaluation();
   const usesStgnn = items.some((i) => i.forecasts.some((f) => f.modelVersion?.startsWith('st-gnn')));
 
   const togglePicked = (id: number) =>
@@ -265,6 +284,7 @@ export function ForecastPage() {
             )}
             {modelInfo && usesStgnn && <StgnnScoreCard info={modelInfo} />}
             {accuracy && <ForecastAccuracyCard accuracy={accuracy} />}
+            {earlyWarning && earlyWarning.seasons.length > 0 && <EarlyWarningCard evaluation={earlyWarning} />}
 
             {dates.length > 0 && (
               <div className="flex shrink-0 gap-2 bg-white p-2 rounded-lg border border-gray-200 overflow-x-auto">
@@ -294,6 +314,7 @@ export function ForecastPage() {
               {items.map(({ station, forecasts, isLoading, isError }) => {
                 const dayForecast = forecastOn(forecasts, selectedDate);
                 const dayValue = dayForecast?.predictedSalinity;
+                const dayRisk = dayForecast?.riskSalinity;
                 const model = modelLabel(forecasts[0]?.modelVersion);
                 return (
                   <div key={station.id} className="card p-4">
@@ -307,6 +328,12 @@ export function ForecastPage() {
                             <> · {dayLabel(dayForecast!.forecastDate).label}: <span className="font-semibold text-gray-900">{formatNumber(dayValue)}‰</span></>
                           )}
                         </p>
+                        {dayRisk != null && (
+                          <p className={`text-xs num ${dayRisk > SALINITY_THRESHOLD && (dayValue ?? 0) <= SALINITY_THRESHOLD ? 'text-red-700' : 'text-gray-500'}`}>
+                            Có thể lên tới {formatNumber(dayRisk)}‰
+                            {dayRisk > SALINITY_THRESHOLD && (dayValue ?? 0) <= SALINITY_THRESHOLD && ` · nguy cơ vượt ${SALINITY_THRESHOLD}‰`}
+                          </p>
+                        )}
                       </div>
                       <StatusBadge level={levelOf(dayValue ?? station.latestSalinity)} />
                     </div>
