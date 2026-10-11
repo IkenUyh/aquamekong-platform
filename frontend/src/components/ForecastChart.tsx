@@ -1,10 +1,10 @@
 import React from 'react';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Area, AreaChart
+  ResponsiveContainer, Area, AreaChart, ReferenceLine
 } from 'recharts';
 import type { SalinityForecast } from '../types';
-import { formatNumber } from '../utils/salinity';
+import { formatDay, formatSalinity, SALINITY_CLASS_COLORS, SALINITY_THRESHOLD } from '../utils/salinity';
 
 interface ForecastChartProps {
   forecasts: SalinityForecast[];
@@ -14,15 +14,15 @@ interface ForecastChartProps {
 
 export function ForecastChart({ forecasts, heightClass = 'h-[180px]' }: ForecastChartProps) {
   const data = forecasts.map((f) => ({
-    date: new Date(f.forecastDate).toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-    }),
+    date: formatDay(f.forecastDate),
     salinity: f.predictedSalinity,
     lower: f.lowerBound,
     upper: f.upperBound,
+    // Mức có thể lên tới (mô hình rủi ro): vượt ngưỡng thì app báo sớm
+    risk: f.riskSalinity ?? null,
     confidence: Math.round((f.confidenceLevel || 0) * 100),
   }));
+  const hasRisk = data.some((d) => d.risk != null);
 
   return (
     <div className={`${heightClass} w-full`}>
@@ -65,8 +65,9 @@ export function ForecastChart({ forecasts, heightClass = 'h-[180px]' }: Forecast
                 salinity: 'Dự báo',
                 upper: 'Cận trên',
                 lower: 'Cận dưới',
+                risk: 'Có thể lên tới',
               };
-              return [`${formatNumber(value)}‰`, labels[name] || name];
+              return [`${formatSalinity(value)}‰`, labels[name] || name];
             }}
           />
           {/* Confidence band */}
@@ -82,6 +83,18 @@ export function ForecastChart({ forecasts, heightClass = 'h-[180px]' }: Forecast
             stroke="none"
             fill="transparent"
           />
+          <ReferenceLine y={SALINITY_THRESHOLD} stroke={SALINITY_CLASS_COLORS.HIGH} strokeDasharray="4 4" />
+          {hasRisk && (
+            <Area
+              type="monotone"
+              dataKey="risk"
+              stroke={SALINITY_CLASS_COLORS.MEDIUM}
+              strokeWidth={1.5}
+              strokeDasharray="5 4"
+              fill="none"
+              dot={false}
+            />
+          )}
           {/* Main prediction line */}
           <Area
             type="monotone"

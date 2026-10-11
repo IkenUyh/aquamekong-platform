@@ -53,8 +53,8 @@ class ForecastServiceTest {
         when(stationRepository.existsById(1L)).thenReturn(true);
         when(stationRepository.getReferenceById(1L)).thenReturn(station);
         when(mlServiceClient.predict(1L, 2)).thenReturn(new MlServiceClient.PredictionResponse(1L, List.of(
-                new MlServiceClient.PredictionItem(tomorrow, 2.5, 0.9, 2.0, 3.0, "prophet-v1.0"),
-                new MlServiceClient.PredictionItem(tomorrow.plusDays(1), 2.7, null, 2.1, 3.3, "prophet-v1.0")
+                new MlServiceClient.PredictionItem(tomorrow, 2.5, 0.9, 2.0, 3.0, null, "prophet-v1.0"),
+                new MlServiceClient.PredictionItem(tomorrow.plusDays(1), 2.7, null, 2.1, 3.3, 3.1, "prophet-v1.0")
         ), "prophet-v1.0", null));
         when(forecastRunRepository.save(any())).thenAnswer(inv -> {
             ForecastRun run = inv.getArgument(0);
@@ -79,6 +79,9 @@ class ForecastServiceTest {
         assertThat(result.get(0).getPredictedSalinity()).isEqualTo(2.5);
         // confidence null từ ML -> mặc định 0.95
         assertThat(result.get(1).getConfidenceLevel()).isEqualTo(0.95);
+        // Mức có thể lên tới chỉ có khi ML gửi (mô hình rủi ro)
+        assertThat(result.get(0).getRiskSalinity()).isNull();
+        assertThat(result.get(1).getRiskSalinity()).isEqualTo(3.1);
     }
 
     @Test
@@ -87,8 +90,8 @@ class ForecastServiceTest {
         when(stationRepository.existsById(1L)).thenReturn(true);
         when(stationRepository.getReferenceById(1L)).thenReturn(station);
         when(mlServiceClient.predict(1L, 7)).thenReturn(new MlServiceClient.PredictionResponse(1L, List.of(
-                new MlServiceClient.PredictionItem(dataEnd.plusDays(1), 0.3, 0.8, 0.2, 0.5, "st-gnn-v1"),
-                new MlServiceClient.PredictionItem(dataEnd.plusDays(7), 0.4, 0.8, 0.1, 0.9, "st-gnn-v1")
+                new MlServiceClient.PredictionItem(dataEnd.plusDays(1), 0.3, 0.8, 0.2, 0.5, null, "st-gnn-v1"),
+                new MlServiceClient.PredictionItem(dataEnd.plusDays(7), 0.4, 0.8, 0.1, 0.9, null, "st-gnn-v1")
         ), "st-gnn-v1", dataEnd));
         when(forecastRunRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(salinityForecastRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));

@@ -22,11 +22,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Sau mỗi lượt dự báo (DailyForecastJob chạy khi có số đo mới), so từng trạm theo dõi với ngưỡng của người theo dõi.
- * Chỉ báo khi kết quả đổi so với lần trước: bắt đầu vượt ngưỡng (để kịp trữ nước), hoặc đã xuống dưới ngưỡng
- * (có thể lấy nước). Mùa khô trạm vượt ngưỡng nhiều tuần liền, báo lặp mỗi ngày thì người dùng sẽ tắt thông báo.
+ * Chỉ báo khi kết quả đổi so với lần trước: bắt đầu vượt ngưỡng hoặc có nguy cơ vượt (để kịp trữ nước), hoặc đã xuống
+ * dưới ngưỡng và hết nguy cơ (có thể lấy nước). Mùa khô trạm vượt ngưỡng nhiều tuần liền, báo lặp mỗi ngày thì người
+ * dùng sẽ tắt thông báo.
  */
 @Slf4j
 @Component
@@ -54,16 +56,22 @@ public class StationWatchJob {
         Instant now = Instant.now();
         Map<Long, StationSnapshot> snapshots = new HashMap<>();
         List<StationWatch> changed = new ArrayList<>();
+        int reported = 0;
         for (StationWatch watch : watchRepository.findAllByOrderByStationIdAsc()) {
             StationSnapshot snapshot = snapshots.computeIfAbsent(watch.getStation().getId(), watchService::snapshot);
-            Outlook outlook = StationWatchService.outlook(snapshot, watch.getThreshold(), now);
-            if (outlook.exceeding() == watch.isForecastExceeding()) continue;
-            pushService.notifyUser(watch.getUser().getId(), message(watch, outlook));
-            watch.setForecastExceeding(outlook.exceeding());
+            Outlook outlook = StationWatchService.outlook(snapshot, watch.getThreshold(), watch.getRiskUntil(), now);
+            boolean stateChanged = outlook.exceeding() != watch.isForecastExceeding();
+            if (!stateChanged && Objects.equals(outlook.riskUntil(), watch.getRiskUntil())) continue;
+            if (stateChanged) {
+                pushService.notifyUser(watch.getUser().getId(), message(watch, outlook));
+                watch.setForecastExceeding(outlook.exceeding());
+                reported++;
+            }
+            watch.setRiskUntil(outlook.riskUntil());
             changed.add(watch);
         }
         watchRepository.saveAll(changed);
-        log.info("Theo dõi trạm: {} lượt đổi trạng thái đã báo", changed.size());
+        log.info("Theo dõi trạm: {} lượt đổi trạng thái đã báo", reported);
     }
 
     static PushMessage message(StationWatch watch, Outlook outlook) {
@@ -75,15 +83,20 @@ public class StationWatchJob {
                     "Số đo mới nhất và dự báo 7 ngày tới đều dưới ngưỡng " + limit + ", có thể lấy nước.", "/forecast", tag);
         }
         List<String> parts = new ArrayList<>();
-        if (outlook.latestSalinity() != null && outlook.latestSalinity() > watch.getThreshold()) {
+        boolean measured = outlook.latestSalinity() != null && outlook.latestSalinity() > watch.getThreshold();
+        if (measured) {
             parts.add("Độ mặn đo ngày " + DAY.format(outlook.latestAt().atZoneSameInstant(ZONE)) + " là "
                     + number(outlook.latestSalinity()) + "‰, vượt ngưỡng " + limit + ".");
         }
         if (outlook.firstExceedDate() != null) {
             parts.add("Dự báo vượt " + limit + " từ ngày " + DAY.format(outlook.firstExceedDate())
                     + ", cao nhất " + number(outlook.forecastMax()) + "‰. Nên trữ nước ngọt trước ngày này.");
+        } else if (!measured && outlook.firstRiskDate() != null) {
+            parts.add("Có thể vượt " + limit + " từ ngày " + DAY.format(outlook.firstRiskDate())
+                    + " (có thể lên tới " + number(outlook.riskMax()) + "‰). Nên trữ nước ngọt trước ngày này.");
         }
-        return new PushMessage("Cảnh báo mặn: " + station, String.join(" ", parts), "/forecast", tag);
+        String title = measured || outlook.firstExceedDate() != null ? "Cảnh báo mặn: " : "Nguy cơ mặn: ";
+        return new PushMessage(title + station, String.join(" ", parts), "/forecast", tag);
     }
 
     private static String number(double value) {

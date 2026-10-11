@@ -16,6 +16,9 @@ class PredictionItem(BaseModel):
     confidence: Optional[float] = Field(None, description="Confidence level (0-1)")
     lower_bound: Optional[float] = Field(None, description="Lower bound of confidence interval")
     upper_bound: Optional[float] = Field(None, description="Upper bound of confidence interval")
+    # Mức độ mặn có thể lên tới (phân vị 80% của mô hình rủi ro); vượt ngưỡng của người dùng thì app báo sớm.
+    # Chỉ mô hình rủi ro điền: khoảng tin cậy của mô hình khác không được hiệu chỉnh cho việc cảnh báo
+    risk_salinity: Optional[float] = Field(None, description="Salinity level the risk model says may be reached (‰)")
     model_version: str = "prophet-v1.0"
     # Ngày cuối có dữ liệu đầu vào; chỉ ST-GNN điền (dự báo tính từ ngày này, không phải từ hôm nay)
     data_end: Optional[date] = None

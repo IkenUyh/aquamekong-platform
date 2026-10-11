@@ -129,6 +129,8 @@ export interface SalinityForecast {
   lowerBound?: number;
   upperBound?: number;
   confidenceLevel?: number;
+  /** Mức có thể lên tới (phân vị 80% của mô hình rủi ro); null với mô hình khác. Vượt ngưỡng thì app báo sớm */
+  riskSalinity?: number | null;
   createdAt?: string;
   /** Thời điểm chạy mô hình của lượt dự báo */
   runAt?: string;
