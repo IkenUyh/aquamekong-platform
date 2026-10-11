@@ -11,6 +11,7 @@ from app.config import get_settings
 from app.ingest.inbox import process_inbox
 from app.ingest.seed import seed_if_empty
 from app.ingest.drive_sync import sync_drive
+from app.early_warning.service import early_warning
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +99,11 @@ def start_scheduler():
         scheduler.add_job(sync_drive, 'interval', minutes=20, id='drive_sync_job',
                           replace_existing=True, max_instances=1, coalesce=True,
                           next_run_time=datetime.now(timezone.utc))
+    # Mô hình rủi ro mặn: học lại khi có số đo mới (khoảng một phút CPU), lần đầu ngay khi khởi động. Backend chạy lại
+    # dự báo trong vòng 30 phút sau khi có số đo mới, nên học xong trước đó là kịp
+    scheduler.add_job(early_warning.refresh, 'interval', minutes=15, id='early_warning_job',
+                      replace_existing=True, max_instances=1, coalesce=True,
+                      next_run_time=datetime.now(timezone.utc))
     # Crawler sinh số ngẫu nhiên, chỉ bật khi demo không có dữ liệu thật
     if settings.enable_mock_crawler:
         scheduler.add_job(run_pipeline, 'interval', minutes=15, id='data_pipeline_job',

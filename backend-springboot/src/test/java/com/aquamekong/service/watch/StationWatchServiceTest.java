@@ -75,7 +75,7 @@ class StationWatchServiceTest {
         StationSnapshot snapshot = new StationSnapshot(reading(1.2, 8),
                 List.of(forecast(8, 9.0), forecast(10, 1.8), forecast(12, 2.4), forecast(13, 2.9)));
 
-        Outlook outlook = StationWatchService.outlook(snapshot, 2.0, NOW);
+        Outlook outlook = StationWatchService.outlook(snapshot, 2.0, null, NOW);
 
         assertThat(outlook.exceeding()).isTrue();
         assertThat(outlook.firstExceedDate()).isEqualTo(LocalDate.of(2026, 10, 12));
@@ -84,9 +84,49 @@ class StationWatchServiceTest {
         assertThat(outlook.latestSalinity()).isEqualTo(1.2);
     }
 
+    private static SalinityForecast risky(int day, double value, double risk) {
+        return SalinityForecast.builder().forecastDate(LocalDate.of(2026, 10, day)).predictedSalinity(value).riskSalinity(risk).build();
+    }
+
+    @Test
+    void riskLevelAboveThresholdWarnsBeforeTheForecastDoes() {
+        StationSnapshot snapshot = new StationSnapshot(reading(1.2, 8),
+                List.of(risky(10, 1.2, 1.6), risky(12, 1.2, 2.3), risky(13, 1.2, 2.6), risky(14, 1.2, 1.9)));
+
+        Outlook outlook = StationWatchService.outlook(snapshot, 2.0, null, NOW);
+
+        assertThat(outlook.exceeding()).isTrue();
+        assertThat(outlook.firstExceedDate()).isNull();
+        assertThat(outlook.firstRiskDate()).isEqualTo(LocalDate.of(2026, 10, 12));
+        assertThat(outlook.riskMax()).isEqualTo(2.6);
+        // Giữ cảnh báo tới ngày cuối có thể vượt
+        assertThat(outlook.riskUntil()).isEqualTo(LocalDate.of(2026, 10, 13));
+    }
+
+    @Test
+    void warningStaysUntilTheFlaggedDayHasPassed() {
+        // Lượt dự báo mới không còn thấy nguy cơ, nhưng hôm qua đã báo có thể vượt ngày 11/10
+        StationSnapshot calm = new StationSnapshot(reading(1.2, 8), List.of(risky(10, 1.2, 1.5)));
+
+        Outlook kept = StationWatchService.outlook(calm, 2.0, LocalDate.of(2026, 10, 11), NOW);
+        Outlook passed = StationWatchService.outlook(calm, 2.0, LocalDate.of(2026, 10, 8), NOW);
+
+        assertThat(kept.exceeding()).isTrue();
+        assertThat(kept.riskUntil()).isEqualTo(LocalDate.of(2026, 10, 11));
+        assertThat(passed.exceeding()).isFalse();
+        assertThat(passed.riskUntil()).isNull();
+    }
+
+    @Test
+    void onlyTheNextSevenDaysCount() {
+        StationSnapshot snapshot = new StationSnapshot(reading(1.2, 8), List.of(risky(17, 3.0, 3.0)));
+
+        assertThat(StationWatchService.outlook(snapshot, 2.0, null, NOW).exceeding()).isFalse();
+    }
+
     @Test
     void latestReadingAboveThresholdCountsEvenWithoutForecast() {
-        Outlook outlook = StationWatchService.outlook(new StationSnapshot(reading(2.5, 8), List.of()), 2.0, NOW);
+        Outlook outlook = StationWatchService.outlook(new StationSnapshot(reading(2.5, 8), List.of()), 2.0, null, NOW);
 
         assertThat(outlook.exceeding()).isTrue();
         assertThat(outlook.firstExceedDate()).isNull();
@@ -95,7 +135,7 @@ class StationWatchServiceTest {
 
     @Test
     void readingFromAStationThatStoppedReportingIsIgnored() {
-        Outlook outlook = StationWatchService.outlook(new StationSnapshot(reading(9.0, 1), List.of(forecast(10, 1.0))), 2.0, NOW);
+        Outlook outlook = StationWatchService.outlook(new StationSnapshot(reading(9.0, 1), List.of(forecast(10, 1.0))), 2.0, null, NOW);
 
         assertThat(outlook.exceeding()).isFalse();
         assertThat(outlook.latestSalinity()).isNull();

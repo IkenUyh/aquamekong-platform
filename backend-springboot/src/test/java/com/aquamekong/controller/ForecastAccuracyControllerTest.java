@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -39,5 +40,16 @@ class ForecastAccuracyControllerTest {
         mvc.perform(get("/api/v1/forecasts/accuracy")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.modelVersion").value("statistical-v2"));
         mvc.perform(get("/api/v1/forecasts/station/3/verification")).andExpect(status().isOk());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void earlyWarningScoresAreNotFoundUntilTheModelHasTrained() throws Exception {
+        when(accuracyService.earlyWarning()).thenReturn(Optional.empty());
+        mvc.perform(get("/api/v1/forecasts/early-warning")).andExpect(status().isNotFound());
+
+        when(accuracyService.earlyWarning()).thenReturn(Optional.of(Map.of("modelVersion", "gb-risk-v1")));
+        mvc.perform(get("/api/v1/forecasts/early-warning")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.modelVersion").value("gb-risk-v1"));
     }
 }

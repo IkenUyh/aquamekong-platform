@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { skillPercent, type ForecastAccuracy, type LeadAccuracy, type StationAccuracy } from '../api/accuracyApi';
+import {
+  skillPercent, type EarlyWarningEvaluation, type ForecastAccuracy, type LeadAccuracy, type StationAccuracy,
+} from '../api/accuracyApi';
+import { CROP_PRESETS } from '../utils/crops';
 import { useForecastVerification } from '../hooks/useForecastAccuracy';
 import { formatNumber, SALINITY_THRESHOLD } from '../utils/salinity';
 
@@ -35,6 +38,69 @@ export function ForecastAccuracyCard({ accuracy }: { accuracy: ForecastAccuracy 
         Chạy lại mô hình cho từng ngày từ {shortDate(accuracy.from)} đến {shortDate(accuracy.to)}, mỗi lần chỉ dùng số đo có tới hôm đó,
         rồi so với số đo thật của mọi trạm.
         {sameAsBaseline && ' Mô hình hiện tại giữ nguyên số đo mới nhất: cách này sai ít hơn kéo dài xu hướng gần đây.'}
+      </p>
+    </div>
+  );
+}
+
+/** Nhãn ngưỡng: ngưỡng chung 4‰ hoặc các loại cây dùng ngưỡng đó */
+function thresholdLabel(threshold: number): string {
+  if (threshold === SALINITY_THRESHOLD) return `${formatNumber(threshold)}‰ (ngưỡng chung)`;
+  const crops = CROP_PRESETS.filter((c) => c.threshold === threshold).map((c) => c.crop.toLowerCase());
+  return crops.length > 0 ? `${formatNumber(threshold)}‰ (${crops.join(', ')})` : `${formatNumber(threshold)}‰`;
+}
+
+/**
+ * Cảnh báo sớm trên các mùa khô cũ: mỗi mùa, mô hình rủi ro chỉ học số đo trước mùa đó rồi chạy lại từng sáng
+ * như app thật (ml-service app/early_warning/episodes.py mô phỏng đúng cách app báo người theo dõi trạm).
+ */
+export function EarlyWarningCard({ evaluation }: { evaluation: EarlyWarningEvaluation }) {
+  const thresholds = evaluation.seasons[0]?.thresholds.map((t) => t.threshold) ?? [];
+  const [threshold, setThreshold] = useState(thresholds.includes(SALINITY_THRESHOLD) ? SALINITY_THRESHOLD : thresholds[0]);
+  const seasons = [...evaluation.seasons].reverse();
+  return (
+    <div className="card p-3 text-xs text-gray-600 space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-gray-900">Cảnh báo sớm trên các mùa khô đã qua</p>
+        <label className="flex items-center gap-2">
+          <span className="sr-only">Ngưỡng</span>
+          <select className="field w-auto py-1 text-xs" value={threshold} onChange={(e) => setThreshold(Number(e.target.value))}>
+            {thresholds.map((t) => <option key={t} value={t}>{thresholdLabel(t)}</option>)}
+          </select>
+        </label>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full num">
+          <thead>
+            <tr className="text-left text-gray-500">
+              <th className="font-normal py-1 pr-2">Mùa khô</th>
+              <th className="font-normal py-1 pr-2 text-right">Lần vượt ngưỡng</th>
+              <th className="font-normal py-1 pr-2 text-right">Đã cảnh báo từ trước</th>
+              <th className="font-normal py-1 text-right">Báo sớm đúng</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 text-gray-700">
+            {seasons.map((s) => {
+              const t = s.thresholds.find((x) => x.threshold === threshold);
+              if (!t) return null;
+              return (
+                <tr key={s.label}>
+                  <td className="py-1 pr-2 whitespace-nowrap">{s.label.replace('Mùa khô ', '')}</td>
+                  <td className="py-1 pr-2 text-right">{t.onsets}</td>
+                  <td className="py-1 pr-2 text-right">
+                    {t.covered}{t.onsets > 0 && <span className="text-gray-400"> ({pct(t.covered / t.onsets)})</span>}
+                  </td>
+                  <td className="py-1 text-right">{t.hits}/{t.warnings}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-gray-400">
+        Mỗi mùa, mô hình chỉ học số đo trước mùa đó rồi chạy lại từng sáng như app thật. Đã cảnh báo từ trước: lần trạm bắt đầu
+        vượt ngưỡng mà từ hôm trước app đã báo vượt hoặc có nguy cơ, chưa báo hết mặn; nếu chỉ giữ nguyên số đo mới nhất thì
+        luôn là 0. Báo sớm đúng: trong các lần app báo nguy cơ khi số đo còn dưới ngưỡng, bao nhiêu lần sau đó mặn vượt thật.
       </p>
     </div>
   );

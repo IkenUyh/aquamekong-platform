@@ -4,6 +4,7 @@ import com.aquamekong.entity.station.Station;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 /** Một tài khoản theo dõi một trạm, với ngưỡng độ mặn riêng (‰), thường theo loại cây trồng. */
@@ -39,6 +40,10 @@ public class StationWatch {
     @Column(name = "forecast_exceeding", nullable = false)
     @Builder.Default
     private boolean forecastExceeding = false;
+
+    /** Ngày cuối dự báo từng báo có thể vượt ngưỡng: cảnh báo giữ tới hết ngày này (V13) */
+    @Column(name = "risk_until")
+    private LocalDate riskUntil;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;

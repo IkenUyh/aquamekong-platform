@@ -2,6 +2,21 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [Unreleased]
+
+### Thêm mới
+- **Cảnh báo sớm bằng mô hình rủi ro**: mỗi ngày dự báo có thêm mức độ mặn có thể lên tới (phân vị 80%, gradient boosting học trên 5 năm số đo). Mức này vượt ngưỡng thì trạm theo dõi báo "có thể vượt từ ngày ..., nên trữ nước ngọt trước ngày này", khuyến nghị vận hành nêu trạm cần trữ nước trước ngày nào, trang Dự báo vẽ đường "Có thể lên tới" và nêu trạm có nguy cơ. ml-service tự học lại khi có số đo mới.
+- **Chấm cảnh báo sớm trên các mùa khô đã qua**: mỗi mùa một mô hình chỉ học số đo trước mùa đó, rồi mô phỏng từng sáng như app thật. Trang Dự báo có bảng theo mùa và theo ngưỡng (4‰ và ngưỡng theo cây trồng): số lần trạm bắt đầu vượt, số lần app đã cảnh báo từ trước, số lần báo sớm đúng. Mùa khô 2025–2026, ngưỡng 4‰: 52/70 lần vượt app đã cảnh báo từ trước (giữ nguyên số mới nhất: 0), 12/14 lần báo sớm đúng.
+- **Phát lại kèm cảnh báo sớm**: trong các mùa khô đã chạy lại, nhật ký có cảnh báo sớm app lẽ ra đã gửi (và kết quả khi tới ngày rõ), lần vượt ngưỡng ghi "đã báo trước N ngày", biểu đồ có số trạm đang có cảnh báo sớm, và mục tổng hợp của giai đoạn.
+
+### Thay đổi
+- Trạm theo dõi chỉ xét 7 ngày tới, và đã báo có thể vượt ngày nào thì giữ cảnh báo tới hết ngày đó, để app không báo "đã giảm" ngay trước khi mặn vượt thật.
+- Khuyến nghị vận hành bỏ qua số đo cũ hơn 3 ngày (trạm mất tín hiệu).
+
+### Hạn chế đã biết
+- Mô hình rủi ro bắt được nhiều lần vượt hơn cách "giữ cảnh báo thêm vài ngày sau lần vượt cuối", nhưng cũng cảnh báo nhiều buổi sáng hơn; tỉ lệ buổi sáng cảnh báo có ích của hai cách gần bằng nhau. Dữ liệu RYNAN hằng ngày chưa có lưu lượng thượng nguồn và thủy triều để mô hình học thêm.
+- Mức có thể lên tới đặt ở phân vị 80% nhưng trên các mùa đã qua, số thật vượt mức này 17–37% số ngày (lý thuyết 20%).
+
 ## [0.3.0] - 2026-10-10
 
 ### Thêm mới

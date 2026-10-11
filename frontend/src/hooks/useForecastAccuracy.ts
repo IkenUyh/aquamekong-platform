@@ -10,6 +10,16 @@ export function useForecastAccuracy(days = 180) {
   });
 }
 
+/** Điểm cảnh báo sớm trên các mùa khô cũ; 404 (mô hình chưa học xong lần đầu) thì không thử lại */
+export function useEarlyWarningEvaluation() {
+  return useQuery({
+    queryKey: ['forecasts', 'early-warning'],
+    queryFn: accuracyApi.earlyWarning,
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+  });
+}
+
 export function useForecastVerification(stationId: number, enabled: boolean, days = 30) {
   return useQuery({
     queryKey: ['forecasts', 'verification', stationId, days],
