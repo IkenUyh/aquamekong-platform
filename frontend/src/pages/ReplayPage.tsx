@@ -6,7 +6,7 @@ import { MetricCard } from '../components/MetricCard';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
 import { useReplay, useReplayBounds } from '../hooks/useReplay';
 import { dryseasonPresets, type Replay, type ReplayEarlyWarning, type ReplayEvent } from '../api/replayApi';
-import { formatNumber, SALINITY_CLASS_COLORS } from '../utils/salinity';
+import { formatNumber, formatSalinity, SALINITY_CLASS_COLORS } from '../utils/salinity';
 
 /** Số ngày phát mỗi giây */
 const SPEEDS = [1, 2, 5, 10];
@@ -32,7 +32,7 @@ function eventDetail(e: LoggedEvent, today: string): { text: React.ReactNode; cl
       className: 'text-yellow-800',
       text: (
         <>
-          Cảnh báo sớm · có thể vượt từ {e.expectedDate ? formatDate(e.expectedDate, false) : '—'} (tới <span className="num">{formatNumber(e.value)}‰</span>)
+          Cảnh báo sớm · có thể vượt từ {e.expectedDate ? formatDate(e.expectedDate, false) : '—'} (tới <span className="num">{formatSalinity(e.value)}‰</span>)
           {known && (e.outcome === 'HIT' ? ' · đã vượt thật' : ' · không vượt')}
         </>
       ),
@@ -44,7 +44,7 @@ function eventDetail(e: LoggedEvent, today: string): { text: React.ReactNode; cl
     className: opened ? 'text-red-700' : 'text-green-700',
     text: (
       <>
-        {opened ? 'Vượt ngưỡng' : 'Về dưới ngưỡng'} · <span className="num">{formatNumber(e.value)}‰</span>
+        {opened ? 'Vượt ngưỡng' : 'Về dưới ngưỡng'} · <span className="num">{formatSalinity(e.value)}‰</span>
         {opened && e.warnedDaysAhead != null && ` · đã báo trước ${e.warnedDaysAhead} ngày`}
       </>
     ),
@@ -211,7 +211,7 @@ function Player({ replay }: { replay: Replay }) {
         />
         <MetricCard
           label="Độ mặn cao nhất"
-          value={formatNumber(peak?.value)}
+          value={formatSalinity(peak?.value)}
           unit={peak ? '‰' : undefined}
           hint={peak?.name ?? 'không có số đo'}
         />

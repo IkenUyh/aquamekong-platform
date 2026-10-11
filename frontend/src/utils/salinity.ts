@@ -42,6 +42,9 @@ export function formatNumber(value: number | null | undefined, digits = 2, fixed
   return value == null ? '—' : value.toLocaleString('vi-VN', { maximumFractionDigits: digits, minimumFractionDigits: fixed ? digits : 0 });
 }
 
+/** Độ mặn: luôn 2 chữ số lẻ, để cùng một số đo hiện giống nhau ở mọi màn hình ("1,90" cạnh "1,87", không phải "1,9") */
+export const formatSalinity = (value: number | null | undefined): string => formatNumber(value, 2, true);
+
 /** Sông mặc định ml-service gán khi nạp trạm không có thông tin sông (ingest/stations.py DEFAULT_RIVER) */
 const UNCLASSIFIED_RIVER = 'Chưa phân loại';
 
@@ -67,23 +70,33 @@ export function metricLabel(metricType: string): { label: string; unit: string }
 export const ONLINE_WINDOW_HOURS = 72;
 export const ONLINE_WINDOW_MS = ONLINE_WINDOW_HOURS * 3600_000;
 
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * Ngày/tháng "07/10". Không dùng toLocaleDateString: ICU vi-VN cho ngày + tháng ra "07-10",
+ * lệch với ngày đủ năm "07/10/2026" ngay bên cạnh.
+ */
+export const formatDayMonth = (d: Date): string => `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`;
+
+/** Ngày đủ năm "07/10/2026" */
+export const formatFullDate = (d: Date): string => `${formatDayMonth(d)}/${d.getFullYear()}`;
+
 /**
  * Thời điểm đo để hiển thị. Số liệu RYNAN theo ngày ghi lúc 00:00 (giờ không mang thông tin): "ngày 07/10";
- * số đo có giờ thật: "lúc 14:30, 07/10". prefix=false bỏ chữ "ngày"/"lúc" (cột bảng).
+ * số đo có giờ thật: "lúc 14:30 07/10". prefix=false bỏ chữ "ngày"/"lúc" (cột bảng), withYear thêm năm.
  */
-export function formatMeasuredAt(iso: string, prefix = true): string {
+export function formatMeasuredAt(iso: string, prefix = true, withYear = false): string {
   const d = new Date(iso);
   const daily = d.getHours() === 0 && d.getMinutes() === 0;
-  const text = daily
-    ? d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
-    : d.toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+  const date = withYear ? formatFullDate(d) : formatDayMonth(d);
+  const text = daily ? date : `${pad2(d.getHours())}:${pad2(d.getMinutes())} ${date}`;
   return prefix ? `${daily ? 'ngày' : 'lúc'} ${text}` : text;
 }
 
-/** Ngày dạng YYYY-MM-DD (không có giờ) theo cùng kiểu với formatMeasuredAt, vd. "08-10" */
+/** Ngày dạng YYYY-MM-DD (không có giờ) theo cùng kiểu với formatMeasuredAt, vd. "08/10" */
 export function formatDay(isoDate: string): string {
   const [y, m, d] = isoDate.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+  return formatDayMonth(new Date(y, m - 1, d));
 }
 
 export function isReporting(lastMeasuredAt: string | null | undefined, now = Date.now()): boolean {

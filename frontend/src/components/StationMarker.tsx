@@ -3,7 +3,7 @@ import L from 'leaflet';
 
 import type { GeoJsonFeature } from '../types';
 import {
-  classifySalinity, formatMeasuredAt, formatNumber, riverOf, SALINITY_CLASS_COLORS, SALINITY_CLASS_SHORT_LABELS, type SalinityClass,
+  classifySalinity, formatMeasuredAt, formatNumber, formatSalinity, riverOf, SALINITY_CLASS_COLORS, SALINITY_CLASS_SHORT_LABELS, type SalinityClass,
 } from '../utils/salinity';
 import { METRIC_SCALES, type ColorMetric } from '../utils/metricScales';
 
@@ -58,7 +58,7 @@ export function StationMarker({ feature, isSelected, onClick, metric, showName }
   const level = classifySalinity(properties.latestSalinity);
   const scale = METRIC_SCALES[metric];
   const value = scale.value(properties);
-  const valueText = value == null ? '—' : `${formatNumber(value, scale.digits)} ${scale.unit}`;
+  const valueText = value == null ? '—' : `${formatNumber(value, scale.digits, true)} ${scale.unit}`;
   const bin = scale.binOf(value);
   // Trạm sát nhau thì nhãn đè lên nhau: mức cao hơn nằm trên (bins xếp từ cao xuống thấp, "chưa có dữ liệu" cuối).
   // Bước 100 lớn hơn chênh lệch toạ độ y (Leaflet xếp theo y) giữa hai marker đang đè nhau.
@@ -154,7 +154,7 @@ function MetricRow({
           color: level ? SALINITY_CLASS_COLORS[level] : '#4A5568',
         }}
       >
-        {value !== null && value !== undefined ? `${formatNumber(value)} ${unit}` : '—'}
+        {value !== null && value !== undefined ? `${unit === '‰' ? formatSalinity(value) : formatNumber(value)} ${unit}` : '—'}
       </span>
     </div>
   );
