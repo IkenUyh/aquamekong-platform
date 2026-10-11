@@ -36,14 +36,26 @@ function createIcon(color: string): L.DivIcon {
   return icon;
 }
 
-/** Lần đầu có marker: canh khung vừa các trạm thay vì giữ center/zoom mặc định */
+/**
+ * Lần đầu có marker: canh khung vừa các trạm thay vì giữ center/zoom mặc định. Khung chưa có kích thước thật
+ * (cột còn đang dàn trang) thì fit lúc đó sẽ zoom ra cả Đông Nam Á, nên đợi tới lần đổi cỡ đầu tiên.
+ */
 function FitToMarkersOnce({ markers }: { markers: MarkerPoint[] }) {
   const map = useMap();
   const done = useRef(false);
   useEffect(() => {
     if (done.current || markers.length === 0) return;
-    map.fitBounds(L.latLngBounds(markers.map((m) => [m.lat, m.lng] as [number, number])), { padding: [24, 24] });
-    done.current = true;
+    const fit = () => {
+      const size = map.getSize();
+      if (size.x < 50 || size.y < 50) return false;
+      map.fitBounds(L.latLngBounds(markers.map((m) => [m.lat, m.lng] as [number, number])), { padding: [24, 24] });
+      done.current = true;
+      return true;
+    };
+    if (fit()) return;
+    const onResize = () => { if (fit()) map.off('resize', onResize); };
+    map.on('resize', onResize);
+    return () => { map.off('resize', onResize); };
   }, [map, markers]);
   return null;
 }

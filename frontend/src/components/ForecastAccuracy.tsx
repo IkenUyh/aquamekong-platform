@@ -5,10 +5,10 @@ import {
 } from '../api/accuracyApi';
 import { CROP_PRESETS } from '../utils/crops';
 import { useForecastVerification } from '../hooks/useForecastAccuracy';
-import { formatNumber, SALINITY_THRESHOLD } from '../utils/salinity';
+import { formatDay, formatNumber, SALINITY_THRESHOLD } from '../utils/salinity';
 
 const SHOWN_LEADS = [1, 3, 7];
-const shortDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+const shortDate = formatDay;
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
 function comparison(a: LeadAccuracy): string {
@@ -106,13 +106,14 @@ export function EarlyWarningCard({ evaluation }: { evaluation: EarlyWarningEvalu
   );
 }
 
-/** Dòng độ tin cậy trên thẻ trạm, kèm nút mở biểu đồ dự báo đặt cạnh số đo thật */
-export function StationAccuracy({ stationId, accuracy, seriesLead }: {
+/** Dòng độ tin cậy của trạm, kèm nút mở biểu đồ dự báo đặt cạnh số đo thật (defaultOpen: mở sẵn, khi bấm từ cột sai số) */
+export function StationAccuracy({ stationId, accuracy, seriesLead, defaultOpen = false }: {
   stationId: number;
   accuracy: StationAccuracy | undefined;
   seriesLead: number;
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const { data: verification = [] } = useForecastVerification(stationId, open);
   const lead = accuracy?.byLead.find((l) => l.lead === seriesLead);
   if (!accuracy || !lead) return null;

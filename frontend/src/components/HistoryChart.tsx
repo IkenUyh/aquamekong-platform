@@ -1,7 +1,7 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import type { Measurement } from '../types';
-import { SALINITY_THRESHOLD } from '../utils/salinity';
+import { formatDayMonth, formatMeasuredAt, SALINITY_THRESHOLD } from '../utils/salinity';
 
 interface HistoryChartProps {
   /** Chỉ số độ mặn (metricType = salinity), mới nhất trước — như API trả về */
@@ -23,9 +23,9 @@ export function HistoryChart({ metrics, stationName, threshold = SALINITY_THRESH
     const d = new Date(m.recordedAt);
     return {
       time: daily && spansDays
-        ? d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
+        ? formatDayMonth(d)
         : spansDays
-        ? d.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+        ? formatMeasuredAt(m.recordedAt, false)
         : d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       salinity: Math.round(m.value * 100) / 100,
     };
