@@ -1,0 +1,11 @@
+# Caddy tự xin và gia hạn chứng chỉ Let's Encrypt cho {$DOMAIN}, và chuyển http:// sang https://.
+# Bản ghi A của tên miền phải trỏ về IP server trước khi chạy, nếu không Let's Encrypt không cấp được.
+{$DOMAIN} {
+	# nginx trong container frontend phục vụ trang và chuyển /api tới backend (kể cả SSE)
+	reverse_proxy frontend:80
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+}
