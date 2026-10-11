@@ -7,6 +7,7 @@ import { BottomNav } from '../components/BottomNav';
 import { MetricCard } from '../components/MetricCard';
 import { DataFreshnessBanner } from '../components/DataFreshnessBanner';
 import { NearbyStations } from '../components/NearbyStations';
+import { SituationStrip } from '../components/SituationStrip';
 import { RecommendationList } from '../components/RecommendationList';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
 import { useStationsList } from '../hooks/useStations';
@@ -15,7 +16,7 @@ import { recommendationApi } from '../api/recommendationApi';
 import { percentChange, reportApi } from '../api/reportApi';
 import type { Station } from '../types';
 import {
-  classifySalinity, formatMeasuredAt, formatNumber, isReporting, ONLINE_WINDOW_HOURS, SALINITY_CLASS_COLORS, SALINITY_THRESHOLD,
+  classifySalinity, formatDay, formatNumber, formatSalinity, isReporting, ONLINE_WINDOW_HOURS, SALINITY_CLASS_COLORS, SALINITY_THRESHOLD,
 } from '../utils/salinity';
 
 /** Thang của thanh ngang: 2 × ngưỡng, để vạch ngưỡng nằm giữa */
@@ -53,7 +54,7 @@ function StationRanking({ stations, selectedId, onSelect }: {
                 {!isReporting(s.lastMeasuredAt) && <span className="ml-1.5 text-xs text-amber-700">· mất tín hiệu</span>}
               </span>
               <span className={`text-sm num font-semibold ${above ? 'text-red-600' : 'text-gray-900'}`}>
-                {formatNumber(s.latestSalinity)}<span className="ml-0.5 text-xs font-normal text-gray-500">‰</span>
+                {formatSalinity(s.latestSalinity)}<span className="ml-0.5 text-xs font-normal text-gray-500">‰</span>
               </span>
             </div>
             <div className="mt-1.5"><SalinityBar value={s.latestSalinity} /></div>
@@ -97,7 +98,7 @@ export function OverviewPage() {
 
   const trendData = trend.map((p) => ({
     ...p,
-    label: new Date(p.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
+    label: formatDay(p.date),
   }));
   const hasTrend = trendData.some((p) => p.current != null);
 
@@ -107,43 +108,28 @@ export function OverviewPage() {
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto w-full p-4 lg:p-6 space-y-6">
           {/* Tiêu đề */}
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h1 className="text-2xl font-semibold text-gray-900">Tổng quan</h1>
-            <p className="text-sm text-gray-500 num">
-              {lastUpdate
-                ? `Số đo mới nhất ${formatMeasuredAt(lastUpdate)}`
-                : 'Chưa có số đo'}
-            </p>
-          </div>
+          <h1 className="text-2xl font-semibold text-gray-900">Tổng quan</h1>
 
           <DataFreshnessBanner />
-          <NearbyStations stations={stations} onSelect={focusStation} />
+          {/* Trạm vượt ngưỡng nêu tên trước mọi con số trung bình */}
+          <SituationStrip stations={stations} openAlerts={openAlerts} lastUpdate={lastUpdate} onSelect={focusStation} />
 
-          {/* Chỉ số chính */}
-          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-            <MetricCard
-              label={`Trạm vượt ngưỡng ${SALINITY_THRESHOLD}‰`}
-              value={`${aboveThreshold} / ${stations.length}`}
-              tone={aboveThreshold > 0 ? 'danger' : 'default'}
-              hint="theo số đo mới nhất"
-            />
-            <MetricCard
-              label="Độ mặn trung bình 7 ngày"
-              value={formatNumber(lastWeek?.avgSalinity.current, 2, true)}
-              unit="‰"
-              change={salinityChange != null ? { value: salinityChange, kind: '%', label: 'so với 7 ngày trước', upIsBad: true } : undefined}
-            />
-            <MetricCard
-              label="Trạm đang truyền dữ liệu"
-              value={`${reportingCount} / ${activeCount}`}
-              hint={`có số đo trong ${ONLINE_WINDOW_HOURS} giờ qua`}
-            />
-            <MetricCard
-              label="Cảnh báo chưa xử lý"
-              value={openAlerts.length}
-              tone={openAlerts.length > 0 ? 'danger' : 'default'}
-              hint={openAlerts.length > 0 ? undefined : 'không có cảnh báo mở'}
-            />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+            <NearbyStations stations={stations} onSelect={focusStation} />
+            <div className="grid grid-cols-2 gap-4">
+              <MetricCard
+                label="Độ mặn trung bình 7 ngày"
+                value={formatNumber(lastWeek?.avgSalinity.current, 2, true)}
+                unit="‰"
+                change={salinityChange != null ? { value: salinityChange, kind: '%', label: 'so với 7 ngày trước', upIsBad: true } : undefined}
+                hint="cả vùng"
+              />
+              <MetricCard
+                label="Trạm đang truyền dữ liệu"
+                value={`${reportingCount} / ${activeCount}`}
+                hint={`có số đo trong ${ONLINE_WINDOW_HOURS} giờ qua`}
+              />
+            </div>
           </div>
 
           {/* Bản đồ + xếp hạng trạm */}
@@ -193,7 +179,7 @@ export function OverviewPage() {
           {/* Xu hướng + khuyến nghị */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <section className="card p-4 lg:col-span-2">
-              <div className="flex items-baseline justify-between mb-3">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-3">
                 <h2 className="text-sm font-semibold text-gray-900">Độ mặn trung bình toàn vùng, 7 ngày</h2>
                 <Link to="/reports" className="text-xs font-medium text-primary hover:underline">Xem báo cáo</Link>
               </div>
@@ -201,11 +187,14 @@ export function OverviewPage() {
                 {hasTrend ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={trendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <CartesianGrid vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="label" tick={{ fill: '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
-                      <Tooltip formatter={(v: number) => [`${formatNumber(v)}‰`, 'Độ mặn TB']} />
-                      <ReferenceLine y={SALINITY_THRESHOLD} stroke="#ef4444" strokeDasharray="4 4" />
+                      {/* Trục luôn chứa ngưỡng, để thấy trung bình vùng còn cách ngưỡng bao xa */}
+                      <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false}
+                        domain={[0, (max: number) => Math.ceil(Math.max(max, SALINITY_THRESHOLD) * 1.15)]} allowDecimals={false} tickCount={6} />
+                      <Tooltip formatter={(v: number) => [`${formatSalinity(v)}‰`, 'Độ mặn TB']} />
+                      <ReferenceLine y={SALINITY_THRESHOLD} stroke="#ef4444" strokeDasharray="4 4"
+                        label={{ value: `Ngưỡng ${SALINITY_THRESHOLD}‰`, position: 'insideTopRight', fill: '#b91c1c', fontSize: 11 }} />
                       <Line type="monotone" dataKey="current" stroke="#0F3D5E" strokeWidth={2} dot={{ r: 3 }} connectNulls />
                     </LineChart>
                   </ResponsiveContainer>
