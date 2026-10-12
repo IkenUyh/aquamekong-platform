@@ -148,7 +148,10 @@ jobs:
     concurrency:
       group: production
       cancel-in-progress: false
-    environment: production
+    # url: nút "View deployment" trên GitHub mở thẳng trang web
+    environment:
+      name: production
+      url: https://aquamekong.kienhuy-dev.name.vn
     permissions:
       contents: read
       packages: read
