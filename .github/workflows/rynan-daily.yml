@@ -26,7 +26,8 @@ permissions:
 jobs:
   fetch:
     name: Fetch RYNAN → Google Drive
-    runs-on: ubuntu-latest
+    # Cùng bản Ubuntu với EC2; ubuntu-latest do GitHub tự đổi phiên bản
+    runs-on: ubuntu-26.04
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
