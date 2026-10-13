@@ -35,7 +35,8 @@ main() {
     chmod -R a+rwX data/inbox data/features
 
     "${COMPOSE[@]}" pull --quiet
-    "${COMPOSE[@]}" up -d --remove-orphans
+    # --wait: chờ mọi service healthy, không thì báo lỗi để job deploy đỏ. Backend khởi động chậm trên máy 2 GB nên chờ tới 5 phút
+    "${COMPOSE[@]}" up -d --remove-orphans --wait --wait-timeout 300
     # Xoá image cũ không còn container nào dùng, để ổ 30 GB không đầy dần
     docker image prune -f > /dev/null
 
