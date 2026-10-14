@@ -30,9 +30,11 @@ main() {
         fi
     fi
 
-    # Thư mục mount vào ml-service phải có trước (không thì Docker tạo với chủ root) và ghi được bởi uid 10001
+    # Thư mục mount vào ml-service phải có trước (không thì Docker tạo với chủ root) và ghi được bởi uid 10001.
+    # Chỉ chmod thư mục do user deploy tạo, không -R: file bên trong do ml-service tạo (chủ 10001) thì user này
+    # không chmod được, chmod -R làm hỏng deploy 14/10/2026 khi kho feature đã có file
     mkdir -p data/inbox data/features
-    chmod -R a+rwX data/inbox data/features
+    find data/inbox data/features -maxdepth 0 -user "$(id -u)" -exec chmod a+rwx {} +
 
     "${COMPOSE[@]}" pull --quiet
     # --wait: chờ mọi service healthy, không thì báo lỗi để job deploy đỏ. Backend khởi động chậm trên máy 2 GB nên chờ tới 5 phút
