@@ -183,6 +183,9 @@ jobs:
           # Token của job hết hạn khi job xong: đủ để server kéo image kể cả khi package GHCR để private
           echo "$TOKEN" | remote docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           status=0
-          remote ./aquamekong-platform/deploy/deploy.sh "${{ github.sha }}" || status=$?
+          # Checkout trước rồi mới chạy: bash đọc hết deploy.sh đang có trên server trước khi script tự checkout,
+          # nên không làm vậy thì bản sửa deploy.sh chỉ có hiệu lực từ lần deploy sau
+          remote "cd aquamekong-platform && git fetch --quiet origin && git checkout --quiet --detach ${{ github.sha }}" \
+            && remote ./aquamekong-platform/deploy/deploy.sh "${{ github.sha }}" || status=$?
           remote docker logout ghcr.io
           exit $status

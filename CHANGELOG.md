@@ -6,6 +6,7 @@ Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên
 
 ### Sửa lỗi
 - Trạm mất tín hiệu (không có số đo mới trong 3 ngày) không còn được dự báo bằng số đo cũ. Trước đây trạm Cầu Rạch Chùa - Kênh Gia Vàm ngừng gửi số đo từ 30/09 mà app vẫn dự báo 0,1‰ cho tuần sau. Giờ ml-service từ chối dự báo trạm đó, trang Dự báo và khung dự báo trên trang Bản đồ ghi "Mất tín hiệu, số đo cuối ngày 30/09", và trạm theo dõi không còn dựa vào lượt dự báo cũ của trạm này.
+- Deploy bản 0.5.1 hỏng ở bước phân quyền thư mục dữ liệu: `chmod -R` gặp file kho feature do ml-service tạo (chủ uid 10001) nên dừng trước khi kéo image mới; server vẫn chạy bản 0.5.0. Giờ chỉ chỉnh quyền thư mục, và GitHub Actions checkout commit mới trước khi chạy `deploy.sh` để bản sửa script có hiệu lực ngay lần deploy đó.
 
 ## [0.5.1] - 2026-10-14
 
