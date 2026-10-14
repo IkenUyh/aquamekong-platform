@@ -228,7 +228,9 @@ def test_predictor_falls_back_when_the_risk_model_fails(monkeypatch):
     def boom(sid, days):
         raise RuntimeError("hỏng")
 
-    index = pd.date_range("2026-01-01", periods=10, freq="D", tz="Asia/Ho_Chi_Minh")
+    # Số đo tới hôm qua: trạm mất tín hiệu thì không dự báo ở tầng nào (test_predictor_cache)
+    yesterday = pd.Timestamp.now(tz="Asia/Ho_Chi_Minh").normalize() - pd.Timedelta(days=1)
+    index = pd.date_range(end=yesterday, periods=10, freq="D")
     monkeypatch.setattr(predictor_module.Predictor, "_stgnn_forecast", lambda self, sid, days: None)
     monkeypatch.setattr(predictor_module.early_warning, "forecast", boom)
     monkeypatch.setattr(predictor_module, "load_station_metrics",
