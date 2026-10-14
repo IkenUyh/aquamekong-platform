@@ -2,7 +2,7 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
-## [Unreleased]
+## [0.5.2] - 2026-10-14
 
 ### Sửa lỗi
 - Trạm mất tín hiệu (không có số đo mới trong 3 ngày) không còn được dự báo bằng số đo cũ. Trước đây trạm Cầu Rạch Chùa - Kênh Gia Vàm ngừng gửi số đo từ 30/09 mà app vẫn dự báo 0,1‰ cho tuần sau. Giờ ml-service từ chối dự báo trạm đó, trang Dự báo và khung dự báo trên trang Bản đồ ghi "Mất tín hiệu, số đo cuối ngày 30/09", và trạm theo dõi không còn dựa vào lượt dự báo cũ của trạm này.
@@ -129,6 +129,7 @@ Bản phát hành đầu tiên.
 - Cảnh báo và khuyến nghị dựa trên số đo mới nhất, chưa dựa trên dự báo.
 - Dữ liệu RYNAN hiện có đến 31/08/2026; trạm hiện "mất tín hiệu" tới khi nạp dữ liệu mới.
 
+[0.5.2]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.3.0...v0.4.0
