@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 from typing import List, Optional
 from app.cache import get_redis
 from app.config import get_settings
-from app.early_warning.service import early_warning
+from app.early_warning.service import MAX_DATA_AGE_DAYS, early_warning
 from app.schemas.forecast import PredictionItem
 from app.services.data_loader import latest_measurement_id, load_station_metrics, load_station_info
 from app.models.hybrid_salinity_model import HybridSalinityModel
@@ -26,6 +26,23 @@ STATISTICAL_VERSION = "statistical-v2"
 
 class InsufficientDataError(ValueError):
     """Trạm không có đủ số đo gần đây cho mô hình nào, nên không dự báo (thay vì bịa số)."""
+
+
+class StaleDataError(InsufficientDataError):
+    """Trạm mất tín hiệu: số đo mới nhất quá cũ, không lấy số cũ dự báo cho những ngày tới."""
+
+
+def daily_salinity(df):
+    """Độ mặn cao nhất theo ngày (giờ VN) từ các số đo của trạm (DataFrame theo recorded_at)."""
+    daily = df["salinity"].dropna()
+    return daily.groupby(daily.index.tz_convert(TIMEZONE).date).max()
+
+
+def ensure_recent(last_day: date, today: date) -> None:
+    """Cùng mốc với mô hình rủi ro: số đo mới nhất cũ hơn MAX_DATA_AGE_DAYS ngày thì trạm mất tín hiệu, không dự báo."""
+    if (today - last_day).days > MAX_DATA_AGE_DAYS:
+        raise StaleDataError(f"Trạm mất tín hiệu: số đo độ mặn mới nhất ngày {last_day:%d/%m/%Y}, "
+                             f"cũ hơn {MAX_DATA_AGE_DAYS} ngày nên không dự báo")
 
 
 class Predictor:
@@ -96,7 +113,8 @@ class Predictor:
         Thứ tự: ST-GNN (trạm có trong model và tốt hơn giữ nguyên giá trị cũ) -> mô hình rủi ro (giữ nguyên số mới
         nhất kèm mức có thể lên tới; đã chạy lại trên các mùa khô cũ) -> Prophet riêng của trạm -> Hybrid ARIMA-CNN
         (global) -> giữ nguyên số mới nhất.
-        Mỗi mô hình lỗi thì rơi xuống tầng sau. Không đủ số đo cho tầng cuối thì InsufficientDataError.
+        Mỗi mô hình lỗi thì rơi xuống tầng sau. Không đủ số đo cho tầng cuối thì InsufficientDataError; trạm có số đo
+        mới nhất cũ hơn MAX_DATA_AGE_DAYS ngày (mất tín hiệu) thì StaleDataError, kể cả khi có Prophet/Hybrid.
         """
         stgnn = self._stgnn_forecast(station_id, days_ahead)
         if stgnn:
@@ -108,6 +126,16 @@ class Predictor:
                 return risk
         except Exception as e:
             logger.error(f"Risk model prediction failed for station {station_id}: {e}", exc_info=True)
+
+        # Các tầng sau đều dự báo từ số đo của trạm: không có số đo gần đây, hoặc trạm mất tín hiệu, thì dừng ở đây
+        lookback = get_settings().default_lookback_days
+        df = load_station_metrics(station_id, lookback_days=lookback)
+        daily = daily_salinity(df) if not df.empty and "salinity" in df else None
+        if daily is None or daily.empty:
+            raise InsufficientDataError(f"Trạm {station_id} không có số đo độ mặn trong {lookback} ngày qua")
+        today = datetime.now(TIMEZONE).date()
+        ensure_recent(daily.index[-1], today)
+
         if self.prophet.has_trained_model(station_id):
             try:
                 logger.info(f"Using Prophet model for station {station_id}")
@@ -122,12 +150,8 @@ class Predictor:
             except Exception as e:
                 logger.error(f"Hybrid prediction failed for station {station_id}: {e}")
 
-        df = load_station_metrics(station_id, lookback_days=get_settings().default_lookback_days)
-        if df.empty or "salinity" not in df:
-            raise InsufficientDataError(f"Trạm {station_id} không có số đo độ mặn trong "
-                                        f"{get_settings().default_lookback_days} ngày qua")
         logger.info(f"No trained model for station {station_id}, using statistical estimation")
-        return self._statistical_forecast(df, days_ahead)
+        return statistical_forecast(daily, days_ahead, today)
 
     def _stgnn_forecast(self, station_id, days_ahead: int) -> Optional[List[PredictionItem]]:
         try:
@@ -153,9 +177,7 @@ class Predictor:
     @staticmethod
     def _statistical_forecast(df, days_ahead: int, today: Optional[date] = None) -> List[PredictionItem]:
         """Dự báo thống kê từ các số đo của trạm (DataFrame theo recorded_at), cho các ngày sau hôm nay giờ VN."""
-        daily = df["salinity"].dropna()
-        daily = daily.groupby(daily.index.tz_convert(TIMEZONE).date).max()
-        return statistical_forecast(daily, days_ahead, today or datetime.now(TIMEZONE).date())
+        return statistical_forecast(daily_salinity(df), days_ahead, today or datetime.now(TIMEZONE).date())
 
 
 def statistical_forecast(daily, days_ahead: int, today: date) -> List[PredictionItem]:
@@ -173,6 +195,8 @@ def statistical_forecast(daily, days_ahead: int, today: date) -> List[Prediction
 
     if len(daily) < MIN_STATISTICAL_DAYS:
         raise InsufficientDataError(f"Trạm chỉ có {len(daily)} ngày số đo độ mặn gần đây, chưa đủ để dự báo")
+    # Backtest cũng qua đây: ngày phát hành mà trạm đang mất tín hiệu thì bỏ qua, như app chạy thật
+    ensure_recent(daily.index[-1], today)
 
     level = float(daily.iloc[-1])
     changes = np.diff(daily.tail(14).values)

@@ -142,6 +142,21 @@ class StationWatchServiceTest {
     }
 
     @Test
+    void forecastFromAStationThatStoppedReportingIsIgnoredButAFlaggedDayIsKept() {
+        // Số đo cuối 01/10, lượt dự báo cũ còn thấy 3‰ ngày 10/10: không được báo vượt từ số liệu đã mất
+        StationSnapshot silent = new StationSnapshot(reading(1.0, 1), List.of(risky(10, 3.0, 3.5)));
+
+        Outlook outlook = StationWatchService.outlook(silent, 2.0, null, NOW);
+        Outlook flagged = StationWatchService.outlook(silent, 2.0, LocalDate.of(2026, 10, 11), NOW);
+
+        assertThat(outlook.exceeding()).isFalse();
+        assertThat(outlook.firstExceedDate()).isNull();
+        assertThat(outlook.riskMax()).isNull();
+        assertThat(flagged.exceeding()).isTrue();
+        assertThat(flagged.riskUntil()).isEqualTo(LocalDate.of(2026, 10, 11));
+    }
+
+    @Test
     void savingRemembersTheCurrentStateSoTheJobOnlyReportsChanges() {
         when(watchRepository.findByUserIdAndStationId(1L, 3L)).thenReturn(Optional.empty());
         when(measurementRepository.findLatestByStationIdAndMetricType(3L, "salinity"))
