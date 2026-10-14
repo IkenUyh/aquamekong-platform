@@ -2,6 +2,15 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [0.5.1] - 2026-10-14
+
+### Thay đổi
+- Mỗi lượt lấy dữ liệu RYNAN hằng ngày lấy lại 3 ngày gần nhất thay vì chỉ hôm qua: ngày nào cả hai lượt đều hỏng (GitHub lỗi, RYNAN sập buổi sáng) sẽ được lượt hôm sau lấy bù. Số lần gọi API RYNAN không đổi, ml-service bỏ qua số đo đã có.
+- GitHub Actions chạy trên `ubuntu-26.04`, cùng bản Ubuntu với server, thay cho `ubuntu-latest` (GitHub chuyển `ubuntu-latest` từ 24.04 sang 26.04 trong khoảng 19/10–19/11/2026).
+
+### Sửa lỗi
+- Deploy chờ mọi service healthy (tối đa 5 phút) rồi mới báo thành công. Trước đây chỉ chờ backend, nên ml-service hoặc frontend lỗi healthcheck mà job deploy vẫn xanh. Mục production trên GitHub có nút mở thẳng trang web.
+
 ## [0.5.0] - 2026-10-11
 
 ### Thêm mới
@@ -114,6 +123,7 @@ Bản phát hành đầu tiên.
 - Cảnh báo và khuyến nghị dựa trên số đo mới nhất, chưa dựa trên dự báo.
 - Dữ liệu RYNAN hiện có đến 31/08/2026; trạm hiện "mất tín hiệu" tới khi nạp dữ liệu mới.
 
+[0.5.1]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.2.1...v0.3.0
