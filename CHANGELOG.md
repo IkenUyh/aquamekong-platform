@@ -2,6 +2,11 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [Unreleased]
+
+### Sửa lỗi
+- Trạm mất tín hiệu (không có số đo mới trong 3 ngày) không còn được dự báo bằng số đo cũ. Trước đây trạm Cầu Rạch Chùa - Kênh Gia Vàm ngừng gửi số đo từ 30/09 mà app vẫn dự báo 0,1‰ cho tuần sau. Giờ ml-service từ chối dự báo trạm đó, trang Dự báo và khung dự báo trên trang Bản đồ ghi "Mất tín hiệu, số đo cuối ngày 30/09", và trạm theo dõi không còn dựa vào lượt dự báo cũ của trạm này.
+
 ## [0.5.1] - 2026-10-14
 
 ### Thay đổi
