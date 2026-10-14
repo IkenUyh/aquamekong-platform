@@ -58,6 +58,12 @@ def _daily(values, last_day):
     return pd.DataFrame({"salinity": values}, index=index)
 
 
+def _recent_metrics(monkeypatch, predictor_module, last_day=None):
+    last_day = last_day or datetime.now(VN).date() - timedelta(days=1)
+    monkeypatch.setattr(predictor_module, "load_station_metrics",
+                        lambda sid, lookback_days: _daily([1.0, 1.1, 1.2, 1.3], last_day))
+
+
 def test_statistical_forecast_starts_tomorrow_from_the_recent_level():
     today = date(2026, 10, 9)
     # Tháng trước mặn 3‰, 14 ngày gần đây đứng yên quanh 0,5‰: không được bị kéo lên bởi số cũ
@@ -96,6 +102,31 @@ def test_statistical_forecast_needs_a_few_days_of_data():
 
     with pytest.raises(InsufficientDataError):
         Predictor._statistical_forecast(_daily([1.0, 1.2], date(2026, 10, 8)), 3, today=date(2026, 10, 9))
+
+
+def test_statistical_forecast_refuses_a_station_that_went_silent():
+    from app.services.predictor import StaleDataError
+
+    today = date(2026, 10, 12)
+    # Số đo cuối 3 ngày trước vẫn dự báo (file RYNAN có thể về trễ), 4 ngày thì trạm mất tín hiệu
+    assert Predictor._statistical_forecast(_daily([0.1] * 5, today - timedelta(days=3)), 7, today=today)
+    with pytest.raises(StaleDataError, match="30/09/2026"):
+        Predictor._statistical_forecast(_daily([0.1] * 5, date(2026, 9, 30)), 7, today=today)
+
+
+def test_silent_station_gets_no_forecast_from_any_model(monkeypatch):
+    # Cầu Rạch Chùa ngừng gửi số đo từ 30/09: không được lấy số 0,1‰ của 12 ngày trước dự báo cho tuần tới
+    import app.services.predictor as predictor_module
+    from app.services.predictor import StaleDataError
+
+    monkeypatch.setattr(predictor_module.stgnn_forecaster, "forecast", lambda code, days: None)
+    monkeypatch.setattr(predictor_module, "load_station_info", lambda sid: {"code": "X"})
+    _recent_metrics(monkeypatch, predictor_module, last_day=datetime.now(VN).date() - timedelta(days=12))
+    p = Predictor()
+    monkeypatch.setattr(p.prophet, "has_trained_model", lambda s: pytest.fail("không được tới Prophet khi trạm mất tín hiệu"))
+
+    with pytest.raises(StaleDataError):
+        p._predict_uncached(1, 7)
 
 
 def test_invalidate_clears_only_that_station(fake_redis, monkeypatch):
@@ -145,6 +176,7 @@ def test_stgnn_is_tried_first_and_carries_its_data_end(monkeypatch):
 
 def test_falls_back_when_stgnn_cannot_serve_the_station(monkeypatch):
     import app.services.predictor as predictor_module
+    _recent_metrics(monkeypatch, predictor_module)
 
     monkeypatch.setattr(predictor_module, "load_station_info", lambda sid: {"code": "OTHER"})
     monkeypatch.setattr(predictor_module.stgnn_forecaster, "forecast", lambda code, days: None)
@@ -157,6 +189,7 @@ def test_falls_back_when_stgnn_cannot_serve_the_station(monkeypatch):
 
 def test_stale_stgnn_gives_way_to_other_models(monkeypatch):
     import app.services.predictor as predictor_module
+    _recent_metrics(monkeypatch, predictor_module)
     from app.stgnn.forecaster import GraphForecast, StationForecast
 
     end = datetime.now(VN).date() - timedelta(days=30)   # kho feature dừng 30 ngày trước

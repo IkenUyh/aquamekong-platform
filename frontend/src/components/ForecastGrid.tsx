@@ -1,13 +1,15 @@
 import React, { Fragment, useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { SalinityForecast, Station } from '../types';
-import { classifySalinity, formatDay, formatSalinity, SALINITY_THRESHOLD } from '../utils/salinity';
+import { classifySalinity, formatDay, formatMeasuredAt, formatSalinity, SALINITY_THRESHOLD } from '../utils/salinity';
 
 export interface StationForecast {
   station: Station;
   forecasts: SalinityForecast[];
   isLoading: boolean;
   isError: boolean;
+  /** Trạm mất tín hiệu (utils/salinity isReporting): thời điểm số đo cuối. Không dự báo từ số cũ */
+  silentSince: string | null;
 }
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
@@ -92,7 +94,7 @@ export function ForecastGrid({ items, dates, dayIndex, onSelectDay, expandedId, 
           </thead>
           <tbody>
             {items.map((item) => {
-              const { station, forecasts, isLoading, isError } = item;
+              const { station, forecasts, isLoading, isError, silentSince } = item;
               const expanded = expandedId === station.id;
               return (
                 <Fragment key={station.id}>
@@ -109,10 +111,15 @@ export function ForecastGrid({ items, dates, dayIndex, onSelectDay, expandedId, 
                         </span>
                       </button>
                     </th>
-                    <td className="border-b border-gray-100 px-2 py-2 text-right num text-gray-900 whitespace-nowrap">
+                    <td className={`border-b border-gray-100 px-2 py-2 text-right num whitespace-nowrap ${silentSince ? 'text-gray-400' : 'text-gray-900'}`}
+                      title={silentSince ? `Số đo ${formatMeasuredAt(silentSince)}` : undefined}>
                       {formatSalinity(station.latestSalinity)}
                     </td>
-                    {isLoading || isError || forecasts.length === 0 ? (
+                    {silentSince ? (
+                      <td colSpan={Math.max(dates.length, 1)} className="border-b border-gray-100 px-2 py-2 text-xs text-gray-500">
+                        Mất tín hiệu, số đo cuối {formatMeasuredAt(silentSince)}: không dự báo
+                      </td>
+                    ) : isLoading || isError || forecasts.length === 0 ? (
                       <td colSpan={Math.max(dates.length, 1)} className="border-b border-gray-100 px-2 py-2 text-xs text-gray-400">
                         {isLoading
                           ? <span className="block h-3 w-full max-w-xs rounded bg-gray-100" aria-label="Đang chạy dự báo" />

@@ -109,7 +109,9 @@ public class StationWatchService {
         Measurement latest = snapshot.latest();
         boolean fresh = latest != null && latest.getValue() != null
                 && !latest.getRecordedAt().toInstant().isBefore(now.minus(MAX_MEASUREMENT_AGE));
-        List<SalinityForecast> upcoming = snapshot.forecasts().stream()
+        // Trạm mất tín hiệu: bỏ cả lượt dự báo cũ, như ml-service không dự báo khi số đo mới nhất quá cũ. Ngày nguy cơ
+        // đã báo (riskUntil) vẫn giữ tới hết ngày đó
+        List<SalinityForecast> upcoming = !fresh ? List.of() : snapshot.forecasts().stream()
                 .filter(f -> f.getPredictedSalinity() != null
                         && !f.getForecastDate().isBefore(today) && !f.getForecastDate().isAfter(horizon))
                 .toList();
