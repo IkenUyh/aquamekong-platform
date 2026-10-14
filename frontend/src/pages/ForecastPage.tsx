@@ -14,7 +14,7 @@ import { forecastQueryKey, useStgnnModelInfo } from '../hooks/useForecast';
 import { useEarlyWarningEvaluation, useForecastAccuracy } from '../hooks/useForecastAccuracy';
 import type { StationAccuracy as StationAccuracyData } from '../api/accuracyApi';
 import type { SalinityForecast, StgnnModelInfo } from '../types';
-import { formatDay, formatFullDate, formatNumber, formatSalinity, SALINITY_THRESHOLD } from '../utils/salinity';
+import { formatDay, formatFullDate, formatMeasuredAt, formatNumber, formatSalinity, isReporting, SALINITY_THRESHOLD } from '../utils/salinity';
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const HORIZONS = [7, 14];
@@ -134,7 +134,7 @@ function StationForecastDetail({ item, date, accuracy, compare }: {
   return (
     <div className="space-y-3 p-4">
       <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-gray-600">
-        <span>Hiện tại <span className="font-semibold text-gray-900 num">{formatSalinity(station.latestSalinity)}‰</span></span>
+        <span>{item.silentSince ? 'Số đo cuối' : 'Hiện tại'} <span className="font-semibold text-gray-900 num">{formatSalinity(station.latestSalinity)}‰</span></span>
         {day && (
           <span><span className="num">{dayLabel(day.forecastDate).label}</span>: <span className="font-semibold text-gray-900 num">{formatSalinity(day.predictedSalinity)}‰</span></span>
         )}
@@ -146,9 +146,16 @@ function StationForecastDetail({ item, date, accuracy, compare }: {
         )}
         {model && <span className="text-gray-500">Mô hình: {model}</span>}
       </p>
-      <div className="h-[180px] rounded-md bg-white p-2">
-        <ForecastChart forecasts={forecasts} heightClass="h-full" />
-      </div>
+      {item.silentSince ? (
+        <p className="text-sm text-gray-600">
+          Trạm mất tín hiệu, số đo cuối {formatMeasuredAt(item.silentSince)}. Không dự báo khi trạm không có số đo mới
+          trong 3 ngày, để không lấy số cũ làm dự báo cho những ngày tới.
+        </p>
+      ) : (
+        <div className="h-[180px] rounded-md bg-white p-2">
+          <ForecastChart forecasts={forecasts} heightClass="h-full" />
+        </div>
+      )}
       {accuracy && <StationAccuracy stationId={station.id} seriesLead={accuracy.seriesLead} accuracy={accuracy.station} defaultOpen={compare} />}
     </div>
   );
@@ -182,15 +189,21 @@ export function ForecastPage() {
     queries: selected.map((s) => ({
       queryKey: forecastQueryKey(s.id, days),
       queryFn: () => forecastApi.getOrPredict(s.id, days),
+      // Trạm mất tín hiệu không dự báo (ml-service cũng từ chối): không lấy lượt dự báo cũ đã lưu
+      enabled: isReporting(s.lastMeasuredAt),
       staleTime: 10 * 60_000,
     })),
   });
-  const items: StationForecast[] = selected.map((station, i) => ({
-    station,
-    forecasts: results[i]?.data ?? [],
-    isLoading: results[i]?.isLoading ?? true,
-    isError: results[i]?.isError ?? false,
-  }));
+  const items: StationForecast[] = selected.map((station, i) => {
+    const silent = !isReporting(station.lastMeasuredAt);
+    return {
+      station,
+      forecasts: silent ? [] : results[i]?.data ?? [],
+      isLoading: !silent && (results[i]?.isLoading ?? true),
+      isError: !silent && (results[i]?.isError ?? false),
+      silentSince: silent ? station.lastMeasuredAt ?? null : null,
+    };
+  });
 
   // Các trạm có thể dùng mô hình khác nhau (ST-GNN chỉ có vài mốc), nên tra theo ngày chứ không theo vị trí
   const dates = [...new Set(items.flatMap((i) => i.forecasts.map((f) => f.forecastDate)))].sort();
