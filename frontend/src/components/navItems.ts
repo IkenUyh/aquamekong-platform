@@ -33,3 +33,12 @@ export const ROLE_LABELS: Record<string, string> = {
   ROLE_OPERATOR: 'Vận hành',
   ROLE_USER: 'Người dùng',
 };
+
+const ROLE_RANK = ['ROLE_ADMIN', 'ROLE_OPERATOR', 'ROLE_USER'];
+
+/** Vai trò cao nhất của tài khoản: tài khoản vừa là người dùng vừa là quản trị chỉ ghi "Quản trị" */
+export function topRoleLabel(roles?: string[]): string | undefined {
+  if (!roles?.length) return undefined;
+  const top = ROLE_RANK.find((r) => roles.includes(r)) ?? roles[0];
+  return ROLE_LABELS[top] ?? top;
+}
