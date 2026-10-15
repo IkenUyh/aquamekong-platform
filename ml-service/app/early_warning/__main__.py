@@ -29,6 +29,9 @@ def main() -> int:
             print(f"  Ngưỡng {t['threshold']:g}‰: {t['onsets']} lần bắt đầu vượt, {t['covered']} lần app đang cảnh báo từ trước "
                   f"(cảnh báo sớm nhắm đúng lần vượt: {t['warnedAhead']}{lead}); "
                   f"{t['warnings']} lần báo sớm: {t['hits']} đúng, {t['misses']} nhầm")
+        forecast = season["forecast"]
+        print(f"  Dự báo ở {forecast['stations']} trạm đủ lịch sử, sai số trung bình (giữ nguyên số mới nhất): "
+              + ", ".join(f"{s['lead']} ngày {s['mae']:.2f}‰ ({s['persistenceMae']:.2f}‰)" for s in forecast["byLead"]))
     return 0
 
 
