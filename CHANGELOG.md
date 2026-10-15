@@ -2,6 +2,12 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [Unreleased]
+
+### Thêm mới
+- **Dự báo của mô hình ở trạm đủ lịch sử**: trạm có số đo từ 2 năm trở lên dùng số dự báo của mô hình (trung vị gradient boosting) cho ngày thứ 4 tới 7, thay vì giữ nguyên số mới nhất. Chạy lại các mùa khô 2023–2026 và mùa mưa 2026, mỗi mùa mô hình chỉ học số đo trước mùa đó: ở các trạm này sai ít hơn giữ nguyên 15–19% ở mùa khô 2024–25 và 2025–26, 0,5–9% ở mùa khô 2023–24 và mùa mưa 2026. Ngày thứ 1–3 và trạm mới lắp (phần lớn là trạm mặn ven biển lắp năm 2024–2025) vẫn giữ nguyên số mới nhất, vì ở đó mô hình chưa hơn được cách này.
+- Lưới dự báo ghi mức có thể lên tới của từng ngày dưới số dự báo, và ghi nhãn "Trạm mới lắp" cho trạm chưa đủ 2 năm số đo. Mục "Độ tin cậy" có thêm bảng điểm dự báo của mô hình theo từng mùa khô.
+
 ## [0.5.2] - 2026-10-14
 
 ### Sửa lỗi
