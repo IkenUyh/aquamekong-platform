@@ -36,7 +36,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<AuthStatus>(() => (getToken() ? 'loading' : 'anonymous'));
 
-  const configQuery = useQuery({ queryKey: ['auth', 'config'], queryFn: authApi.config, staleTime: Infinity, retry: 1 });
+  // Lỗi (vd. mở trang đúng lúc backend khởi động lại): tạm dùng FALLBACK_CONFIG và thử lại mỗi 15 giây tới khi được,
+  // để nút Google và đăng ký tự hiện lại mà không phải tải lại trang
+  const configQuery = useQuery({
+    queryKey: ['auth', 'config'], queryFn: authApi.config, staleTime: Infinity, retry: 1,
+    refetchInterval: (query) => (query.state.status === 'error' ? 15_000 : false),
+  });
   const config = useMemo(() => {
     const loaded = configQuery.isError ? FALLBACK_CONFIG : configQuery.data;
     // Trong app điện thoại, Google (GSI), Zalo (redirect về trang web) và passkey (WebAuthn) chưa chạy được

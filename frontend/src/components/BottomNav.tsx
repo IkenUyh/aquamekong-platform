@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { LogOut, Menu, UserRound } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUnresolvedAlerts } from '../hooks/useAlerts';
-import { NAV_ITEMS, ROLE_LABELS } from './navItems';
+import { NAV_ITEMS, topRoleLabel } from './navItems';
 
 const tabClass = (active: boolean) =>
   `flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] ${
@@ -29,7 +29,7 @@ export function BottomNav() {
   const primary = items.filter((item) => item.primary);
   const more = items.filter((item) => !item.primary);
   const inMore = pathname === '/account' || more.some((item) => pathname.startsWith(item.path));
-  const roleLabel = user?.roles?.map((r) => ROLE_LABELS[r] ?? r).join(', ');
+  const roleLabel = topRoleLabel(user?.roles);
   const alertCount = openAlerts?.length ?? 0;
 
   return (
