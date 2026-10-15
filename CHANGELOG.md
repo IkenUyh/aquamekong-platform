@@ -2,7 +2,7 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
-## [Unreleased]
+## [0.6.2] - 2026-10-15
 
 ### Sửa lỗi
 - Trang đăng nhập không còn mất nút Google và nút đăng ký khi mở đúng lúc backend khởi động lại: trang tự thử lấy lại cấu hình mỗi 15 giây, không cần tải lại.
@@ -149,6 +149,7 @@ Bản phát hành đầu tiên.
 - Cảnh báo và khuyến nghị dựa trên số đo mới nhất, chưa dựa trên dự báo.
 - Dữ liệu RYNAN hiện có đến 31/08/2026; trạm hiện "mất tín hiệu" tới khi nạp dữ liệu mới.
 
+[0.6.2]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.5.1...v0.5.2
