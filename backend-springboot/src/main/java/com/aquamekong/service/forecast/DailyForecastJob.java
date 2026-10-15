@@ -1,5 +1,6 @@
 package com.aquamekong.service.forecast;
 
+import com.aquamekong.client.MlServiceClient;
 import com.aquamekong.entity.enums.StationStatus;
 import com.aquamekong.entity.forecast.ForecastRun;
 import com.aquamekong.entity.station.Station;
@@ -25,8 +26,9 @@ import java.time.ZoneId;
 /**
  * Chạy dự báo cho mọi trạm đang hoạt động và lưu lại, để người chưa đăng nhập (không được chạy mô hình) vẫn thấy
  * dự báo trong ngày. Chạy khi có số đo mới, không theo giờ cố định: số liệu RYNAN về theo lịch GitHub Actions,
- * có hôm trễ vài giờ, và máy chủ có thể khởi động muộn. Mỗi 30 phút kiểm tra: hôm nay chưa có lượt nào, hoặc có
- * số đo nạp vào sau lượt trước thì chạy lại. Xong thì phát ForecastsRefreshedEvent (StationWatchJob báo người theo dõi).
+ * có hôm trễ vài giờ, và máy chủ có thể khởi động muộn. Mỗi 30 phút kiểm tra: hôm nay chưa có lượt nào, có số đo
+ * nạp vào sau lượt trước, hoặc mô hình rủi ro của ML service vừa học lại (sau khi số đo mới về, hay sau deploy) thì
+ * chạy lại. Xong thì phát ForecastsRefreshedEvent (StationWatchJob báo người theo dõi).
  */
 @Slf4j
 @Component
@@ -41,6 +43,7 @@ public class DailyForecastJob {
     private final StationRepository stationRepository;
     private final ForecastRunRepository forecastRunRepository;
     private final MeasurementRepository measurementRepository;
+    private final MlServiceClient mlServiceClient;
     private final TaskScheduler taskScheduler;
     private final ApplicationEventPublisher eventPublisher;
     private final String cron;
@@ -49,11 +52,15 @@ public class DailyForecastJob {
     /** Lượt chạy gần nhất của job này; null = chưa biết (vừa khởi động), lấy lượt mới nhất trong DB */
     private volatile OffsetDateTime lastRefreshAt;
     private volatile boolean lastRefreshKnown;
+    /** Lần học (trainedAt) của mô hình rủi ro mà lượt chạy trước đã dùng; null = chưa biết, nên sau khi khởi động
+     * thì chạy lại một lần khi đọc được */
+    private volatile String lastModelStamp;
 
     public DailyForecastJob(ForecastService forecastService,
                             StationRepository stationRepository,
                             ForecastRunRepository forecastRunRepository,
                             MeasurementRepository measurementRepository,
+                            MlServiceClient mlServiceClient,
                             TaskScheduler taskScheduler,
                             ApplicationEventPublisher eventPublisher,
                             @Value("${app.forecast.refresh-cron:0 */30 6-22 * * *}") String cron,
@@ -62,6 +69,7 @@ public class DailyForecastJob {
         this.stationRepository = stationRepository;
         this.forecastRunRepository = forecastRunRepository;
         this.measurementRepository = measurementRepository;
+        this.mlServiceClient = mlServiceClient;
         this.taskScheduler = taskScheduler;
         this.eventPublisher = eventPublisher;
         this.cron = cron;
@@ -80,15 +88,19 @@ public class DailyForecastJob {
         }
         OffsetDateTime startOfToday = now.atZone(ZONE).toLocalDate().atStartOfDay(ZONE).toOffsetDateTime();
         OffsetDateTime newestImport = newestImportAt();
+        String modelStamp = currentModelStamp();
         if (lastRefreshAt == null || lastRefreshAt.isBefore(startOfToday)) {
             log.info("Hôm nay chưa chạy dự báo, chạy cho mọi trạm");
         } else if (newestImport != null && newestImport.isAfter(lastRefreshAt)) {
             log.info("Có số đo mới nạp lúc {}, chạy lại dự báo", newestImport.atZoneSameInstant(ZONE).toLocalTime());
+        } else if (modelStamp != null && !modelStamp.equals(lastModelStamp)) {
+            log.info("Mô hình rủi ro vừa học lại ({}), chạy lại dự báo", modelStamp);
         } else {
             return;
         }
-        // Lấy mốc trước khi chạy: số đo nạp trong lúc chạy sẽ được lượt sau bắt
+        // Lấy mốc trước khi chạy: số đo nạp hay mô hình học lại trong lúc chạy sẽ được lượt sau bắt
         lastRefreshAt = OffsetDateTime.ofInstant(now, ZONE);
+        lastModelStamp = modelStamp;
         runDaily();
     }
 
@@ -106,6 +118,16 @@ public class DailyForecastJob {
         }
         log.info("Dự báo hằng ngày: {} trạm thành công, {} trạm lỗi", ok, failed);
         eventPublisher.publishEvent(new ForecastsRefreshedEvent(LocalDate.now(ZONE), ok, failed));
+    }
+
+    /** Lần học của mô hình rủi ro; null khi chưa học xong lần đầu hoặc không gọi được ML service */
+    private String currentModelStamp() {
+        try {
+            return mlServiceClient.earlyWarning().map(m -> m.get("trainedAt")).map(Object::toString).orElse(null);
+        } catch (RuntimeException e) {
+            log.warn("Không đọc được lần học của mô hình rủi ro: {}", e.getMessage());
+            return null;
+        }
     }
 
     /** Lúc nạp số đo mới nhất (measurements.created_at của dòng có id lớn nhất, dùng khoá chính) */
