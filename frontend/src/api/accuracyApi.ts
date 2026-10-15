@@ -55,6 +55,12 @@ export interface EarlyWarningScore {
   misses: number;
 }
 
+/** Sai số của số dự báo app hiển thị so với giữ nguyên số mới nhất, ở các trạm đủ lịch sử của một mùa khô */
+export interface SeasonForecastScore {
+  stations: number;
+  byLead: { lead: number; count: number; mae: number; persistenceMae: number }[];
+}
+
 export interface EarlyWarningSeason {
   label: string;
   from: string;
@@ -67,6 +73,15 @@ export interface EarlyWarningSeason {
   /** Số thật vượt mức có thể lên tới bao nhiêu phần (lý thuyết 20%) */
   aboveUpper: number | null;
   thresholds: EarlyWarningScore[];
+  forecast?: SeasonForecastScore;
+}
+
+/** Trạm có số đo từ ít nhất matureDays ngày: số dự báo mốc fromLead..toLead ngày là trung vị của mô hình */
+export interface ForecastRule {
+  fromLead: number;
+  toLead: number;
+  matureDays: number;
+  stationIds: number[];
 }
 
 /** GET /forecasts/early-warning: mô hình rủi ro chạy lại trên từng mùa khô cũ */
@@ -76,6 +91,7 @@ export interface EarlyWarningEvaluation {
   trainedUntil: string;
   upperQuantile: number;
   warningHorizon: number;
+  forecastRule?: ForecastRule;
   seasons: EarlyWarningSeason[];
 }
 
