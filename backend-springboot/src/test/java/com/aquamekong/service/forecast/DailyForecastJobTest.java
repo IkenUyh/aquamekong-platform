@@ -1,5 +1,6 @@
 package com.aquamekong.service.forecast;
 
+import com.aquamekong.client.MlServiceClient;
 import com.aquamekong.entity.enums.StationStatus;
 import com.aquamekong.entity.forecast.ForecastRun;
 import com.aquamekong.entity.station.Station;
@@ -24,6 +25,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,17 +44,19 @@ class DailyForecastJobTest {
     @Mock StationRepository stationRepository;
     @Mock ForecastRunRepository forecastRunRepository;
     @Mock MeasurementRepository measurementRepository;
+    @Mock MlServiceClient mlServiceClient;
     @Mock TaskScheduler taskScheduler;
     @Mock ApplicationEventPublisher eventPublisher;
 
     @BeforeEach
     void setUp() {
         when(stationRepository.findByStatus(StationStatus.ACTIVE)).thenReturn(List.of(station(1), station(2), station(3)));
+        when(mlServiceClient.earlyWarning()).thenReturn(Optional.empty());
     }
 
     private DailyForecastJob job(String cron) {
         return new DailyForecastJob(forecastService, stationRepository, forecastRunRepository, measurementRepository,
-                taskScheduler, eventPublisher, cron, Duration.ofMinutes(2));
+                mlServiceClient, taskScheduler, eventPublisher, cron, Duration.ofMinutes(2));
     }
 
     private static Station station(long id) {
@@ -101,6 +105,37 @@ class DailyForecastJobTest {
     void skipsWhenNothingNewArrived() {
         lastRunInDb(vn(10, 9, 30));
         newestImport(vn(10, 9, 12));
+
+        job("0 */30 6-22 * * *").refreshIfNeeded(vn(10, 10, 0).toInstant());
+
+        verifyNoInteractions(forecastService, eventPublisher);
+    }
+
+    private void riskModelTrainedAt(String trainedAt) {
+        when(mlServiceClient.earlyWarning()).thenReturn(Optional.of(Map.of("trainedAt", trainedAt)));
+    }
+
+    @Test
+    void reRunsWhenTheRiskModelIsRetrained() {
+        // Sau deploy (hay số đo mới về), ML service học lại vài phút sau lượt chạy: lượt đó dùng mô hình cũ
+        lastRunInDb(vn(10, 9, 30));
+        newestImport(vn(10, 9, 12));
+        DailyForecastJob job = job("0 */30 6-22 * * *");
+        riskModelTrainedAt("2026-10-10T02:00:00Z");
+
+        job.refreshIfNeeded(vn(10, 10, 0).toInstant());   // vừa khởi động: chưa biết lượt trước dùng mô hình nào
+        job.refreshIfNeeded(vn(10, 10, 30).toInstant());  // vẫn mô hình đó: không chạy
+        riskModelTrainedAt("2026-10-10T03:40:00Z");
+        job.refreshIfNeeded(vn(10, 11, 0).toInstant());
+
+        verify(forecastService, times(6)).predict(anyLong(), anyInt());
+    }
+
+    @Test
+    void mlServiceDownDoesNotTriggerOrBreakTheCheck() {
+        lastRunInDb(vn(10, 9, 30));
+        newestImport(vn(10, 9, 12));
+        when(mlServiceClient.earlyWarning()).thenThrow(new MlServiceException("ML không trả lời", null));
 
         job("0 */30 6-22 * * *").refreshIfNeeded(vn(10, 10, 0).toInstant());
 
