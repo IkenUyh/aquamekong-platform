@@ -6,7 +6,7 @@ import { DashboardLayout } from '../layouts/DashboardLayout';
 import { ForecastChart } from '../components/ForecastChart';
 import { ForecastGrid, type StationForecast } from '../components/ForecastGrid';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
-import { EarlyWarningCard, ForecastAccuracyCard, StationAccuracy } from '../components/ForecastAccuracy';
+import { EarlyWarningCard, ForecastAccuracyCard, ModelForecastCard, StationAccuracy } from '../components/ForecastAccuracy';
 import { forecastApi } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useStationsList } from '../hooks/useStations';
@@ -25,11 +25,12 @@ const dayLabel = (iso: string) => ({ weekday: WEEKDAYS[new Date(`${iso}T00:00:00
 /** Ngày YYYY-MM-DD dạng "07/10/2026" */
 const fullDay = (iso: string) => formatFullDate(new Date(`${iso}T00:00:00`));
 
-/** Tên mô hình theo model_version mà ML service ghi vào lượt dự báo */
-function modelLabel(version?: string): string {
+/** Tên mô hình theo model_version mà ML service ghi vào lượt dự báo; newStation: trạm chưa đủ số năm số đo */
+function modelLabel(version?: string, newStation = false): string {
   if (!version) return '';
   if (version.startsWith('st-gnn')) return 'ST-GNN';
-  if (version.startsWith('gb-risk')) return 'Số mới nhất + mô hình rủi ro';
+  if (version.startsWith('gb-risk-v1') || (version.startsWith('gb-risk') && newStation)) return 'Số mới nhất + mô hình rủi ro';
+  if (version.startsWith('gb-risk')) return 'Mô hình rủi ro';
   if (version.startsWith('prophet')) return 'Prophet';
   if (version.startsWith('hybrid')) return 'ARIMA-CNN';
   if (version.startsWith('statistical-v1')) return 'Xu hướng thống kê';
@@ -120,16 +121,18 @@ function buildInsights(items: StationForecast[]): string[] {
 }
 
 /** Chi tiết một trạm, mở ngay dưới dòng của trạm trong lưới */
-function StationForecastDetail({ item, date, accuracy, compare }: {
+function StationForecastDetail({ item, date, accuracy, compare, newStation }: {
   item: StationForecast;
   date?: string;
   accuracy: { seriesLead: number; station: StationAccuracyData | undefined } | null;
   /** Mở bằng cột sai số: hiện sẵn biểu đồ dự báo đặt cạnh số đo thật */
   compare: boolean;
+  /** Trạm chưa đủ số năm số đo (mô hình rủi ro): số dự báo giữ nguyên số mới nhất */
+  newStation: { years: number } | null;
 }) {
   const { station, forecasts } = item;
   const day = forecasts.find((f) => f.forecastDate === date);
-  const model = modelLabel(forecasts[0]?.modelVersion);
+  const model = modelLabel(forecasts[0]?.modelVersion, !!newStation);
   const mayExceed = day?.riskSalinity != null && day.riskSalinity > SALINITY_THRESHOLD && day.predictedSalinity <= SALINITY_THRESHOLD;
   return (
     <div className="space-y-3 p-4">
@@ -146,6 +149,12 @@ function StationForecastDetail({ item, date, accuracy, compare }: {
         )}
         {model && <span className="text-gray-500">Mô hình: {model}</span>}
       </p>
+      {newStation && !item.silentSince && forecasts.some((f) => f.modelVersion?.startsWith('gb-risk')) && (
+        <p className="text-sm text-gray-600">
+          Trạm mới lắp, chưa đủ {newStation.years} năm số đo: dự báo giữ nguyên số mới nhất, kèm mức có thể lên tới của
+          mô hình rủi ro. Khi đủ {newStation.years} năm, trạm tự chuyển sang số của mô hình.
+        </p>
+      )}
       {item.silentSince ? (
         <p className="text-sm text-gray-600">
           Trạm mất tín hiệu, số đo cuối {formatMeasuredAt(item.silentSince)}. Không dự báo khi trạm không có số đo mới
@@ -221,6 +230,14 @@ export function ForecastPage() {
   const { data: accuracy } = useForecastAccuracy();
   const { data: earlyWarning } = useEarlyWarningEvaluation();
   const usesStgnn = items.some((i) => i.forecasts.some((f) => f.modelVersion?.startsWith('st-gnn')));
+  // Trạm đủ lịch sử (mô hình rủi ro): số dự báo từ mốc fromLead ngày là của mô hình, trạm còn lại giữ nguyên số mới nhất
+  const rule = earlyWarning?.forecastRule;
+  const matureIds = useMemo(() => new Set(rule?.stationIds ?? []), [rule]);
+  const modelRule = rule ? {
+    fromLead: rule.fromLead,
+    years: Math.round(rule.matureDays / 365),
+    isNewStation: (id: number) => !matureIds.has(id),
+  } : undefined;
   // Độ tin cậy toàn vùng ở mốc của chuỗi so sánh (cùng mốc với cột sai số từng trạm)
   const overallSkill = accuracy?.byLead.find((l) => l.lead === accuracy.seriesLead);
 
@@ -359,6 +376,7 @@ export function ForecastPage() {
                 onToggle={(id) => { setCompareId(null); setExpandedId((prev) => (prev === id ? null : id)); }}
                 renderDetail={(item) => (
                   <StationForecastDetail item={item} date={selectedDate} compare={compareId === item.station.id}
+                    newStation={modelRule?.isNewStation(item.station.id) ? { years: modelRule.years } : null}
                     accuracy={accuracy ? { seriesLead: accuracy.seriesLead, station: accuracy.stations.find((a) => a.stationId === item.station.id) } : null} />
                 )}
                 skill={accuracy ? {
@@ -366,6 +384,7 @@ export function ForecastPage() {
                   of: (id) => accuracy.stations.find((a) => a.stationId === id)?.byLead.find((l) => l.lead === accuracy.seriesLead),
                   onCompare: (id) => { setCompareId(id); setExpandedId(id); },
                 } : undefined}
+                modelRule={modelRule}
               />
             )}
 
@@ -374,10 +393,11 @@ export function ForecastPage() {
               <details className="shrink-0">
                 <summary className="cursor-pointer select-none py-1 text-sm font-semibold text-gray-700 hover:text-gray-900">
                   Độ tin cậy của dự báo
-                  <span className="font-normal text-gray-500"> · độ chính xác toàn vùng, cảnh báo sớm các mùa khô</span>
+                  <span className="font-normal text-gray-500"> · dự báo của mô hình, độ chính xác toàn vùng, cảnh báo sớm các mùa khô</span>
                 </summary>
                 <div className="mt-3 space-y-4">
                   {modelInfo && usesStgnn && <StgnnScoreCard info={modelInfo} />}
+                  {earlyWarning && <ModelForecastCard evaluation={earlyWarning} />}
                   {accuracy && <ForecastAccuracyCard accuracy={accuracy} />}
                   {earlyWarning && earlyWarning.seasons.length > 0 && <EarlyWarningCard evaluation={earlyWarning} />}
                 </div>
