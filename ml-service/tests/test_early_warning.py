@@ -173,15 +173,70 @@ def service(trained, tmp_path, monkeypatch):
 
 
 def test_forecast_holds_the_latest_reading_with_a_band_and_a_risk_level(service):
-    today = date(2023, 4, 1)                                      # số đo cuối 31/03
+    today = date(2023, 4, 1)                                      # số đo cuối 31/03, trạm mới có số đo từ 01/11/2021
     items = service.forecast(87, 7, today)
 
     assert [i.date for i in items] == [today + timedelta(days=k) for k in range(1, 8)]
-    assert len({i.salinity for i in items}) == 1
+    assert len({i.salinity for i in items}) == 1                  # chưa đủ 2 năm số đo: giữ nguyên cả 7 ngày
     for i in items:
         assert i.lower_bound <= i.salinity <= i.upper_bound
         assert i.risk_salinity == i.upper_bound
         assert i.model_version == svc.MODEL_VERSION
+
+
+def test_only_stations_with_two_years_of_readings_use_the_model_and_only_from_day_four():
+    first = date(2021, 3, 1)
+    assert not svc.is_mature(first, first + timedelta(days=svc.MATURE_DAYS - 1))
+    assert svc.is_mature(first, first + timedelta(days=svc.MATURE_DAYS))
+    assert [h for h in range(1, 17) if svc.uses_model(True, h)] == [4, 5, 6, 7]
+    assert not any(svc.uses_model(False, h) for h in range(1, 17))
+
+
+@pytest.fixture(scope="module")
+def mature_trained():
+    # Số đo từ 01/11/2020: tới mùa khô 2022–2023 thì đủ 2 năm
+    panel = seasonal_panel(first=date(2020, 11, 1))
+    model, meta, backtest = svc.train_all(panel, data_version=8)
+    return panel, model, meta, backtest
+
+
+def test_forecast_of_a_mature_station_uses_the_median_from_day_four(mature_trained, tmp_path, monkeypatch):
+    panel, model, meta, backtest = mature_trained
+    s = svc.EarlyWarningService(model_dir=str(tmp_path))
+    s._save(model, meta, backtest)
+    monkeypatch.setattr(svc, "load_panel", lambda: panel)
+    monkeypatch.setattr(svc.data_loader, "latest_measurement_id", lambda: 8)
+
+    items = s.forecast(87, 7, date(2023, 4, 1))
+    entry = s._live_table()[87]
+
+    assert entry["mature"]
+    assert [i.salinity for i in items[:3]] == [round(entry["level"], 2)] * 3
+    assert [i.salinity for i in items[3:]] == [round(entry["median"][h], 2) for h in range(4, 8)]
+    for i in items:
+        assert i.lower_bound <= i.salinity <= i.upper_bound
+
+
+def test_each_dry_season_scores_the_shown_forecast_against_holding_the_latest_reading(mature_trained):
+    _, _, meta, _ = mature_trained
+    assert meta["modelFormat"] == svc.MODEL_FORMAT
+    assert meta["forecastRule"] == {"fromLead": 4, "toLead": 7, "matureDays": 730, "stationIds": [87, 88]}
+    early, late = meta["seasons"]                                 # 2021–2022: chưa trạm nào đủ 2 năm
+    assert early["forecast"] == {"stations": 0, "byLead": []}
+    assert late["forecast"]["stations"] == 2
+    leads = late["forecast"]["byLead"]
+    assert [s["lead"] for s in leads] == list(range(1, ep.WARNING_HORIZON + 1))
+    # Mốc 1–3 ngày app giữ nguyên số mới nhất: sai số bằng đúng cách giữ nguyên
+    assert all(s["mae"] == s["persistenceMae"] for s in leads[:3])
+
+
+def test_a_model_saved_in_an_older_format_waits_for_a_retrain(service, tmp_path):
+    meta_path = tmp_path / "early_warning" / "meta.json"
+    import json
+    meta = json.loads(meta_path.read_text())
+    meta_path.write_text(json.dumps({**meta, "modelFormat": 1}))
+
+    assert svc.EarlyWarningService(model_dir=str(tmp_path)).stamp() == "none"
 
 
 def test_forecast_gives_up_when_readings_are_stale_or_the_station_is_unknown(service):

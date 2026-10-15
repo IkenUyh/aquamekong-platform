@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
-  skillPercent, type EarlyWarningEvaluation, type ForecastAccuracy, type LeadAccuracy, type StationAccuracy,
+  skillPercent, type EarlyWarningEvaluation, type ForecastAccuracy, type LeadAccuracy, type SeasonForecastScore,
+  type StationAccuracy,
 } from '../api/accuracyApi';
 import { CROP_PRESETS } from '../utils/crops';
 import { useForecastVerification } from '../hooks/useForecastAccuracy';
-import { formatDay, formatNumber, SALINITY_THRESHOLD } from '../utils/salinity';
+import { formatDay, formatNumber, formatSalinity, SALINITY_THRESHOLD } from '../utils/salinity';
 
 const SHOWN_LEADS = [1, 3, 7];
 const shortDate = formatDay;
@@ -27,7 +28,9 @@ export function ForecastAccuracyCard({ accuracy }: { accuracy: ForecastAccuracy 
   const sameAsBaseline = leads.every((l) => skillPercent(l) === 0);
   return (
     <div className="card p-3 text-xs text-gray-600 space-y-1">
-      <p className="text-sm font-semibold text-gray-900">Độ chính xác dự báo</p>
+      <p className="text-sm font-semibold text-gray-900">
+        {sameAsBaseline ? 'Độ chính xác khi giữ nguyên số mới nhất' : 'Độ chính xác dự báo'}
+      </p>
       {leads.map((l) => (
         <p key={l.lead} className="num">
           Dự báo trước {l.lead} ngày: sai trung bình {formatNumber(l.mae)}‰, đoán đúng mức mặn {pct(l.levelAccuracy)}
@@ -37,7 +40,65 @@ export function ForecastAccuracyCard({ accuracy }: { accuracy: ForecastAccuracy 
       <p className="text-gray-400">
         Chạy lại mô hình cho từng ngày từ {shortDate(accuracy.from)} đến {shortDate(accuracy.to)}, mỗi lần chỉ dùng số đo có tới hôm đó,
         rồi so với số đo thật của mọi trạm.
-        {sameAsBaseline && ' Mô hình hiện tại giữ nguyên số đo mới nhất: cách này sai ít hơn kéo dài xu hướng gần đây.'}
+        {sameAsBaseline && ' Cách này sai ít hơn kéo dài xu hướng gần đây. App dùng nó ở mốc 1–3 ngày và ở trạm mới lắp;'
+          + ' trạm đủ 2 năm số đo dùng số của mô hình từ mốc 4 ngày (thẻ "Dự báo của mô hình").'}
+      </p>
+    </div>
+  );
+}
+
+/** "tốt hơn 16%" / "kém hơn 3%" so với giữ nguyên số mới nhất */
+function versusHolding(score: SeasonForecastScore['byLead'][number]): string {
+  if (score.persistenceMae === 0) return 'bằng giữ nguyên';
+  const better = Math.round((100 * (score.persistenceMae - score.mae)) / score.persistenceMae);
+  if (better === 0) return 'bằng giữ nguyên';
+  return better > 0 ? `tốt hơn ${better}%` : `kém hơn ${-better}%`;
+}
+
+/**
+ * Số dự báo app hiển thị ở trạm đủ lịch sử, chạy lại trên các mùa khô cũ (mỗi mùa mô hình chỉ học số đo trước mùa
+ * đó), đặt cạnh cách giữ nguyên số mới nhất. ml-service app/early_warning/service.py _forecast_score.
+ */
+export function ModelForecastCard({ evaluation }: { evaluation: EarlyWarningEvaluation }) {
+  const rule = evaluation.forecastRule;
+  const seasons = [...evaluation.seasons].reverse().filter((s) => s.forecast && s.forecast.stations > 0);
+  if (!rule || seasons.length === 0) return null;
+  const years = Math.round(rule.matureDays / 365);
+  const leads = [rule.fromLead, rule.toLead];
+  return (
+    <div className="card p-3 text-xs text-gray-600 space-y-2">
+      <p className="text-sm font-semibold text-gray-900">Dự báo của mô hình ở trạm đủ {years} năm số đo</p>
+      <div className="overflow-x-auto">
+        <table className="w-full num">
+          <thead>
+            <tr className="text-left text-gray-500">
+              <th className="font-normal py-1 pr-2">Mùa khô</th>
+              <th className="font-normal py-1 pr-2 text-right">Trạm</th>
+              {leads.map((l) => <th key={l} className="font-normal py-1 pr-2 text-right last:pr-0">Trước {l} ngày</th>)}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 text-gray-700">
+            {seasons.map((s) => (
+              <tr key={s.label}>
+                <td className="py-1 pr-2 whitespace-nowrap">{s.label.replace('Mùa khô ', '')}</td>
+                <td className="py-1 pr-2 text-right">{s.forecast!.stations}</td>
+                {leads.map((l) => {
+                  const score = s.forecast!.byLead.find((b) => b.lead === l);
+                  return (
+                    <td key={l} className="py-1 pr-2 text-right whitespace-nowrap last:pr-0">
+                      {score ? <>±{formatSalinity(score.mae)}‰ <span className="text-gray-400">({versusHolding(score)})</span></> : '—'}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-gray-400">
+        Sai trung bình của số dự báo app hiển thị, so với giữ nguyên số đo mới nhất. Mỗi mùa, mô hình chỉ học số đo trước
+        mùa đó. Ở trạm có số đo từ {years} năm trở lên, app dùng số của mô hình từ mốc {rule.fromLead} tới {rule.toLead} ngày;
+        mốc 1–{rule.fromLead - 1} ngày và trạm mới lắp giữ nguyên số mới nhất, vì ở đó mô hình chưa hơn được cách này.
       </p>
     </div>
   );
