@@ -2,6 +2,12 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [Unreleased]
+
+### Sửa lỗi
+- Trang đăng nhập không còn mất nút Google và nút đăng ký khi mở đúng lúc backend khởi động lại: trang tự thử lấy lại cấu hình mỗi 15 giây, không cần tải lại.
+- Thanh menu chỉ ghi vai trò cao nhất của tài khoản ("Quản trị" thay vì "Người dùng, Quản trị" bị xuống hàng).
+
 ## [0.6.1] - 2026-10-15
 
 ### Sửa lỗi
