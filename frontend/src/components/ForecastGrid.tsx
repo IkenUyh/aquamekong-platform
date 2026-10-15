@@ -42,13 +42,15 @@ interface ForecastGridProps {
   renderDetail: (item: StationForecast) => React.ReactNode;
   /** Có thì thêm cột sai số; bấm vào mở trạm kèm biểu đồ so với thực tế */
   skill?: { lead: number; of: (stationId: number) => StationSkill | undefined; onCompare: (stationId: number) => void };
+  /** Quy tắc của mô hình rủi ro: trạm chưa đủ số năm số đo giữ nguyên số mới nhất, ghi nhãn "Trạm mới lắp" */
+  modelRule?: { fromLead: number; years: number; isNewStation: (stationId: number) => boolean };
 }
 
 /**
  * Lưới trạm × ngày dự báo: một dòng mỗi trạm thay cho 40 biểu đồ gần như phẳng, để so được các trạm trên cùng
  * một thang. Bấm tên trạm mở biểu đồ chi tiết ngay dưới dòng; bấm tiêu đề ngày đổi ngày của bản đồ.
  */
-export function ForecastGrid({ items, dates, dayIndex, onSelectDay, expandedId, onToggle, renderDetail, skill }: ForecastGridProps) {
+export function ForecastGrid({ items, dates, dayIndex, onSelectDay, expandedId, onToggle, renderDetail, skill, modelRule }: ForecastGridProps) {
   const columns = 2 + Math.max(dates.length, 1) + (skill ? 1 : 0);
   // Bề rộng khung nhìn của bảng: phần chi tiết bám mép trái và rộng đúng chừng đó khi bảng cuộn ngang (điện thoại)
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -96,6 +98,8 @@ export function ForecastGrid({ items, dates, dayIndex, onSelectDay, expandedId, 
             {items.map((item) => {
               const { station, forecasts, isLoading, isError, silentSince } = item;
               const expanded = expandedId === station.id;
+              const isNew = !silentSince && !!modelRule?.isNewStation(station.id)
+                && forecasts.some((f) => f.modelVersion?.startsWith('gb-risk'));
               return (
                 <Fragment key={station.id}>
                   <tr className={expanded ? 'bg-primary-50/40' : 'hover:bg-gray-50'}>
@@ -108,6 +112,7 @@ export function ForecastGrid({ items, dates, dayIndex, onSelectDay, expandedId, 
                         <span>
                           <span className="block font-medium text-gray-900 leading-snug">{station.name}</span>
                           {station.province && <span className="block text-xs text-gray-500">{station.province}</span>}
+                          {isNew && <span className="block text-xs text-gray-400">Trạm mới lắp</span>}
                         </span>
                       </button>
                     </th>
@@ -137,7 +142,11 @@ export function ForecastGrid({ items, dates, dayIndex, onSelectDay, expandedId, 
                           <td key={d} className="border-b border-gray-100 px-0.5 py-1.5 text-center">
                             <span title={label}
                               className={`block rounded-md px-1 py-1 num ${CELL[classifySalinity(f.predictedSalinity)]} ${mayExceed ? 'ring-1 ring-inset ring-red-500' : ''}`}>
-                              {formatSalinity(f.predictedSalinity)}
+                              <span className="block">{formatSalinity(f.predictedSalinity)}</span>
+                              {/* Mức có thể lên tới (phân vị 80% của mô hình rủi ro): đổi theo từng ngày */}
+                              {f.riskSalinity != null && (
+                                <span className="block text-[10px] leading-tight font-normal text-gray-500">≤{formatSalinity(f.riskSalinity)}</span>
+                              )}
                             </span>
                           </td>
                         );
@@ -175,6 +184,12 @@ export function ForecastGrid({ items, dates, dayIndex, onSelectDay, expandedId, 
         <span className="flex items-center gap-1.5"><span className="h-3 w-5 rounded bg-yellow-50 border border-yellow-200" />1 – {SALINITY_THRESHOLD}‰</span>
         <span className="flex items-center gap-1.5"><span className="h-3 w-5 rounded bg-red-100" />trên {SALINITY_THRESHOLD}‰</span>
         <span className="flex items-center gap-1.5"><span className="h-3 w-5 rounded ring-1 ring-inset ring-red-500" />có thể vượt {SALINITY_THRESHOLD}‰</span>
+        <span className="flex items-center gap-1.5"><span className="num text-[10px] text-gray-500">≤2,17</span>có thể lên tới</span>
+        {modelRule && (
+          <span className="text-gray-500">
+            Trạm đủ {modelRule.years} năm số đo: từ ngày dự báo thứ {modelRule.fromLead} là số của mô hình; trạm mới lắp giữ nguyên số mới nhất.
+          </span>
+        )}
         <span className="text-gray-500">Bấm tên trạm để xem biểu đồ{skill ? ', bấm sai số để so dự báo với số đo thật' : ''}.</span>
       </p>
     </div>
