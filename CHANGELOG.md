@@ -2,6 +2,14 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [Unreleased]
+
+### Sửa lỗi
+- Dự báo tự chạy lại khi mô hình rủi ro học lại xong (sau khi có số đo mới, hoặc sau mỗi lần deploy). Trước đây sau deploy phải bấm "Chạy lại dự báo" bằng tay, và lượt dự báo buổi sáng có thể dùng mô hình học trên số liệu hôm trước.
+
+### Thay đổi
+- GitHub Actions dùng các action chạy trên Node 24 (checkout v5, setup-python v6, setup-java v5, setup-node v5, các action Docker v4/v7), hết cảnh báo Node 20 sắp ngừng hỗ trợ.
+
 ## [0.6.0] - 2026-10-15
 
 ### Thêm mới
