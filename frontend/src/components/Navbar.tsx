@@ -5,13 +5,13 @@ import { RootState } from '../store';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Logo } from './Logo';
-import { initials, NAV_ITEMS, ROLE_LABELS } from './navItems';
+import { initials, NAV_ITEMS, topRoleLabel } from './navItems';
 
 export function Navbar() {
   const isOfflineMode = useSelector((state: RootState) => state.network.isOfflineMode);
   const { user, logout, hasRole } = useAuth();
   const navItems = NAV_ITEMS.filter((item) => !item.roles || hasRole(...item.roles));
-  const roleLabel = user?.roles?.map((r) => ROLE_LABELS[r] ?? r).join(', ');
+  const roleLabel = topRoleLabel(user?.roles);
   const { pathname } = useLocation();
 
   const status = (
@@ -58,7 +58,7 @@ export function Navbar() {
               </span>
               <span className="leading-tight hidden xl:block text-left">
                 <span className="block text-sm font-medium whitespace-nowrap">{user.fullName || user.username}</span>
-                {roleLabel && <span className="block text-[11px] text-white/60">{roleLabel}</span>}
+                {roleLabel && <span className="block text-[11px] text-white/60 whitespace-nowrap">{roleLabel}</span>}
               </span>
             </NavLink>
             <button onClick={() => logout()} title="Đăng xuất"
