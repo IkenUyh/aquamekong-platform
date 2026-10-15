@@ -5,8 +5,9 @@ Mô hình rủi ro mặn chạy thật.
   từng mùa khô cũ: mỗi mùa một mô hình chỉ học các ngày trước mùa đó, rồi dự báo từng sáng của mùa như app chạy thật.
   Kết quả lưu ở model_dir/early_warning: model.joblib, meta.json (điểm từng mùa), backtest.json (dự báo từng sáng,
   cho trang Phát lại). File joblib chỉ do chính service này ghi vào volume model, không nhận file từ ngoài.
-- forecast(): dự báo cho Predictor. Độ mặn dự báo giữ nguyên số mới nhất (sai số trung bình thấp nhất); risk_salinity
-  (mức có thể lên tới) là phân vị 80% của mô hình; khoảng dự báo là phân vị 20%–80%, nới ra cho chứa số dự báo.
+- forecast(): dự báo cho Predictor. Độ mặn dự báo là trung vị của mô hình ở trạm đủ lịch sử từ mốc MODEL_FROM_LEAD ngày,
+  còn lại giữ nguyên số mới nhất (uses_model); risk_salinity (mức có thể lên tới) là phân vị 80% của mô hình; khoảng dự
+  báo là phân vị 20%–80%, nới ra cho chứa số dự báo.
 - replay_episodes(): cảnh báo sớm mà app lẽ ra đã gửi trong các mùa khô cũ, theo ngưỡng của từng trạm.
 """
 
@@ -27,13 +28,15 @@ import sklearn
 from app.config import get_settings
 from app.early_warning import episodes as ep
 from app.early_warning.features import MAX_HORIZON, build_rows, load_panel
-from app.early_warning.model import LOWER_QUANTILE, UPPER_QUANTILE, RiskModel, station_codes
+from app.early_warning.model import LOWER_QUANTILE, MEDIAN_MAX_HORIZON, UPPER_QUANTILE, RiskModel, station_codes
 from app.schemas.forecast import PredictionItem
 from app.services import data_loader
 
 logger = logging.getLogger(__name__)
 
-MODEL_VERSION = "gb-risk-v1"
+MODEL_VERSION = "gb-risk-v2"
+# Đổi khi cấu trúc model.joblib đổi (v2 thêm trung vị): mô hình đã lưu khác bản này thì không dùng, chờ học lại
+MODEL_FORMAT = 2
 TIMEZONE = ZoneInfo("Asia/Ho_Chi_Minh")
 # Số đo mới nhất cũ hơn mức này (trạm mất tín hiệu) thì không dùng mô hình, như backend bỏ số đo cũ hơn 3 ngày
 MAX_DATA_AGE_DAYS = 3
@@ -41,6 +44,13 @@ MAX_DATA_AGE_DAYS = 3
 THRESHOLDS = (4.0, 2.0, 1.0, 0.5)
 # Mùa khô chỉ được chạy lại khi trước đó có ít nhất một năm số đo để học
 MIN_HISTORY_DAYS = 365
+# Số dự báo lấy trung vị của mô hình chỉ ở trạm có số đo từ ít nhất 2 năm trước ngày phát hành, mốc 4–7 ngày
+# (MEDIAN_MAX_HORIZON). Chạy lại các mùa 2023–2026, mỗi mùa học số đo trước mùa đó: ở trạm đủ 2 năm, trung vị sai ít
+# hơn giữ nguyên ở mốc 4–7 ngày trong mọi mùa đo được (mùa khô 2024–25 và 2025–26: 15–19%; mùa khô 2023–24 và mùa mưa
+# 2026: 0,5–9%), còn mốc 1–3 ngày lúc hơn lúc kém (mốc 1 có mùa kém 24%). Trạm dưới 2 năm (phần lớn là trạm mặn ven
+# biển mới lắp) thì trung vị kém hơn giữ nguyên ở mọi mốc trong mùa khô.
+MATURE_DAYS = 730
+MODEL_FROM_LEAD = 4
 
 
 def dry_seasons(first_day: date, last_day: date) -> List[Tuple[str, date, date]]:
@@ -61,6 +71,40 @@ def _daily_salinity(panel: pd.DataFrame) -> Dict[int, Dict[date, float]]:
 
 def _round(value: float) -> Optional[float]:
     return None if value is None or np.isnan(value) else round(float(value), 2)
+
+
+def first_salinity_days(panel: pd.DataFrame) -> Dict[int, date]:
+    """Ngày có số đo độ mặn đầu tiên của từng trạm."""
+    known = panel[panel["salinity"].notna()]
+    return {int(sid): day.date() for sid, day in known.groupby("station_id")["day"].min().items()}
+
+
+def is_mature(first_day: Optional[date], issued: date) -> bool:
+    """Trạm có số đo từ ít nhất MATURE_DAYS ngày trước ngày phát hành."""
+    return first_day is not None and (issued - first_day).days >= MATURE_DAYS
+
+
+def uses_model(mature: bool, h: int) -> bool:
+    """Số dự báo ngày D+h lấy trung vị của mô hình thay vì giữ nguyên số mới nhất."""
+    return mature and MODEL_FROM_LEAD <= h <= MEDIAN_MAX_HORIZON
+
+
+def _forecast_score(scored: pd.DataFrame, first_days: Dict[int, date]) -> dict:
+    """
+    Sai số trung bình của số dự báo app hiển thị (uses_model) so với giữ nguyên số mới nhất, ở các trạm đủ lịch sử
+    (trạm mới luôn giữ nguyên, hai số bằng nhau), theo từng mốc ngày.
+    """
+    first = scored["station_id"].map({sid: pd.Timestamp(d) for sid, d in first_days.items()})
+    mature = scored[(scored["issued"] - first) >= pd.Timedelta(days=MATURE_DAYS)]
+    use = mature["h"].map(lambda h: uses_model(True, int(h)))
+    mature = mature.assign(served=np.where(use, mature["median"], mature["s0"]))
+    by_lead = [{
+        "lead": int(h),
+        "count": int(len(g)),
+        "mae": round(float((g["served"] - g["target"]).abs().mean()), 3),
+        "persistenceMae": round(float((g["s0"] - g["target"]).abs().mean()), 3),
+    } for h, g in mature.groupby("h")]
+    return {"stations": int(mature["station_id"].nunique()), "byLead": by_lead}
 
 
 def _season_grid(test: pd.DataFrame, start: date, end: date) -> Dict[str, dict]:
@@ -90,13 +134,14 @@ def train_all(panel: pd.DataFrame, data_version=None) -> Tuple[RiskModel, dict, 
     salinity_days = panel.loc[panel["salinity"].notna(), "day"]
     first_day, last_day = salinity_days.min().date(), salinity_days.max().date()
     daily = _daily_salinity(panel)
+    first_days = first_salinity_days(panel)
     seasons_meta, seasons_data = [], []
     for label, start, end in dry_seasons(first_day, last_day):
         start_ts, end_ts = pd.Timestamp(start), pd.Timestamp(end)
         fold = RiskModel.train(known[known["target_day"] < start_ts])
         test = rows[(rows["issued"] >= start_ts) & (rows["issued"] <= end_ts) & (rows["h"] <= ep.WARNING_HORIZON)]
-        lower, upper = fold.predict(test)
-        test = test.assign(lower=lower, upper=upper)
+        lower, median, upper = fold.predict(test)
+        test = test.assign(lower=lower, median=median, upper=upper)
 
         scored = test[test["target"].notna() & (test["target_day"] <= end_ts)]
         grid = _season_grid(test, start, end)
@@ -116,6 +161,7 @@ def train_all(panel: pd.DataFrame, data_version=None) -> Tuple[RiskModel, dict, 
             if len(scored) else None,
             "aboveUpper": round(float((scored["target"] > scored["upper"]).mean()), 3) if len(scored) else None,
             "thresholds": thresholds,
+            "forecast": _forecast_score(scored, first_days),
         })
         seasons_data.append({"label": label, "from": start.isoformat(), "to": end.isoformat(), "stations": grid})
 
@@ -125,10 +171,18 @@ def train_all(panel: pd.DataFrame, data_version=None) -> Tuple[RiskModel, dict, 
         "trainedUntil": last_day.isoformat(),
         "dataVersion": data_version,
         "sklearnVersion": sklearn.__version__,
+        "modelFormat": MODEL_FORMAT,
         "stationCodes": {str(k): v for k, v in codes.items()},
         "lowerQuantile": LOWER_QUANTILE,
         "upperQuantile": UPPER_QUANTILE,
         "warningHorizon": ep.WARNING_HORIZON,
+        # Trạm đủ lịch sử cho lần phát hành tới (ngày sau ngày cuối có số đo): trang Dự báo ghi nhãn trạm mới lắp
+        "forecastRule": {
+            "fromLead": MODEL_FROM_LEAD,
+            "toLead": MEDIAN_MAX_HORIZON,
+            "matureDays": MATURE_DAYS,
+            "stationIds": sorted(sid for sid, d in first_days.items() if is_mature(d, last_day + timedelta(days=1))),
+        },
         "seasons": seasons_meta,
     }
     return model, meta, {"seasons": seasons_data}
@@ -167,6 +221,10 @@ class EarlyWarningService:
                 if meta.get("sklearnVersion") != sklearn.__version__:
                     logger.info("Mô hình rủi ro mặn lưu bằng scikit-learn %s, đang chạy %s: chờ học lại",
                                 meta.get("sklearnVersion"), sklearn.__version__)
+                    return
+                if meta.get("modelFormat") != MODEL_FORMAT:
+                    logger.info("Mô hình rủi ro mặn đã lưu theo định dạng %s, bản này cần %s: chờ học lại",
+                                meta.get("modelFormat"), MODEL_FORMAT)
                     return
                 model = joblib.load(self._dir / "model.joblib")
                 backtest = json.loads((self._dir / "backtest.json").read_text())
@@ -218,16 +276,20 @@ class EarlyWarningService:
             if self._live_key == key:
                 return self._live
             codes = {int(k): v for k, v in self._meta["stationCodes"].items()}
-            rows = build_rows(load_panel(), station_codes=codes, live=True)
-            lower, upper = self._model.predict(rows)
-            rows = rows.assign(lower=lower, upper=upper)
+            panel = load_panel()
+            rows = build_rows(panel, station_codes=codes, live=True)
+            lower, median, upper = self._model.predict(rows)
+            rows = rows.assign(lower=lower, median=median, upper=upper)
+            first_days = first_salinity_days(panel)
             table = {}
             for sid, g in rows.groupby("station_id"):
                 issued = g["issued"].iloc[0].date()
                 table[int(sid)] = {
                     "last_day": issued - timedelta(days=1),
                     "level": float(g["s0"].iloc[0]),
+                    "mature": is_mature(first_days.get(int(sid)), issued),
                     "lower": dict(zip(g["h"].astype(int), g["lower"].astype(float))),
+                    "median": dict(zip(g["h"].astype(int), g["median"].astype(float))),
                     "upper": dict(zip(g["h"].astype(int), g["upper"].astype(float))),
                 }
             self._live_key, self._live = key, table
@@ -250,8 +312,9 @@ class EarlyWarningService:
             if h not in entry["upper"]:
                 return None
             risk = round(entry["upper"][h], 2)
+            value = round(entry["median"][h], 2) if uses_model(entry["mature"], h) else level
             items.append(PredictionItem(
-                date=day, salinity=level, lower_bound=min(round(entry["lower"][h], 2), level), upper_bound=max(risk, level),
+                date=day, salinity=value, lower_bound=min(round(entry["lower"][h], 2), value), upper_bound=max(risk, value),
                 risk_salinity=risk, confidence=round(UPPER_QUANTILE - LOWER_QUANTILE, 2), model_version=MODEL_VERSION,
             ))
         return items
@@ -261,7 +324,8 @@ class EarlyWarningService:
         self._ensure_loaded()
         if self._meta is None:
             return None
-        keys = ("modelVersion", "trainedAt", "trainedUntil", "lowerQuantile", "upperQuantile", "warningHorizon", "seasons")
+        keys = ("modelVersion", "trainedAt", "trainedUntil", "lowerQuantile", "upperQuantile", "warningHorizon",
+                "forecastRule", "seasons")
         return {k: self._meta[k] for k in keys}
 
     def replay_episodes(self, first: date, last: date, thresholds: Dict[int, float]) -> dict:
