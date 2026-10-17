@@ -2,6 +2,11 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [Unreleased]
+
+### Sửa lỗi
+- Trang Cảnh báo không còn ẩn cảnh báo đang mở bắt đầu trước khoảng thời gian đã chọn (cảnh báo Kênh Trường Sơn từ 09/10 biến khỏi bộ lọc "Trong 7 ngày" dù vẫn được đếm là 1 nguy hiểm). Bộ lọc thời gian giờ giữ mọi cảnh báo còn diễn ra trong khoảng đó.
+
 ## [0.7.0] - 2026-10-17
 
 ### Thêm mới
