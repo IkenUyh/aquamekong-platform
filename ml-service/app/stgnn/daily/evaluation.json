@@ -1,0 +1,176 @@
+[
+ {
+  "label": "Mùa khô 2024–2025",
+  "from": "2024-12-01",
+  "to": "2025-05-31",
+  "stations": 17,
+  "method": "walk-forward",
+  "byDay": [
+   {
+    "day": 1,
+    "count": 3077,
+    "mae": 0.399,
+    "gbRisk": 0.422,
+    "persistence": 0.422
+   },
+   {
+    "day": 2,
+    "count": 3060,
+    "mae": 0.497,
+    "gbRisk": 0.553,
+    "persistence": 0.553
+   },
+   {
+    "day": 3,
+    "count": 3043,
+    "mae": 0.561,
+    "gbRisk": 0.66,
+    "persistence": 0.66
+   },
+   {
+    "day": 4,
+    "count": 3026,
+    "mae": 0.6,
+    "gbRisk": 0.623,
+    "persistence": 0.748
+   },
+   {
+    "day": 5,
+    "count": 3009,
+    "mae": 0.64,
+    "gbRisk": 0.67,
+    "persistence": 0.816
+   },
+   {
+    "day": 6,
+    "count": 2992,
+    "mae": 0.669,
+    "gbRisk": 0.717,
+    "persistence": 0.864
+   },
+   {
+    "day": 7,
+    "count": 2975,
+    "mae": 0.7,
+    "gbRisk": 0.755,
+    "persistence": 0.897
+   }
+  ]
+ },
+ {
+  "label": "Mùa khô 2025–2026",
+  "from": "2025-12-01",
+  "to": "2026-05-31",
+  "stations": 17,
+  "method": "walk-forward",
+  "byDay": [
+   {
+    "day": 1,
+    "count": 3005,
+    "mae": 0.322,
+    "gbRisk": 0.331,
+    "persistence": 0.331
+   },
+   {
+    "day": 2,
+    "count": 2987,
+    "mae": 0.402,
+    "gbRisk": 0.436,
+    "persistence": 0.436
+   },
+   {
+    "day": 3,
+    "count": 2969,
+    "mae": 0.466,
+    "gbRisk": 0.522,
+    "persistence": 0.522
+   },
+   {
+    "day": 4,
+    "count": 2951,
+    "mae": 0.482,
+    "gbRisk": 0.501,
+    "persistence": 0.598
+   },
+   {
+    "day": 5,
+    "count": 2933,
+    "mae": 0.541,
+    "gbRisk": 0.55,
+    "persistence": 0.659
+   },
+   {
+    "day": 6,
+    "count": 2915,
+    "mae": 0.579,
+    "gbRisk": 0.59,
+    "persistence": 0.707
+   },
+   {
+    "day": 7,
+    "count": 2897,
+    "mae": 0.607,
+    "gbRisk": 0.625,
+    "persistence": 0.736
+   }
+  ]
+ },
+ {
+  "label": "Sau khi train (01/09/2026 – 16/10/2026)",
+  "from": "2026-09-01",
+  "to": "2026-10-16",
+  "stations": 17,
+  "method": "after-training",
+  "byDay": [
+   {
+    "day": 1,
+    "count": 765,
+    "mae": 0.148,
+    "gbRisk": 0.154,
+    "persistence": 0.154
+   },
+   {
+    "day": 2,
+    "count": 748,
+    "mae": 0.198,
+    "gbRisk": 0.198,
+    "persistence": 0.198
+   },
+   {
+    "day": 3,
+    "count": 731,
+    "mae": 0.227,
+    "gbRisk": 0.237,
+    "persistence": 0.237
+   },
+   {
+    "day": 4,
+    "count": 714,
+    "mae": 0.246,
+    "gbRisk": 0.252,
+    "persistence": 0.266
+   },
+   {
+    "day": 5,
+    "count": 697,
+    "mae": 0.262,
+    "gbRisk": 0.267,
+    "persistence": 0.285
+   },
+   {
+    "day": 6,
+    "count": 680,
+    "mae": 0.28,
+    "gbRisk": 0.281,
+    "persistence": 0.295
+   },
+   {
+    "day": 7,
+    "count": 663,
+    "mae": 0.294,
+    "gbRisk": 0.295,
+    "persistence": 0.312
+   }
+  ]
+ }
+]

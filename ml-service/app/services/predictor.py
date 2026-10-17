@@ -15,6 +15,7 @@ from app.services.data_loader import latest_measurement_id, load_station_metrics
 from app.models.hybrid_salinity_model import HybridSalinityModel
 from app.models.salinity_model import SalinityModel
 from app.stgnn.forecaster import forecaster as stgnn_forecaster
+from app.stgnn.daily import blend as blend_stgnn_daily, daily_forecaster
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ class Predictor:
         # nạp vào giữa ngày (file RYNAN về trễ) thì dự báo tính lại, không trả kết quả tính trên số đo cũ.
         # Lần học của mô hình rủi ro: học xong (vd. lần đầu sau khi khởi động) thì không trả dự báo chưa có mức rủi ro
         return (f"forecast:{station_id}:{days_ahead}:{datetime.now(TIMEZONE).date().isoformat()}"
-                f":{latest_measurement_id()}:{early_warning.stamp()}")
+                f":{latest_measurement_id()}:{early_warning.stamp()}:{daily_forecaster.version()}")
 
     def _get_cached(self, key: str) -> Optional[List[PredictionItem]]:
         try:
@@ -110,8 +111,8 @@ class Predictor:
 
     def _predict_uncached(self, station_id, days_ahead: int) -> List[PredictionItem]:
         """
-        Thứ tự: ST-GNN (trạm có trong model và tốt hơn giữ nguyên giá trị cũ) -> mô hình rủi ro (giữ nguyên số mới
-        nhất kèm mức có thể lên tới; đã chạy lại trên các mùa khô cũ) -> Prophet riêng của trạm -> Hybrid ARIMA-CNN
+        Thứ tự: ST-GNN (trạm có trong model và tốt hơn giữ nguyên giá trị cũ) -> mô hình rủi ro (kèm mức có thể lên tới;
+        trạm có trong ST-GNN daily thì trộn số dự báo của hai mô hình) -> Prophet riêng của trạm -> Hybrid ARIMA-CNN
         (global) -> giữ nguyên số mới nhất.
         Mỗi mô hình lỗi thì rơi xuống tầng sau. Không đủ số đo cho tầng cuối thì InsufficientDataError; trạm có số đo
         mới nhất cũ hơn MAX_DATA_AGE_DAYS ngày (mất tín hiệu) thì StaleDataError, kể cả khi có Prophet/Hybrid.
@@ -123,7 +124,7 @@ class Predictor:
             risk = early_warning.forecast(station_id, days_ahead)
             if risk:
                 logger.info(f"Using risk model for station {station_id}")
-                return risk
+                return self._with_stgnn_daily(station_id, risk)
         except Exception as e:
             logger.error(f"Risk model prediction failed for station {station_id}: {e}", exc_info=True)
 
@@ -152,6 +153,20 @@ class Predictor:
 
         logger.info(f"No trained model for station {station_id}, using statistical estimation")
         return statistical_forecast(daily, days_ahead, today)
+
+    @staticmethod
+    def _with_stgnn_daily(station_id, risk: List[PredictionItem]) -> List[PredictionItem]:
+        """Trạm có trong ST-GNN daily: trộn số dự báo (app/stgnn/daily.blend). Lỗi thì giữ dự báo của mô hình rủi ro."""
+        try:
+            code = load_station_info(station_id)["code"]
+            graph = daily_forecaster.forecast(code, datetime.now(TIMEZONE).date(), latest_measurement_id())
+            if graph is None:
+                return risk
+            logger.info(f"Blending ST-GNN daily for station {station_id} ({code}), data until {graph.data_end}")
+            return blend_stgnn_daily(risk, graph, code, f"{daily_forecaster.version()}+{risk[0].model_version}")
+        except Exception as e:
+            logger.error(f"ST-GNN daily failed for station {station_id}, keeping the risk model: {e}", exc_info=True)
+            return risk
 
     def _stgnn_forecast(self, station_id, days_ahead: int) -> Optional[List[PredictionItem]]:
         try:
