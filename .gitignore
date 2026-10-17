@@ -4,6 +4,8 @@ Data/
 
 # Model Weights
 *.pth
+# Weights ST-GNN daily đóng vào image ml-service (python -m app.stgnn.daily_install)
+!ml-service/app/stgnn/daily/*.pth
 *.pt
 ml-service/trained_models/
 
