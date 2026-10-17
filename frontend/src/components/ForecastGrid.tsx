@@ -43,7 +43,11 @@ interface ForecastGridProps {
   /** Có thì thêm cột sai số; bấm vào mở trạm kèm biểu đồ so với thực tế */
   skill?: { lead: number; of: (stationId: number) => StationSkill | undefined; onCompare: (stationId: number) => void };
   /** Quy tắc của mô hình rủi ro: trạm chưa đủ số năm số đo giữ nguyên số mới nhất, ghi nhãn "Trạm mới lắp" */
-  modelRule?: { fromLead: number; years: number; isNewStation: (stationId: number) => boolean };
+  modelRule?: {
+    fromLead: number; years: number; isNewStation: (stationId: number) => boolean;
+    /** Trạm có ST-GNN daily: tới ngày averageFromDay - 1 là số ST-GNN, từ đó trung bình với mô hình rủi ro */
+    stgnn?: { stations: number; averageFromDay: number };
+  };
 }
 
 /**
@@ -188,6 +192,11 @@ export function ForecastGrid({ items, dates, dayIndex, onSelectDay, expandedId, 
         {modelRule && (
           <span className="text-gray-500">
             Trạm đủ {modelRule.years} năm số đo: từ ngày dự báo thứ {modelRule.fromLead} là số của mô hình; trạm mới lắp giữ nguyên số mới nhất.
+          </span>
+        )}
+        {modelRule?.stgnn && (
+          <span className="text-gray-500">
+            {modelRule.stgnn.stations} trạm có ST-GNN: ngày 1–{modelRule.stgnn.averageFromDay - 1} là số ST-GNN, ngày {modelRule.stgnn.averageFromDay}–7 trung bình ST-GNN và mô hình rủi ro.
           </span>
         )}
         <span className="text-gray-500">Bấm tên trạm để xem biểu đồ{skill ? ', bấm sai số để so dự báo với số đo thật' : ''}.</span>

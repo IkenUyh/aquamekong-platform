@@ -121,22 +121,17 @@ def list_models():
 
 @router.get("/models/stgnn")
 def stgnn_model_info():
-    """Thông tin ST-GNN đã cài: trạm, ngày dữ liệu cuối lúc train, điểm trên tập test (không kèm scaler)."""
-    from app.stgnn.forecaster import forecaster as stgnn_forecaster
+    """ST-GNN daily đã cài (app/stgnn/daily): trạm, ngày dữ liệu cuối lúc train, cách trộn với gb-risk-v2 và điểm từng mùa."""
+    from app.stgnn.daily import STGNN_ONLY_TO, daily_forecaster
 
-    meta = stgnn_forecaster.meta()
+    meta = daily_forecaster.meta()
     if not meta:
-        raise HTTPException(status_code=404, detail="Chưa cài ST-GNN (python -m app.stgnn.install <thư mục weights>)")
-    evaluation = {
-        key: {k: ev[k] for k in ("overall", "interval_coverage", "exceed_recall", "exceed_precision", "test_days")}
-        for key, ev in meta["evaluation"].items()
-    }
+        raise HTTPException(status_code=404, detail="Chưa cài ST-GNN daily (python -m app.stgnn.daily_install <thư mục gói>)")
     return {
         "model_version": meta["model_version"],
-        "installed_at": meta["installed_at"],
-        "trained_until": meta["trained_until"],
+        "trained_until": meta.get("trained_until"),
+        "stations": meta["stations"],
         "horizons": meta["horizons"],
-        "stations": [code for code in meta["stations"] if stgnn_forecaster.eligible(meta, code)],
-        "all_stations": meta["stations"],
-        "evaluation": evaluation,
+        "stgnn_only_to": STGNN_ONLY_TO,
+        "evaluation": daily_forecaster.evaluation() or [],
     }
