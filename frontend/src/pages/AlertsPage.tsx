@@ -1,3 +1,4 @@
+import { activeSince } from '../utils/alertPeriod';
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -113,7 +114,7 @@ export function AlertsPage() {
   const filtered = useMemo(() => {
     const since = periodHours ? Date.now() - periodHours * HOUR : 0;
     return alerts.filter((a) =>
-      new Date(a.createdAt).getTime() >= since &&
+      activeSince(a, since) &&
       levels.includes(levelOf(a)) &&
       (!status || a.status === status) &&
       (!province || a.province === province) &&
