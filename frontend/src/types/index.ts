@@ -138,27 +138,26 @@ export interface SalinityForecast {
   dataUntil?: string | null;
 }
 
-interface ErrorScore {
-  mae: number;
-  rmse: number;
+/** Điểm của số dự báo app hiển thị ở các trạm ST-GNN daily trong một giai đoạn (ml-service scripts/benchmark_stgnn_daily.py) */
+export interface StgnnPeriodScore {
+  label: string;
+  from: string;
+  to: string;
+  stations: number;
+  /** walk-forward: mỗi mùa train lại chỉ trên dữ liệu trước mùa; after-training: weights đang chạy, sau ngày dữ liệu cuối lúc train */
+  method: 'walk-forward' | 'after-training';
+  byDay: { day: number; count: number; mae: number; gbRisk: number; persistence: number }[];
 }
 
-/** Điểm ST-GNN trên tập test (GET /forecasts/model-info, khoá giữ nguyên dạng snake_case của ML service) */
+/** GET /forecasts/model-info: ST-GNN daily đã cài */
 export interface StgnnModelInfo {
   model_version: string;
-  installed_at: string;
-  trained_until: string;
-  horizons: number[];
-  /** Trạm đang dùng ST-GNN (tốt hơn giữ nguyên giá trị cũ trên tập test) */
+  trained_until: string | null;
   stations: string[];
-  all_stations: string[];
-  evaluation: Record<string, {
-    overall: { stgnn: ErrorScore; naive: ErrorScore };
-    interval_coverage: number;
-    exceed_recall: number;
-    exceed_precision: number;
-    test_days: number;
-  }>;
+  horizons: number[];
+  /** Số ngày sau số đo cuối dùng số ST-GNN; sau đó trung bình với mô hình rủi ro. Ngày trên web = số ngày đó - 1 */
+  stgnn_only_to: number;
+  evaluation: StgnnPeriodScore[];
 }
 
 // --- Domain: Alert ---
