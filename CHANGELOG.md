@@ -2,7 +2,7 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
-## [Unreleased]
+## [0.7.1] - 2026-10-17
 
 ### Sửa lỗi
 - Trang Cảnh báo không còn ẩn cảnh báo đang mở bắt đầu trước khoảng thời gian đã chọn (cảnh báo Kênh Trường Sơn từ 09/10 biến khỏi bộ lọc "Trong 7 ngày" dù vẫn được đếm là 1 nguy hiểm). Bộ lọc thời gian giờ giữ mọi cảnh báo còn diễn ra trong khoảng đó.
@@ -160,6 +160,7 @@ Bản phát hành đầu tiên.
 - Cảnh báo và khuyến nghị dựa trên số đo mới nhất, chưa dựa trên dự báo.
 - Dữ liệu RYNAN hiện có đến 31/08/2026; trạm hiện "mất tín hiệu" tới khi nạp dữ liệu mới.
 
+[0.7.1]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.6.0...v0.6.1
