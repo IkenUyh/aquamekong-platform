@@ -14,7 +14,7 @@ import { forecastQueryKey, useStgnnModelInfo } from '../hooks/useForecast';
 import { useEarlyWarningEvaluation, useForecastAccuracy } from '../hooks/useForecastAccuracy';
 import type { StationAccuracy as StationAccuracyData } from '../api/accuracyApi';
 import type { SalinityForecast, StgnnModelInfo } from '../types';
-import { formatDay, formatFullDate, formatMeasuredAt, formatNumber, formatSalinity, isReporting, SALINITY_THRESHOLD } from '../utils/salinity';
+import { formatDay, formatFullDate, formatMeasuredAt, formatSalinity, isReporting, SALINITY_THRESHOLD } from '../utils/salinity';
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const HORIZONS = [7, 14];
@@ -28,6 +28,7 @@ const fullDay = (iso: string) => formatFullDate(new Date(`${iso}T00:00:00`));
 /** Tên mô hình theo model_version mà ML service ghi vào lượt dự báo; newStation: trạm chưa đủ số năm số đo */
 function modelLabel(version?: string, newStation = false): string {
   if (!version) return '';
+  if (version.startsWith('stgnn-daily')) return 'ST-GNN + mô hình rủi ro';
   if (version.startsWith('st-gnn')) return 'ST-GNN';
   if (version.startsWith('gb-risk-v1') || (version.startsWith('gb-risk') && newStation)) return 'Số mới nhất + mô hình rủi ro';
   if (version.startsWith('gb-risk')) return 'Mô hình rủi ro';
@@ -39,29 +40,54 @@ function modelLabel(version?: string, newStation = false): string {
   return version;
 }
 
-/** Thẻ điểm ST-GNN trên tập test, so với cách giữ nguyên giá trị cũ */
+/** "tốt hơn 6%" so với một mức sai số khác */
+const versus = (mae: number, other: number) => {
+  const better = other === 0 ? 0 : Math.round((100 * (other - mae)) / other);
+  return better === 0 ? 'bằng' : better > 0 ? `tốt hơn ${better}%` : `kém hơn ${-better}%`;
+};
+
+/** Thẻ điểm ST-GNN daily: số app hiển thị ở các trạm của nó, đặt cạnh mô hình rủi ro và cách giữ nguyên, theo từng giai đoạn */
 function StgnnScoreCard({ info }: { info: StgnnModelInfo }) {
-  const pct = (a: number, b: number) => Math.round((100 * (b - a)) / b);
+  const days = [1, 3, 7];
+  const stgnnDays = info.stgnn_only_to - 1;
   return (
-    <div className="card p-3 text-xs text-gray-600 space-y-1">
-      <p className="text-sm font-semibold text-gray-900">
-        ST-GNN · {info.stations.length}/{info.all_stations.length} trạm của mô hình
-      </p>
-      {info.horizons.map((h) => {
-        const ev = info.evaluation[`h${h}`];
-        if (!ev) return null;
-        const { stgnn, naive } = ev.overall;
-        return (
-          <p key={h} className="num">
-            Dự báo {h} ngày: sai số trung bình {formatNumber(stgnn.mae)}‰, giữ nguyên giá trị cũ {formatNumber(naive.mae)}‰
-            {' '}({pct(stgnn.mae, naive.mae) >= 0 ? `tốt hơn ${pct(stgnn.mae, naive.mae)}%` : `kém hơn ${-pct(stgnn.mae, naive.mae)}%`});
-            {' '}khoảng dự báo chứa {Math.round(ev.interval_coverage * 100)}% giá trị thật
-          </p>
-        );
-      })}
+    <div className="card p-3 text-xs text-gray-600 space-y-2">
+      <p className="text-sm font-semibold text-gray-900">ST-GNN ở {info.stations.length} trạm</p>
+      <div className="overflow-x-auto">
+        <table className="w-full num">
+          <thead>
+            <tr className="text-left text-gray-500">
+              <th className="font-normal py-1 pr-2">Giai đoạn</th>
+              {days.map((d) => <th key={d} className="font-normal py-1 pr-2 text-right last:pr-0">Ngày {d}</th>)}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 text-gray-700">
+            {info.evaluation.map((period) => (
+              <tr key={period.label}>
+                <td className="py-1 pr-2">{period.label}</td>
+                {days.map((d) => {
+                  const s = period.byDay.find((x) => x.day === d);
+                  return (
+                    <td key={d} className="py-1 pr-2 text-right whitespace-nowrap last:pr-0">
+                      {s ? (
+                        <span title={`Mô hình rủi ro ±${formatSalinity(s.gbRisk)}‰, giữ nguyên ±${formatSalinity(s.persistence)}‰`}>
+                          ±{formatSalinity(s.mae)}‰ <span className="text-gray-400">({versus(s.mae, s.gbRisk)})</span>
+                        </span>
+                      ) : '—'}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <p className="text-gray-400">
-        Chấm trên {info.evaluation[`h${info.horizons[0]}`]?.test_days ?? '—'} ngày cuối của dữ liệu (tập kiểm tra), dữ liệu tới {fullDay(info.trained_until)}.
-        Trạm còn lại dùng mô hình khác.
+        Sai trung bình của số dự báo app hiển thị ở các trạm này, trong ngoặc là so với mô hình rủi ro (gradient boosting).
+        Ngày 1–{stgnnDays} là số của ST-GNN, ngày {stgnnDays + 1}–7 là trung bình ST-GNN và mô hình rủi ro: trên các mùa đã
+        chấm, cách trộn này sai ít hơn từng mô hình riêng. Mùa khô: mỗi mùa train lại chỉ trên dữ liệu trước mùa đó. Giai đoạn
+        sau khi train: mô hình đang chạy{info.trained_until ? ` (học dữ liệu tới ${fullDay(info.trained_until)})` : ''}, chấm
+        trên số đo nó chưa thấy. Đích luôn là số đo thật.
       </p>
     </div>
   );
@@ -229,7 +255,7 @@ export function ForecastPage() {
   // Thẻ điểm ST-GNN chỉ khi có trạm đang hiển thị dự báo của nó (dữ liệu ST-GNN cũ thì ML dùng mô hình khác)
   const { data: accuracy } = useForecastAccuracy();
   const { data: earlyWarning } = useEarlyWarningEvaluation();
-  const usesStgnn = items.some((i) => i.forecasts.some((f) => f.modelVersion?.startsWith('st-gnn')));
+  const usesStgnn = items.some((i) => i.forecasts.some((f) => f.modelVersion?.startsWith('st-gnn') || f.modelVersion?.startsWith('stgnn-daily')));
   // Trạm đủ lịch sử (mô hình rủi ro): số dự báo từ mốc fromLead ngày là của mô hình, trạm còn lại giữ nguyên số mới nhất
   const rule = earlyWarning?.forecastRule;
   const matureIds = useMemo(() => new Set(rule?.stationIds ?? []), [rule]);
@@ -237,6 +263,7 @@ export function ForecastPage() {
     fromLead: rule.fromLead,
     years: Math.round(rule.matureDays / 365),
     isNewStation: (id: number) => !matureIds.has(id),
+    stgnn: modelInfo && usesStgnn ? { stations: modelInfo.stations.length, averageFromDay: modelInfo.stgnn_only_to } : undefined,
   } : undefined;
   // Độ tin cậy toàn vùng ở mốc của chuỗi so sánh (cùng mốc với cột sai số từng trạm)
   const overallSkill = accuracy?.byLead.find((l) => l.lead === accuracy.seriesLead);
