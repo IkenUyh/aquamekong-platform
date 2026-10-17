@@ -2,7 +2,7 @@
 
 Các thay đổi đáng chú ý của AquaMekong, mới nhất ở trên. Phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
 
-## [Unreleased]
+## [0.7.0] - 2026-10-17
 
 ### Thêm mới
 - **ST-GNN chạy thật ở 17 trạm**: mô hình đồ thị không gian – thời gian của nhóm AI, train lại chỉ với số đo RYNAN hằng ngày (độ mặn, mực nước) nên chạy được mỗi ngày. Ở 17 trạm này, ngày 1–3 dùng số của ST-GNN, ngày 4–7 dùng trung bình ST-GNN và mô hình rủi ro. Chấm trên số đo thật: mùa khô 2024–25 và 2025–26 (mỗi mùa chỉ học dữ liệu trước 01/12) sai ít hơn mô hình rủi ro 3–15% ở ngày 1–3 và 2–7% ở ngày 4–7; trên số đo sau khi train (01/09–16/10/2026) bằng hoặc tốt hơn 0–4% ở mọi ngày. Mức có thể lên tới, cảnh báo sớm và 23 trạm còn lại vẫn dùng mô hình rủi ro.
@@ -155,6 +155,7 @@ Bản phát hành đầu tiên.
 - Cảnh báo và khuyến nghị dựa trên số đo mới nhất, chưa dựa trên dự báo.
 - Dữ liệu RYNAN hiện có đến 31/08/2026; trạm hiện "mất tín hiệu" tới khi nạp dữ liệu mới.
 
+[0.7.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/IkenUyh/aquamekong-platform/compare/v0.5.2...v0.6.0
