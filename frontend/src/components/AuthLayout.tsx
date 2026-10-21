@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Logo } from './Logo';
 import { useAuth } from '../contexts/AuthContext';
+import { DATA_SOURCE_CREDIT } from '../utils/attribution';
 
 /** Hoạ tiết sóng mờ cho nửa trái (SVG thuần, không ảnh ngoài) */
 function WavePattern() {
@@ -33,7 +34,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             Số đo độ mặn, mực nước và lưu lượng từ các trạm quan trắc; dự báo 7–14 ngày và cảnh báo khi vượt ngưỡng.
           </p>
         </div>
-        <p className="relative text-xs text-white/50">AquaMekong · Hệ thống quan trắc thủy văn</p>
+        <p className="relative text-xs text-white/50">AquaMekong · Hệ thống quan trắc thủy văn · {DATA_SOURCE_CREDIT}</p>
         <WavePattern />
       </aside>
 
