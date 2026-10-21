@@ -5,6 +5,7 @@ import { MapLegend } from './MapLegend';
 import { MapFlyToStation } from '../hooks/useMapFlyTo';
 import type { GeoJsonFeature } from '../types';
 import type { ColorMetric } from '../utils/metricScales';
+import { MAP_ATTRIBUTION } from '../utils/attribution';
 import type { Feature, GeoJsonObject } from 'geojson';
 import type { Layer } from 'leaflet';
 import provincesData from '../data/mekong-provinces.json';
@@ -27,7 +28,6 @@ const DEFAULT_ZOOM = 9;
 
 // OpenStreetMap map tiles
 const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 /** Từ mức zoom này tên trạm hiện thẳng trên marker; nhỏ hơn thì chỉ hiện khi rê chuột */
 const SHOW_NAMES_ZOOM = 11;
@@ -59,7 +59,7 @@ export function MapView({ features, selectedStationId, onSelectStation, activeLa
       zoomControl={true}
       id="map-container"
     >
-      <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
+      <TileLayer url={TILE_URL} attribution={MAP_ATTRIBUTION} />
 
       {activeLayers.provinces && (
         <GeoJSON
