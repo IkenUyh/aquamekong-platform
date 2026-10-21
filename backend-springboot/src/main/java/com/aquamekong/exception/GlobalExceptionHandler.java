@@ -92,6 +92,19 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.CONFLICT);
     }
 
+    /** Trạm không đủ số đo để dự báo: lỗi do dữ liệu, không phải ML service hỏng (502) */
+    @ExceptionHandler(InsufficientDataException.class)
+    public ResponseEntity<Map<String, Object>> handleInsufficientData(InsufficientDataException ex, WebRequest request) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", OffsetDateTime.now());
+        body.put("status", HttpStatus.UNPROCESSABLE_ENTITY.value());
+        body.put("error", "Unprocessable Entity");
+        body.put("message", ex.getMessage());
+        body.put("path", request.getDescription(false).replace("uri=", ""));
+
+        return new ResponseEntity<>(body, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+
     @ExceptionHandler(MlServiceException.class)
     public ResponseEntity<Map<String, Object>> handleMlServiceException(MlServiceException ex, WebRequest request) {
         Map<String, Object> body = new LinkedHashMap<>();
