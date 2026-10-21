@@ -5,6 +5,7 @@ import com.aquamekong.entity.enums.StationStatus;
 import com.aquamekong.entity.forecast.ForecastRun;
 import com.aquamekong.entity.station.Station;
 import com.aquamekong.entity.telemetry.Measurement;
+import com.aquamekong.exception.InsufficientDataException;
 import com.aquamekong.exception.MlServiceException;
 import com.aquamekong.repository.forecast.ForecastRunRepository;
 import com.aquamekong.repository.station.StationRepository;
@@ -155,6 +156,21 @@ class DailyForecastJobTest {
         verify(eventPublisher).publishEvent(event.capture());
         assertThat(event.getValue().succeeded()).isEqualTo(2);
         assertThat(event.getValue().failed()).isEqualTo(1);
+    }
+
+    @Test
+    void silentStationIsNeitherSucceededNorFailed() {
+        // Trạm mất tín hiệu vẫn ACTIVE, ml-service trả 422
+        lastRunInDb(null);
+        when(forecastService.predict(2L, DailyForecastJob.DAYS_AHEAD))
+                .thenThrow(new InsufficientDataException("Trạm 2 không có số đo độ mặn trong 30 ngày qua", null));
+
+        job("0 */30 6-22 * * *").refreshIfNeeded(vn(10, 7, 0).toInstant());
+
+        ArgumentCaptor<ForecastsRefreshedEvent> event = ArgumentCaptor.forClass(ForecastsRefreshedEvent.class);
+        verify(eventPublisher).publishEvent(event.capture());
+        assertThat(event.getValue().succeeded()).isEqualTo(2);
+        assertThat(event.getValue().failed()).isZero();
     }
 
     @Test
