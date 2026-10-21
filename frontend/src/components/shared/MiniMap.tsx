@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { MAP_ATTRIBUTION } from '../../utils/attribution';
 
 interface MiniMapProps {
   markers: {
@@ -112,7 +113,7 @@ export function MiniMap({ markers, center = [10.0, 105.5], zoom = 7, height = '4
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attribution={MAP_ATTRIBUTION}
         />
         <ZoomControl position="topright" />
         
