@@ -4,6 +4,10 @@
 
 server:
   port: ${SERVER_PORT:8080}
+  # Sau Caddy và nginx, địa chỉ kết nối luôn là IP container nginx: lấy IP người dùng từ X-Forwarded-For
+  # (Tomcat chỉ tin proxy trong dải mạng nội bộ). Không có thì khoá đăng nhập sai (username + IP) thành khoá
+  # theo username, ai cũng khoá được tài khoản admin
+  forward-headers-strategy: native
 
 spring:
   application:
