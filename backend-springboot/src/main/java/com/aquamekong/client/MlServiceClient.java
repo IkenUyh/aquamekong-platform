@@ -1,5 +1,6 @@
 package com.aquamekong.client;
 
+import com.aquamekong.exception.InsufficientDataException;
 import com.aquamekong.exception.MlServiceException;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -112,6 +113,16 @@ public class MlServiceClient {
                 throw new MlServiceException("ML service trả về dữ liệu rỗng cho trạm " + stationId);
             }
             return response;
+        } catch (HttpClientErrorException.UnprocessableEntity e) {
+            // ml-service trả 422 + detail dạng chuỗi khi trạm không đủ số đo; 422 của FastAPI khi request sai định
+            // dạng thì detail là danh sách lỗi, đó vẫn là lỗi thật
+            Map<?, ?> body = e.getResponseBodyAs(Map.class);
+            if (body != null && body.get("detail") instanceof String detail) {
+                log.info("ML service không dự báo trạm {}: {}", stationId, detail);
+                throw new InsufficientDataException(detail, e);
+            }
+            log.error("Gọi ML service thất bại cho trạm {}: {}", stationId, e.getMessage());
+            throw new MlServiceException("Không gọi được ML service: " + e.getMessage(), e);
         } catch (RestClientException e) {
             log.error("Gọi ML service thất bại cho trạm {}: {}", stationId, e.getMessage());
             throw new MlServiceException("Không gọi được ML service: " + e.getMessage(), e);
