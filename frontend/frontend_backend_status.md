@@ -67,5 +67,50 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
 ### 5. Cảnh báo (Alerts)
 - **Trang:** `/alerts`, panel cảnh báo trên bản đồ
 - **Trạng thái:** 🟢 Đã liên kết. `api/alertApi.ts` (`toAlertDto`) map dữ liệu backend sang dạng UI hiển thị.
+- **Endpoints:**
+  - `GET /api/v1/alerts?limit=` (tối đa 1000), `GET /api/v1/alerts/status/ACTIVE`, `GET /api/v1/alerts/station/{id}` 🌐
+  - `PUT /api/v1/alerts/{id}/status?status=` 🛠️ (các nút Xác nhận / Đã xử lý / Mở lại trên trang Cảnh báo)
+  - `GET/POST/DELETE /api/v1/alerts/rules...` (GET 👤, ghi 🛠️; giao diện: `/admin`)
+- Backend tự sinh cảnh báo cho mọi số liệu mới, kể cả dữ liệu do ML pipeline crawl về. Mỗi rule chỉ có tối đa 1 cảnh báo chưa xử lý (ACTIVE hoặc ACKNOWLEDGED) tại một thời điểm.
 
-// TODO: complete edge-case assertions and verification
+### 5b. Trạm theo dõi (Watches)
+- **Trang:** `/account`, mục "Trạm theo dõi" (`components/StationWatchSettings.tsx`, `api/watchApi.ts`)
+- **Trạng thái:** 🟢 Đã liên kết
+- **Endpoints:** `GET /api/v1/watches` 👤 (kèm số đo mới nhất và dự báo so với ngưỡng), `POST /api/v1/watches` `{stationId, threshold, crop}` 👤 (theo dõi, hoặc đổi ngưỡng nếu đã theo dõi; tối đa 20 trạm), `DELETE /api/v1/watches/{id}` 👤
+- Ngưỡng gợi ý theo loại cây (`utils/crops.ts`): sầu riêng 0,5‰, cây ăn trái 1‰, lúa 2‰, rau màu 2‰; người dùng sửa được.
+- Sau mỗi lượt dự báo (backend chạy lại dự báo khi có số đo mới), backend báo khi trạm đổi trạng thái: số đo mới nhất, dự báo hoặc mức có thể lên tới (mô hình rủi ro) của 7 ngày tới bắt đầu vượt ngưỡng, hoặc đã xuống dưới ngưỡng và hết nguy cơ. Đã báo có thể vượt ngày nào thì giữ cảnh báo tới hết ngày đó (`riskUntil`). Không báo lặp mỗi ngày.
+- Tài khoản đã theo dõi ít nhất một trạm thì chỉ nhận cảnh báo đo được (mục 5) của các trạm đó; chưa theo dõi trạm nào thì nhận mọi trạm. Quản trị/Vận hành luôn nhận mọi trạm.
+
+### 6. Khuyến nghị (Recommendations)
+- **Trang:** `/` (Tổng quan), panel trên bản đồ
+- **Trạng thái:** 🟢 Đã liên kết
+- **Endpoint:** `GET /api/v1/recommendations` 🌐: trạm đang vượt 4‰ (hạn chế lấy nước), trạm chưa vượt nhưng dự báo hoặc mức có thể lên tới vượt 4‰ trong 7 ngày (trữ nước ngọt trước ngày đó), chỉ dùng số đo không cũ hơn 3 ngày.
+
+### 7. Báo cáo & Thống kê (Reports)
+- **Trang:** `/reports` (chọn kỳ 7/30/90 ngày), thẻ "Thông số tổng hợp (24 giờ qua)" trên bản đồ
+- **Trạng thái:** 🟢 Đã liên kết. Mỗi số liệu so sánh kỳ hiện tại với kỳ liền trước có cùng độ dài.
+- **Endpoints** (`days` từ 1 đến 90) 🌐:
+  - `GET /api/v1/reports/overview?days=`: độ mặn, mực nước, lưu lượng trung bình; số trạm vượt 4‰; phân bố trạm theo mức độ mặn
+  - `GET /api/v1/reports/trend?days=`: độ mặn trung bình toàn vùng theo từng ngày
+  - `GET /api/v1/reports/top-stations?days=&limit=`: các trạm có độ mặn trung bình cao nhất
+  - `GET /api/v1/reports/data-freshness`: dữ liệu có về đúng hạn không (sau 12:00 phải có số đo của hôm qua, vì lịch GitHub Actions có thể trễ vài giờ). Trang Tổng quan hiện dải cảnh báo khi `stale`; lúc 09:00 backend báo cho Quản trị/Vận hành.
+- Hệ thống chưa có cảm biến đo **lượng mưa**, nên không có số liệu lượng mưa.
+
+---
+
+### 8. Quản trị
+- **Trang:** `/admin` (🛠️). Tab "Người dùng" chỉ hiện với 🔑.
+- **Trạng thái:** 🟢 Đã liên kết
+- **Rule cảnh báo:** `GET/POST/DELETE /api/v1/alerts/rules` (POST có `id` là sửa). Backend validate trạm, chỉ số, toán tử và ngưỡng. Hệ thống **chỉ sinh cảnh báo khi có rule đang bật**.
+- **Trạm:** `POST/PUT /api/v1/stations` 🛠️; `DELETE` 🔑, thao tác này xoá dây chuyền số đo và cảnh báo của trạm. Muốn tạm dừng trạm thì dùng trạng thái "Ngừng hoạt động".
+- **Người dùng:** `GET/POST /api/v1/users`, `PUT /users/{id}/status`, `POST/DELETE /users/{id}/roles` 🔑. ADMIN không thể tự khoá hoặc tự gỡ quyền của mình, và hệ thống không cho gỡ ADMIN cuối cùng.
+
+---
+
+## Còn thiếu
+- Màn hình quản lý thiết bị và cảm biến (`/api/v1/devices`, `/api/v1/sensors`). `deviceApi`/`sensorApi` đã có sẵn trong `api/client.ts`.
+- User bị khoá vẫn dùng được token đã cấp cho tới khi token hết hạn (`JWT_EXPIRATION`, mặc định 8 giờ). (Đăng nhập Google mới thì bị chặn ngay.)
+- Challenge passkey lưu trong bộ nhớ backend (5 phút): chạy nhiều instance backend thì cần chuyển sang Redis.
+- Chưa bắt buộc passkey cho OPERATOR/ADMIN (hiện chỉ khuyến khích).
+- Lấy số điện thoại Zalo (cần xin quyền riêng từ Zalo) để gửi cảnh báo qua Zalo OA.
+- Đăng ký chưa xác minh email và chưa giới hạn số lượt theo IP (backend chưa đọc `X-Forwarded-For` sau nginx).
