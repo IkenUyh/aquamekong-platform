@@ -26,5 +26,23 @@ class PasskeyChallengeStoreTest {
     @Test
     void loginChallengeCannotBeUsedAsRegistration() {
         String id = store.put("assertion", null);
+        assertThatThrownBy(() -> store.take(id, String.class, "alice")).isInstanceOf(BadCredentialsException.class);
+    }
 
-// TODO: complete edge-case assertions and verification
+    @Test
+    void wrongTypeIsRejected() {
+        String id = store.put("request", null);
+        assertThatThrownBy(() -> store.take(id, Integer.class, null)).isInstanceOf(BadCredentialsException.class);
+    }
+
+    @Test
+    void unknownIdIsRejected() {
+        assertThatThrownBy(() -> store.take("nope", String.class, null)).isInstanceOf(BadCredentialsException.class);
+        assertThatThrownBy(() -> store.take(null, String.class, null)).isInstanceOf(BadCredentialsException.class);
+    }
+
+    @Test
+    void idsAreUnguessable() {
+        assertThat(store.put("a", null)).hasSize(22).isNotEqualTo(store.put("b", null));
+    }
+}

@@ -39,5 +39,31 @@ class WatchControllerTest {
     @WithAnonymousUser
     void anonymousCannotListOrWatch() throws Exception {
         mvc.perform(get("/api/v1/watches")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/watches").contentType(MediaType.APPLICATION_JSON).content(BODY))
+                .andExpect(status().isUnauthorized());
+        verifyNoInteractions(watchService);
+    }
 
-// TODO: complete edge-case assertions and verification
+    @Test
+    @WithMockUser(username = "alice", roles = "USER")
+    void selfRegisteredUserCanWatchAndUnwatch() throws Exception {
+        mvc.perform(post("/api/v1/watches").contentType(MediaType.APPLICATION_JSON).content(BODY))
+                .andExpect(status().isOk());
+        verify(watchService).save(eq("alice"), any());
+
+        mvc.perform(delete("/api/v1/watches/5")).andExpect(status().isNoContent());
+        verify(watchService).delete("alice", 5L);
+    }
+
+    @Test
+    @WithMockUser(username = "alice", roles = "USER")
+    void thresholdMustBeAPlausibleSalinity() throws Exception {
+        mvc.perform(post("/api/v1/watches").contentType(MediaType.APPLICATION_JSON).content("""
+                        {"stationId":3,"threshold":0}"""))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/watches").contentType(MediaType.APPLICATION_JSON).content("""
+                        {"stationId":3,"threshold":120}"""))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(watchService);
+    }
+}

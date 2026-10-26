@@ -46,5 +46,35 @@ class PushControllerTest {
 
     @Test
     @WithMockUser(username = "alice", roles = "USER")
+    void selfRegisteredUserCanSubscribe() throws Exception {
+        mvc.perform(post("/api/v1/push/subscriptions").contentType(MediaType.APPLICATION_JSON).content(SUBSCRIBE_BODY))
+                .andExpect(status().isNoContent());
+        verify(pushService).subscribe(eq("alice"), any());
+    }
 
-// TODO: complete edge-case assertions and verification
+    @Test
+    @WithMockUser(username = "alice", roles = "USER")
+    void subscribeValidatesBody() throws Exception {
+        mvc.perform(post("/api/v1/push/subscriptions").contentType(MediaType.APPLICATION_JSON).content("{\"channel\":\"WEBPUSH\"}"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(pushService);
+    }
+
+    @Test
+    @WithMockUser(username = "dev", roles = "DEVICE")
+    void ingestDeviceCannotSubscribe() throws Exception {
+        mvc.perform(post("/api/v1/push/subscriptions").contentType(MediaType.APPLICATION_JSON).content(SUBSCRIBE_BODY))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "alice", roles = "USER")
+    void configReturnsVapidKey() throws Exception {
+        when(pushService.config()).thenReturn(new PushConfigDto("BPub", false));
+
+        mvc.perform(get("/api/v1/push/config"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.webPushPublicKey").value("BPub"))
+                .andExpect(jsonPath("$.fcmEnabled").value(false));
+    }
+}

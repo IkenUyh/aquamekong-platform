@@ -23,5 +23,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(ForecastController.class)
 @Import({SecurityConfig.class, JwtService.class, JsonAuthErrorHandler.class})
 @TestPropertySource(properties = "app.security.public-read=false")
+class PrivateReadSecurityTest {
 
-// TODO: complete edge-case assertions and verification
+    @Autowired MockMvc mvc;
+    @MockBean ForecastService forecastService;
+    @MockBean UserDetailsService userDetailsService;
+
+    @Test
+    @WithAnonymousUser
+    void anonymousIsUnauthorized() throws Exception {
+        mvc.perform(get("/api/v1/forecasts/runs")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void userCanRead() throws Exception {
+        mvc.perform(get("/api/v1/forecasts/runs")).andExpect(status().isOk());
+    }
+}

@@ -12,5 +12,13 @@ class LoginAttemptServiceTest {
         for (int i = 0; i < LoginAttemptService.MAX_FAILURES - 1; i++) {
             service.onFailure("bob|1.2.3.4");
         }
+        assertThat(service.isLocked("bob|1.2.3.4")).isFalse();
 
-// TODO: complete edge-case assertions and verification
+        service.onFailure("bob|1.2.3.4");
+        assertThat(service.isLocked("bob|1.2.3.4")).isTrue();
+        assertThat(service.isLocked("bob|5.6.7.8")).isFalse();
+
+        service.onSuccess("bob|1.2.3.4");
+        assertThat(service.isLocked("bob|1.2.3.4")).isFalse();
+    }
+}

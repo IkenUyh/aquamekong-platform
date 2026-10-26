@@ -22,5 +22,19 @@ class JwtServiceTest {
 
     @Test
     void rejectsTokenSignedWithAnotherKey() {
+        String token = new JwtService(SECRET, Duration.ofHours(1)).issue("alice", List.of("ROLE_ADMIN"));
+        JwtService other = new JwtService("another-secret-another-secret-another-1", Duration.ofHours(1));
+        assertThat(other.parse(token)).isEmpty();
+    }
 
-// TODO: complete edge-case assertions and verification
+    @Test
+    void rejectsExpiredToken() {
+        JwtService jwt = new JwtService(SECRET, Duration.ofSeconds(-1));
+        assertThat(jwt.parse(jwt.issue("alice", List.of()))).isEmpty();
+    }
+
+    @Test
+    void rejectsShortSecret() {
+        assertThatThrownBy(() -> new JwtService("short", Duration.ofHours(1))).isInstanceOf(IllegalStateException.class);
+    }
+}

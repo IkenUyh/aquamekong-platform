@@ -63,5 +63,47 @@ class GoogleIdTokenVerifierTest {
         assertThat(p.subject()).isEqualTo("1234567890");
         assertThat(p.email()).isEqualTo("nguyen.van.a@gmail.com");
         assertThat(p.emailVerified()).isTrue();
+        assertThat(p.name()).isEqualTo("Nguyễn Văn A");
+    }
 
-// TODO: complete edge-case assertions and verification
+    @Test
+    void acceptsIssuerWithoutScheme() throws Exception {
+        assertThat(verifier.verify(token("accounts.google.com", CLIENT_ID, inOneHour(), "true")).emailVerified()).isTrue();
+    }
+
+    @Test
+    void rejectsTokenIssuedForAnotherApp() {
+        assertThatThrownBy(() -> verifier.verify(token("https://accounts.google.com", "other-app", inOneHour(), true)))
+                .isInstanceOf(BadCredentialsException.class);
+    }
+
+    @Test
+    void rejectsForeignIssuer() {
+        assertThatThrownBy(() -> verifier.verify(token("https://evil.example", CLIENT_ID, inOneHour(), true)))
+                .isInstanceOf(BadCredentialsException.class);
+    }
+
+    @Test
+    void rejectsExpiredToken() {
+        assertThatThrownBy(() -> verifier.verify(token("https://accounts.google.com", CLIENT_ID, Instant.now().minusSeconds(600), true)))
+                .isInstanceOf(BadCredentialsException.class);
+    }
+
+    @Test
+    void rejectsGarbage() {
+        assertThatThrownBy(() -> verifier.verify("not-a-jwt")).isInstanceOf(BadCredentialsException.class);
+    }
+
+    @Test
+    void unverifiedEmailIsReported() throws Exception {
+        assertThat(verifier.verify(token("https://accounts.google.com", CLIENT_ID, inOneHour(), false)).emailVerified()).isFalse();
+    }
+
+    @Test
+    void disabledWithoutClientId() {
+        var disabled = new GoogleIdTokenVerifier("");
+        assertThat(disabled.isEnabled()).isFalse();
+        assertThat(disabled.getClientId()).isNull();
+        assertThatThrownBy(() -> disabled.verify("x")).isInstanceOf(IllegalArgumentException.class);
+    }
+}
