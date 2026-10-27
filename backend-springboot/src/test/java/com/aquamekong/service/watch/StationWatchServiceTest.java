@@ -1,0 +1,127 @@
+package com.aquamekong.service.watch;
+
+import com.aquamekong.dto.watch.WatchDtos.Outlook;
+import com.aquamekong.dto.watch.WatchDtos.WatchRequest;
+import com.aquamekong.entity.forecast.SalinityForecast;
+import com.aquamekong.entity.station.Station;
+import com.aquamekong.entity.telemetry.Measurement;
+import com.aquamekong.entity.user.StationWatch;
+import com.aquamekong.entity.user.User;
+import com.aquamekong.repository.forecast.SalinityForecastRepository;
+import com.aquamekong.repository.station.StationRepository;
+import com.aquamekong.repository.telemetry.MeasurementRepository;
+import com.aquamekong.repository.user.StationWatchRepository;
+import com.aquamekong.repository.user.UserRepository;
+import com.aquamekong.service.watch.StationWatchService.StationSnapshot;
+import jakarta.persistence.EntityNotFoundException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class StationWatchServiceTest {
+
+    private static final ZoneOffset VN = ZoneOffset.ofHours(7);
+    /** 09/10/2026 08:00 giờ VN */
+    private static final Instant NOW = OffsetDateTime.of(2026, 10, 9, 8, 0, 0, 0, VN).toInstant();
+
+    @Mock StationWatchRepository watchRepository;
+    @Mock UserRepository userRepository;
+    @Mock StationRepository stationRepository;
+    @Mock MeasurementRepository measurementRepository;
+    @Mock SalinityForecastRepository forecastRepository;
+    StationWatchService service;
+
+    private final User alice = User.builder().id(1L).username("alice").build();
+    private final User bob = User.builder().id(2L).username("bob").build();
+    private final Station station = Station.builder().id(3L).name("Mỹ Tho").build();
+
+    @BeforeEach
+    void setUp() {
+        service = new StationWatchService(watchRepository, userRepository, stationRepository, measurementRepository, forecastRepository);
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(alice));
+        when(stationRepository.findById(3L)).thenReturn(Optional.of(station));
+        when(forecastRepository.findLatestRunByStationId(3L)).thenReturn(List.of());
+        when(watchRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+    }
+
+    private static Measurement reading(double value, int day) {
+        return Measurement.builder().value(value).recordedAt(OffsetDateTime.of(2026, 10, day, 0, 0, 0, 0, VN)).build();
+    }
+
+    private static SalinityForecast forecast(int day, double value) {
+        return SalinityForecast.builder().forecastDate(LocalDate.of(2026, 10, day)).predictedSalinity(value).build();
+    }
+
+    @Test
+    void forecastAboveThresholdGivesTheFirstDayAndThePeak() {
+        StationSnapshot snapshot = new StationSnapshot(reading(1.2, 8),
+                List.of(forecast(8, 9.0), forecast(10, 1.8), forecast(12, 2.4), forecast(13, 2.9)));
+
+        Outlook outlook = StationWatchService.outlook(snapshot, 2.0, null, NOW);
+
+        assertThat(outlook.exceeding()).isTrue();
+        assertThat(outlook.firstExceedDate()).isEqualTo(LocalDate.of(2026, 10, 12));
+        // Ngày 08/10 đã qua: không tính vào dự báo
+        assertThat(outlook.forecastMax()).isEqualTo(2.9);
+        assertThat(outlook.latestSalinity()).isEqualTo(1.2);
+    }
+
+    private static SalinityForecast risky(int day, double value, double risk) {
+        return SalinityForecast.builder().forecastDate(LocalDate.of(2026, 10, day)).predictedSalinity(value).riskSalinity(risk).build();
+    }
+
+    @Test
+    void riskLevelAboveThresholdWarnsBeforeTheForecastDoes() {
+        StationSnapshot snapshot = new StationSnapshot(reading(1.2, 8),
+                List.of(risky(10, 1.2, 1.6), risky(12, 1.2, 2.3), risky(13, 1.2, 2.6), risky(14, 1.2, 1.9)));
+
+        Outlook outlook = StationWatchService.outlook(snapshot, 2.0, null, NOW);
+
+        assertThat(outlook.exceeding()).isTrue();
+        assertThat(outlook.firstExceedDate()).isNull();
+        assertThat(outlook.firstRiskDate()).isEqualTo(LocalDate.of(2026, 10, 12));
+        assertThat(outlook.riskMax()).isEqualTo(2.6);
+        // Giữ cảnh báo tới ngày cuối có thể vượt
+        assertThat(outlook.riskUntil()).isEqualTo(LocalDate.of(2026, 10, 13));
+    }
+
+    @Test
+    void warningStaysUntilTheFlaggedDayHasPassed() {
+        // Lượt dự báo mới không còn thấy nguy cơ, nhưng hôm qua đã báo có thể vượt ngày 11/10
+        StationSnapshot calm = new StationSnapshot(reading(1.2, 8), List.of(risky(10, 1.2, 1.5)));
+
+        Outlook kept = StationWatchService.outlook(calm, 2.0, LocalDate.of(2026, 10, 11), NOW);
+        Outlook passed = StationWatchService.outlook(calm, 2.0, LocalDate.of(2026, 10, 8), NOW);
+
+        assertThat(kept.exceeding()).isTrue();
+        assertThat(kept.riskUntil()).isEqualTo(LocalDate.of(2026, 10, 11));
+        assertThat(passed.exceeding()).isFalse();
+        assertThat(passed.riskUntil()).isNull();
+    }
+
+    @Test
+    void onlyTheNextSevenDaysCount() {
+        StationSnapshot snapshot = new StationSnapshot(reading(1.2, 8), List.of(risky(17, 3.0, 3.0)));
+
+        assertThat(StationWatchService.outlook(snapshot, 2.0, null, NOW).exceeding()).isFalse();
+    }
+
+// TODO: complete edge-case assertions and verification
