@@ -124,4 +124,86 @@ class StationWatchServiceTest {
         assertThat(StationWatchService.outlook(snapshot, 2.0, null, NOW).exceeding()).isFalse();
     }
 
-// TODO: complete edge-case assertions and verification
+    @Test
+    void latestReadingAboveThresholdCountsEvenWithoutForecast() {
+        Outlook outlook = StationWatchService.outlook(new StationSnapshot(reading(2.5, 8), List.of()), 2.0, null, NOW);
+
+        assertThat(outlook.exceeding()).isTrue();
+        assertThat(outlook.firstExceedDate()).isNull();
+        assertThat(outlook.forecastMax()).isNull();
+    }
+
+    @Test
+    void readingFromAStationThatStoppedReportingIsIgnored() {
+        Outlook outlook = StationWatchService.outlook(new StationSnapshot(reading(9.0, 1), List.of(forecast(10, 1.0))), 2.0, null, NOW);
+
+        assertThat(outlook.exceeding()).isFalse();
+        assertThat(outlook.latestSalinity()).isNull();
+    }
+
+    @Test
+    void forecastFromAStationThatStoppedReportingIsIgnoredButAFlaggedDayIsKept() {
+        // Số đo cuối 01/10, lượt dự báo cũ còn thấy 3‰ ngày 10/10: không được báo vượt từ số liệu đã mất
+        StationSnapshot silent = new StationSnapshot(reading(1.0, 1), List.of(risky(10, 3.0, 3.5)));
+
+        Outlook outlook = StationWatchService.outlook(silent, 2.0, null, NOW);
+        Outlook flagged = StationWatchService.outlook(silent, 2.0, LocalDate.of(2026, 10, 11), NOW);
+
+        assertThat(outlook.exceeding()).isFalse();
+        assertThat(outlook.firstExceedDate()).isNull();
+        assertThat(outlook.riskMax()).isNull();
+        assertThat(flagged.exceeding()).isTrue();
+        assertThat(flagged.riskUntil()).isEqualTo(LocalDate.of(2026, 10, 11));
+    }
+
+    @Test
+    void savingRemembersTheCurrentStateSoTheJobOnlyReportsChanges() {
+        when(watchRepository.findByUserIdAndStationId(1L, 3L)).thenReturn(Optional.empty());
+        when(measurementRepository.findLatestByStationIdAndMetricType(3L, "salinity"))
+                .thenReturn(Measurement.builder().value(5.0).recordedAt(OffsetDateTime.now()).build());
+
+        var dto = service.save("alice", new WatchRequest(3L, 2.0, " Lúa "));
+
+        assertThat(dto.crop()).isEqualTo("Lúa");
+        assertThat(dto.outlook().exceeding()).isTrue();
+        verify(watchRepository).save(argThat(StationWatch::isForecastExceeding));
+    }
+
+    @Test
+    void savingAnExistingWatchUpdatesTheThreshold() {
+        StationWatch existing = StationWatch.builder().id(7L).user(alice).station(station).threshold(4.0).crop("Lúa").build();
+        when(watchRepository.findByUserIdAndStationId(1L, 3L)).thenReturn(Optional.of(existing));
+
+        var dto = service.save("alice", new WatchRequest(3L, 0.5, ""));
+
+        assertThat(dto.id()).isEqualTo(7L);
+        assertThat(existing.getThreshold()).isEqualTo(0.5);
+        assertThat(existing.getCrop()).isNull();
+        verify(watchRepository, never()).countByUserId(any());
+    }
+
+    @Test
+    void watchCountIsLimited() {
+        when(watchRepository.findByUserIdAndStationId(1L, 3L)).thenReturn(Optional.empty());
+        when(watchRepository.countByUserId(1L)).thenReturn((long) StationWatchService.MAX_WATCHES_PER_USER);
+
+        assertThatThrownBy(() -> service.save("alice", new WatchRequest(3L, 2.0, null)))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(watchRepository, never()).save(any());
+    }
+
+    @Test
+    void unknownStationIsNotFound() {
+        assertThatThrownBy(() -> service.save("alice", new WatchRequest(99L, 2.0, null)))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void cannotDeleteSomeoneElsesWatch() {
+        when(watchRepository.findById(7L)).thenReturn(Optional.of(StationWatch.builder().id(7L).user(bob).station(station).build()));
+
+        service.delete("alice", 7L);
+
+        verify(watchRepository, never()).delete(any());
+    }
+}

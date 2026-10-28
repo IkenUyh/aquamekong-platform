@@ -56,5 +56,43 @@ class ReplayServiceTest {
         assertThat(days.get(1).events()).containsExactly(
                 new Event(1L, EventType.WARNED, 4.9, null, D1.plusDays(3), "HIT", D1.plusDays(4)));
         assertThat(days).extracting(Day::warningCount).containsExactly(0, 1, 1, 1, 0);
+        assertThat(days.get(3).events()).containsExactly(new Event(1L, EventType.OPENED, 4.6, 2, null, null, null));
 
-// TODO: complete edge-case assertions and verification
+        EarlyWarning summary = ReplayService.summarize(days, daily, new EarlyWarningEpisodes(true,
+                List.of(new MlServiceClient.Season("Mùa khô 2023–2024", D1.minusDays(91), D1.plusDays(91))),
+                Map.of(1L, List.of(warning))));
+        assertThat(summary.opened()).isEqualTo(1);
+        assertThat(summary.warnedAhead()).isEqualTo(1);
+        assertThat(summary.medianLeadDays()).isEqualTo(2.0);
+        assertThat(summary.warnings()).isEqualTo(1);
+        assertThat(summary.hits()).isEqualTo(1);
+    }
+
+    @Test
+    void exceedanceOnTheFirstDayWithDataIsNotCountedAsANewOnset() {
+        Map<Long, Map<LocalDate, Double>> daily = Map.of(1L, Map.of(D1, 5.0, D1.plusDays(1), 5.0));
+        List<Day> days = ReplayService.buildDays(List.of(a), daily, D1, D1.plusDays(1));
+
+        EarlyWarning summary = ReplayService.summarize(days, daily, new EarlyWarningEpisodes(true,
+                List.of(new MlServiceClient.Season("Mùa khô", D1, D1.plusDays(1))), Map.of()));
+
+        assertThat(summary.opened()).isZero();
+    }
+
+    @Test
+    void withoutMlResultsTheSummaryIsMarkedUnavailable() {
+        EarlyWarning summary = ReplayService.summarize(List.of(), Map.of(),
+                new EarlyWarningEpisodes(false, List.of(), Map.of()));
+
+        assertThat(summary.available()).isFalse();
+    }
+
+    @Test
+    void rejectsInvalidRanges() {
+        ReplayService service = new ReplayService(mock(NamedParameterJdbcTemplate.class), mock(MlServiceClient.class));
+
+        assertThatThrownBy(() -> service.replay(D1, D1.minusDays(1))).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.replay(D1, D1.plusDays(ReplayService.MAX_DAYS)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+}
