@@ -18,6 +18,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.util.DisconnectedClientHelper;
 
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
@@ -132,6 +133,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex, WebRequest request) {
+        // Client đã ngắt kết nối (thường là SSE: heartbeat gửi tới tab đã đóng -> Broken pipe): không còn ai nhận
+        // response, và ghi JSON vào luồng text/event-stream cũng lỗi. Không phải lỗi hệ thống nên không log ERROR
+        if (DisconnectedClientHelper.isClientDisconnectedException(ex)) {
+            log.debug("Client đã ngắt kết nối ở {}: {}", request.getDescription(false), ex.getMessage());
+            return null;
+        }
         log.error("Unhandled error at {}", request.getDescription(false), ex);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", OffsetDateTime.now());
