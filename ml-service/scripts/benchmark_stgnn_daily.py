@@ -94,5 +94,67 @@ def dry_seasons(rows, first, ids) -> list:
             for k, (issue, fc) in enumerate(dates):
                 if not (start <= fc <= end):
                     continue
+                for i, code in enumerate(stations):
+                    act, last = raw.at[fc, code], raw.at[issue, code]
+                    if not (np.isnan(act) or np.isnan(last)):
+                        recs.append((h, code, issue, float(p[k, i]), float(last), float(act)))
+            print(f"{label} mốc {h}: xong", flush=True)
+        res = pd.DataFrame(recs, columns=["h", "code", "end", "stgnn", "naive", "actual"])
+        res = res.merge(risk[["code", "end", "h_st", "served"]], left_on=["code", "end", "h"], right_on=["code", "end", "h_st"], how="left")
+        res["shown"] = [shown_value(h, s, r) for h, s, r in zip(res["h"], res["stgnn"], res["served"])]
+        out.append(summarize(label, start, end, res, "walk-forward"))
+    return out
 
-// TODO: complete edge-case assertions and verification
+
+def after_training(rows, first, ids, data: pd.DataFrame) -> dict:
+    """Weights đang cài trên dữ liệu chúng chưa thấy, qua đúng đường chạy thật (DailyForecaster + blend)."""
+    meta = json.loads((ARTIFACT_DIR / "meta.json").read_text())
+    start = pd.Timestamp(meta["trained_until"]) + pd.Timedelta(days=1)
+    risk = risk_fold(rows, start, first, ids)
+    actual = data.pivot(index="day", columns="code", values="salinity")
+    last_day = actual.index.max()
+    recs = []
+    for end in pd.date_range(start - pd.Timedelta(days=1), last_day - pd.Timedelta(days=2)):
+        f = DailyForecaster(loader=lambda codes, e=end: data[(data["code"].isin(codes)) & (data["day"] <= e)])
+        graph = f._run(f.meta(), end.date() + timedelta(days=1))
+        if graph is None:
+            continue
+        r = risk[risk["end"] == end]
+        for code in meta["stations"]:
+            if graph.last_day.get(code) != end.date():
+                continue
+            items = [PredictionItem(date=(end + pd.Timedelta(days=int(x.h_st))).date(), salinity=float(x.served), model_version="gb")
+                     for x in r[r["code"] == code].itertuples() if x.h_st <= 8]
+            shown = {i.date: i.salinity for i in blend(items, graph, code, "x")}
+            for fc in graph.by_station[code]:
+                day = pd.Timestamp(fc.date)
+                if fc.horizon < 2 or day > last_day or day not in actual.index or pd.Timestamp(fc.date) < start:
+                    continue
+                act, last = actual.at[day, code], actual.at[end, code]
+                served = next((i.salinity for i in items if i.date == fc.date), np.nan)
+                if not (np.isnan(act) or np.isnan(last)):
+                    recs.append((fc.horizon, code, end, shown.get(fc.date, np.nan), served, float(last), float(act)))
+    res = pd.DataFrame(recs, columns=["h", "code", "end", "shown", "served", "naive", "actual"])
+    return summarize(f"Sau khi train ({start.date():%d/%m/%Y} – {last_day.date():%d/%m/%Y})", start, last_day, res, "after-training")
+
+
+def main() -> int:
+    panel = load_panel()
+    rows = build_rows(panel, max_horizon=7, station_codes=station_codes(panel))
+    first = svc.first_salinity_days(panel)
+    ids = pd.read_sql(text("SELECT id AS station_id, code FROM stations"), get_engine())
+    meta = json.loads((ARTIFACT_DIR / "meta.json").read_text())
+    data = panel.merge(ids, on="station_id")
+    data = data[data["code"].isin(meta["stations"])][["code", "day", "salinity", "water_level"]].copy()
+    data["water_level"] = data["water_level"] * 100
+    result = dry_seasons(rows, first, ids) + [after_training(rows, first, ids, data)]
+    (ARTIFACT_DIR / EVALUATION_FILE).write_text(json.dumps(result, ensure_ascii=False, indent=1))
+    for period in result:
+        print(f"\n{period['label']} ({period['stations']} trạm, {period['method']})")
+        for d in period["byDay"]:
+            print(f"  ngày {d['day']}: hiển thị {d['mae']:.3f}‰ | gb-risk-v2 {d['gbRisk']:.3f}‰ | giữ nguyên {d['persistence']:.3f}‰ (n={d['count']})")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

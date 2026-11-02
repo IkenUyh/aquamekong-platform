@@ -25,5 +25,22 @@ def main():
     
     test_targets = []
     test_preds = []
+    
+    for i in range(split_idx, total_windows):
+        true_y = target_data[i + loader.lookback + loader.horizon - 1]
+        naive_pred = target_data[i + loader.lookback - 1]
+        
+        test_targets.append(true_y)
+        test_preds.append(naive_pred)
+        
+    test_targets = np.array(test_targets)
+    test_preds = np.array(test_preds)
+    
+    rmse = np.sqrt(mean_squared_error(test_targets, test_preds))
+    mae = mean_absolute_error(test_targets, test_preds)
+    
+    print(f"Naive Baseline RMSE: {rmse:.4f}")
+    print(f"Naive Baseline MAE: {mae:.4f}")
 
-// TODO: complete edge-case assertions and verification
+if __name__ == '__main__':
+    main()
