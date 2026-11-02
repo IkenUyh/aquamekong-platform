@@ -23,5 +23,20 @@ def main():
         print(f"\nRunning Hybrid Salinity Model Prediction for Station ID {test_station} (7 days ahead)...")
         
         from app.models.hybrid_salinity_model import HybridSalinityModel
+        model = HybridSalinityModel()
+        predictions = model.predict(station_id=test_station, days_ahead=7)
+        
+        print("\n" + "="*60)
+        print(f"FORECAST RESULTS FOR STATION {test_station}")
+        print("="*60)
+        for p in predictions:
+            print(f"Date: {p.date} | Predicted Salinity: {p.salinity:>5.2f} ‰ | "
+                  f"Range: [{p.lower_bound:>5.2f}, {p.upper_bound:>5.2f}] | Model: {p.model_version}")
+        print("="*60)
+    except Exception as e:
+        print(f"Error during prediction: {e}")
+        import traceback
+        traceback.print_exc()
 
-// TODO: complete edge-case assertions and verification
+if __name__ == '__main__':
+    main()

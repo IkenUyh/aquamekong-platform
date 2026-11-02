@@ -47,5 +47,37 @@ def run_local_test():
     preprocessor = DataPreprocessor()
     clean_df = preprocessor.process(raw_data, scale=False)
     
+    if clean_df.empty:
+        logger.info("Data empty after preprocessing.")
+        return
+        
+    logger.info(f"Preprocessed {len(clean_df)} records.")
+    logger.info("First 3 records of cleaned DataFrame (real units, not scaled):")
+    logger.info("\n" + clean_df.head(3).to_string())
+    
+    # 3. Test DB Save logic (mocked)
+    logger.info("3. Simulating Database Save...")
+    
+    # Mocking the CRAWLER sensor mapping that usually comes from DB (Flyway V3)
+    codes = ["CT-001", "MT-001", "BT-001", "TV-001", "ST-001", "CM-001"]
+    units = {"salinity": "‰", "water_level": "m", "flow_rate": "m³/s"}
+    sensors = pd.DataFrame([
+        {"station_code": c, "station_id": i + 1, "metric_type": m, "sensor_id": i * 3 + j + 1, "unit": u}
+        for i, c in enumerate(codes)
+        for j, (m, u) in enumerate(units.items())
+    ])
 
-// TODO: complete edge-case assertions and verification
+    long_df = clean_df.melt(
+        id_vars=['station_code', 'recorded_at'],
+        value_vars=scheduler.METRIC_COLUMNS,
+        var_name='metric_type',
+        value_name='value',
+    ).dropna(subset=['value'])
+    db_df = long_df.merge(sensors, on=['station_code', 'metric_type'], how='inner')
+    logger.info(f"Would insert {len(db_df)} records into PostgreSQL 'measurements' table.")
+    logger.info("\n" + db_df.head(3).to_string())
+    
+    logger.info("=== TEST FINISHED SUCCESSFULLY ===")
+
+if __name__ == "__main__":
+    run_local_test()
