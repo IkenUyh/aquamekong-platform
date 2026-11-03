@@ -78,4 +78,56 @@ def test_install_rejects_scaler_from_other_data(weights_dir):
     with pytest.raises(ValueError, match="không khớp"):
         install(src, feats, models)
 
-// TODO: complete edge-case assertions and verification
+
+def test_scaler_pickle_with_other_globals_is_never_loaded(tmp_path):
+    evil = tmp_path / "st_gnn_scaler.pkl"
+    evil.write_bytes(pickle.dumps(print, protocol=4))
+
+    with pytest.raises(ValueError, match="không được phép"):
+        artifact.check_scaler_pickle(evil)
+
+
+def test_forecast_starts_after_last_data_day_with_ordered_quantiles(weights_dir):
+    feats, src, models = weights_dir
+    install(src, feats, models)
+    forecaster = StgnnForecaster(models, feats)
+
+    graph = forecaster.forecast_graph()
+
+    assert str(graph.data_end) == "2026-03-21"
+    for code in ("S1", "S2", "S3"):
+        points = graph.by_station[code]
+        assert [(p.horizon, str(p.date)) for p in points] == [(1, "2026-03-22"), (7, "2026-03-28")]
+        assert all(0 <= p.q10 <= p.q50 <= p.q90 for p in points)
+
+
+def test_stations_worse_than_naive_fall_back(weights_dir):
+    feats, src, models = weights_dir
+    meta = install(src, feats, models)
+    per_station = meta["evaluation"]["h7"]["per_station"]
+    per_station["S1"]["stgnn"]["mae"], per_station["S1"]["naive"]["mae"] = 0.1, 0.5   # tốt hơn
+    per_station["S2"]["stgnn"]["mae"], per_station["S2"]["naive"]["mae"] = 0.9, 0.5   # kém hơn
+    artifact.write_meta(meta, models)
+    forecaster = StgnnForecaster(models, feats)
+
+    assert forecaster.forecast("S1", 7) is not None
+    assert forecaster.forecast("S2", 7) is None
+    assert forecaster.forecast("S1", 14) is None      # xa hơn horizon lớn nhất
+    assert forecaster.forecast("UNKNOWN", 7) is None
+
+
+def test_no_installed_model_means_no_stgnn(tmp_path):
+    assert StgnnForecaster(tmp_path / "models", tmp_path / "features").forecast("S1", 7) is None
+
+
+def test_features_store_keeps_latest_row_per_station_and_day(tmp_path):
+    first = pd.DataFrame([{"station_id": "S1", "date": "2026-01-01", "salinity_max": 1.0},
+                          {"station_id": "S1", "date": "2026-01-02", "salinity_max": 2.0}])
+    again = pd.DataFrame([{"station_id": "S1", "date": "2026-01-02", "salinity_max": 2.5}])
+
+    append_features(first, tmp_path)
+    assert append_features(again, tmp_path) == 2
+
+    stored = pd.read_csv(features_path(tmp_path))
+    assert features_path(tmp_path).name == FEATURES_FILE
+    assert stored.loc[stored["date"] == "2026-01-02", "salinity_max"].item() == 2.5

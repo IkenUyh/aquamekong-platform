@@ -58,5 +58,43 @@ def _loader(last_days):
         rows = []
         for code in codes:
             last = last_days.get(code, END)
+            for d in pd.date_range(END - timedelta(days=70), last, freq="D"):
+                rows.append((code, d, 0.5 + 0.1 * np.sin(d.dayofyear / 5), 120.0 + 5 * np.cos(d.dayofyear / 3)))
+        return pd.DataFrame(rows, columns=["code", "day", "salinity", "water_level"])
+    return load
 
-// TODO: complete edge-case assertions and verification
+
+def test_the_installed_weights_forecast_every_station_for_eight_days():
+    f = DailyForecaster(loader=_loader({}))
+    graph = f.graph(END + timedelta(days=1))
+
+    assert graph.data_end == END
+    for code in META["stations"]:
+        fcs = graph.by_station[code]
+        assert [x.horizon for x in fcs] == list(range(1, 9))
+        assert [x.date for x in fcs] == [END + timedelta(days=h) for h in range(1, 9)]
+        assert all(0 <= x.q10 <= x.q50 <= x.q90 for x in fcs)
+
+
+def test_a_station_that_went_silent_or_old_data_gets_no_stgnn_forecast():
+    silent = META["stations"][0]
+    f = DailyForecaster(loader=_loader({silent: END - timedelta(days=10)}))
+    today = END + timedelta(days=1)
+    assert f.forecast(silent, today) is None
+    assert f.forecast(META["stations"][1], today) is not None
+    assert f.forecast("NOT_IN_GRAPH", today) is None
+    assert DailyForecaster(loader=_loader({})).forecast(META["stations"][1], END + timedelta(days=daily.MAX_DATA_AGE_DAYS + 1)) is None
+
+
+def test_predictor_keeps_the_risk_model_when_stgnn_daily_fails(monkeypatch):
+    import app.services.predictor as predictor_module
+
+    risk = [PredictionItem(date=END + timedelta(days=1), salinity=2.0, model_version="gb-risk-v2")]
+    monkeypatch.setattr(predictor_module, "load_station_info", lambda sid: {"code": META["stations"][0]})
+    monkeypatch.setattr(predictor_module, "latest_measurement_id", lambda: 1)
+
+    def boom(*args, **kwargs):
+        raise RuntimeError("hỏng")
+
+    monkeypatch.setattr(predictor_module.daily_forecaster, "forecast", boom)
+    assert predictor_module.Predictor._with_stgnn_daily(1, risk) == risk

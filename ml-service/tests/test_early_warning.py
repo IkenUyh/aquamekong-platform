@@ -177,5 +177,123 @@ def test_forecast_holds_the_latest_reading_with_a_band_and_a_risk_level(service)
     items = service.forecast(87, 7, today)
 
     assert [i.date for i in items] == [today + timedelta(days=k) for k in range(1, 8)]
+    assert len({i.salinity for i in items}) == 1                  # chưa đủ 2 năm số đo: giữ nguyên cả 7 ngày
+    for i in items:
+        assert i.lower_bound <= i.salinity <= i.upper_bound
+        assert i.risk_salinity == i.upper_bound
+        assert i.model_version == svc.MODEL_VERSION
 
-// TODO: complete edge-case assertions and verification
+
+def test_only_stations_with_two_years_of_readings_use_the_model_and_only_from_day_four():
+    first = date(2021, 3, 1)
+    assert not svc.is_mature(first, first + timedelta(days=svc.MATURE_DAYS - 1))
+    assert svc.is_mature(first, first + timedelta(days=svc.MATURE_DAYS))
+    assert [h for h in range(1, 17) if svc.uses_model(True, h)] == [4, 5, 6, 7]
+    assert not any(svc.uses_model(False, h) for h in range(1, 17))
+
+
+@pytest.fixture(scope="module")
+def mature_trained():
+    # Số đo từ 01/11/2020: tới mùa khô 2022–2023 thì đủ 2 năm
+    panel = seasonal_panel(first=date(2020, 11, 1))
+    model, meta, backtest = svc.train_all(panel, data_version=8)
+    return panel, model, meta, backtest
+
+
+def test_forecast_of_a_mature_station_uses_the_median_from_day_four(mature_trained, tmp_path, monkeypatch):
+    panel, model, meta, backtest = mature_trained
+    s = svc.EarlyWarningService(model_dir=str(tmp_path))
+    s._save(model, meta, backtest)
+    monkeypatch.setattr(svc, "load_panel", lambda: panel)
+    monkeypatch.setattr(svc.data_loader, "latest_measurement_id", lambda: 8)
+
+    items = s.forecast(87, 7, date(2023, 4, 1))
+    entry = s._live_table()[87]
+
+    assert entry["mature"]
+    assert [i.salinity for i in items[:3]] == [round(entry["level"], 2)] * 3
+    assert [i.salinity for i in items[3:]] == [round(entry["median"][h], 2) for h in range(4, 8)]
+    for i in items:
+        assert i.lower_bound <= i.salinity <= i.upper_bound
+
+
+def test_each_dry_season_scores_the_shown_forecast_against_holding_the_latest_reading(mature_trained):
+    _, _, meta, _ = mature_trained
+    assert meta["modelFormat"] == svc.MODEL_FORMAT
+    assert meta["forecastRule"] == {"fromLead": 4, "toLead": 7, "matureDays": 730, "stationIds": [87, 88]}
+    early, late = meta["seasons"]                                 # 2021–2022: chưa trạm nào đủ 2 năm
+    assert early["forecast"] == {"stations": 0, "byLead": []}
+    assert late["forecast"]["stations"] == 2
+    leads = late["forecast"]["byLead"]
+    assert [s["lead"] for s in leads] == list(range(1, ep.WARNING_HORIZON + 1))
+    # Mốc 1–3 ngày app giữ nguyên số mới nhất: sai số bằng đúng cách giữ nguyên
+    assert all(s["mae"] == s["persistenceMae"] for s in leads[:3])
+
+
+def test_a_model_saved_in_an_older_format_waits_for_a_retrain(service, tmp_path):
+    meta_path = tmp_path / "early_warning" / "meta.json"
+    import json
+    meta = json.loads(meta_path.read_text())
+    meta_path.write_text(json.dumps({**meta, "modelFormat": 1}))
+
+    assert svc.EarlyWarningService(model_dir=str(tmp_path)).stamp() == "none"
+
+
+def test_forecast_gives_up_when_readings_are_stale_or_the_station_is_unknown(service):
+    assert service.forecast(87, 7, date(2023, 4, 4)) is None      # số đo cuối cách 4 ngày
+    assert service.forecast(999, 7, date(2023, 4, 1)) is None
+    assert service.forecast(87, 30, date(2023, 4, 1)) is None     # xa hơn số ngày mô hình đã học
+
+
+def test_saved_model_is_loaded_by_a_new_service(service, tmp_path):
+    fresh = svc.EarlyWarningService(model_dir=str(tmp_path))
+    assert fresh.stamp() == service.stamp() != "none"
+    assert fresh.evaluation()["seasons"][0]["label"] == "Mùa khô 2022–2023"
+
+
+def test_replay_episodes_use_each_station_threshold_and_the_requested_range(service):
+    result = service.replay_episodes(date(2022, 12, 1), date(2023, 3, 31), {87: 0.5})
+    assert result["available"] and result["seasons"][0]["from"] == "2022-12-01"
+    assert set(result["stations"]) <= {"87"}
+
+    outside = service.replay_episodes(date(2021, 12, 1), date(2022, 3, 31), {87: 0.5, 88: 0.5})
+    assert outside["seasons"] == [] and outside["stations"] == {}
+
+
+def test_replay_without_a_trained_model_is_marked_unavailable(tmp_path):
+    result = svc.EarlyWarningService(model_dir=str(tmp_path)).replay_episodes(D0, D0, {1: 4.0})
+    assert result == {"available": False, "seasons": [], "stations": {}}
+
+
+# --- Predictor ---------------------------------------------------------------------------------------------------
+
+def test_predictor_prefers_the_risk_model_over_holding_the_latest_reading(monkeypatch):
+    import app.services.predictor as predictor_module
+
+    item = PredictionItem(date=D0, salinity=1.0, upper_bound=2.0, risk_salinity=2.0, model_version=svc.MODEL_VERSION)
+    monkeypatch.setattr(predictor_module.Predictor, "_stgnn_forecast", lambda self, sid, days: None)
+    monkeypatch.setattr(predictor_module.early_warning, "forecast", lambda sid, days: [item])
+
+    assert predictor_module.Predictor()._predict_uncached(1, 7) == [item]
+
+
+def test_predictor_falls_back_when_the_risk_model_fails(monkeypatch):
+    import app.services.predictor as predictor_module
+
+    def boom(sid, days):
+        raise RuntimeError("hỏng")
+
+    # Số đo tới hôm qua: trạm mất tín hiệu thì không dự báo ở tầng nào (test_predictor_cache)
+    yesterday = pd.Timestamp.now(tz="Asia/Ho_Chi_Minh").normalize() - pd.Timedelta(days=1)
+    index = pd.date_range(end=yesterday, periods=10, freq="D")
+    monkeypatch.setattr(predictor_module.Predictor, "_stgnn_forecast", lambda self, sid, days: None)
+    monkeypatch.setattr(predictor_module.early_warning, "forecast", boom)
+    monkeypatch.setattr(predictor_module, "load_station_metrics",
+                        lambda station_id, lookback_days: pd.DataFrame({"salinity": [2.0] * 10}, index=index))
+    p = predictor_module.Predictor()
+    monkeypatch.setattr(p.prophet, "has_trained_model", lambda sid: False)
+    monkeypatch.setattr(p.model, "has_trained_model", lambda sid: False)
+
+    items = p._predict_uncached(1, 3)
+    assert {i.model_version for i in items} == {predictor_module.STATISTICAL_VERSION}
+    assert all(i.risk_salinity is None for i in items)
