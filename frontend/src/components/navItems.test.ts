@@ -8,4 +8,8 @@ describe('topRoleLabel', () => {
     expect(topRoleLabel(['ROLE_USER'])).toBe('Người dùng');
   });
 
-// TODO: complete edge-case assertions and verification
+  it('has no label without roles', () => {
+    expect(topRoleLabel(undefined)).toBeUndefined();
+    expect(topRoleLabel([])).toBeUndefined();
+  });
+});

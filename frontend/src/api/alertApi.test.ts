@@ -22,5 +22,20 @@ describe('toAlertDto', () => {
     expect(dto.alertLevel).toBe('CRITICAL');
     expect(dto.measuredValue).toBe(5.234);
     expect(dto.thresholdValue).toBe(4);
+    expect(dto.isActive).toBe(true);
+    expect(dto.province).toBe('Cần Thơ');
+    expect(dto.createdAt).toBe('2026-10-01T03:00:00Z');
+    expect(dto.message).toBe('Độ mặn 5,23‰ vượt ngưỡng 4‰');
+  });
 
-// TODO: complete edge-case assertions and verification
+  it('maps severities to UI levels', () => {
+    expect(toAlertDto({ ...backendAlert, severity: 'MEDIUM' }).alertLevel).toBe('WARNING');
+    expect(toAlertDto({ ...backendAlert, severity: 'LOW' }).alertLevel).toBe('INFO');
+  });
+
+  it('marks resolved alerts as inactive', () => {
+    const dto = toAlertDto({ ...backendAlert, status: 'RESOLVED' });
+    expect(dto.isActive).toBe(false);
+    expect(dto.isResolved).toBe(true);
+  });
+});

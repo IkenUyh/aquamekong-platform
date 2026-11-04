@@ -43,5 +43,33 @@ describe('startZaloLogin', () => {
     const expected = btoa(String.fromCharCode(...digest)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     expect(url.searchParams.get('code_challenge')).toBe(expected);
   });
+});
 
-// TODO: complete edge-case assertions and verification
+describe('consumeZaloCallback', () => {
+  it('returns code, verifier and where to go back', async () => {
+    const url = await start('link', '/account');
+    const result = consumeZaloCallback(`?code=abc&state=${url.searchParams.get('state')}`);
+    expect(result).toMatchObject({ ok: true, code: 'abc', intent: 'link', from: '/account' });
+  });
+
+  it('rejects a mismatched state (CSRF)', async () => {
+    await start();
+    expect(consumeZaloCallback('?code=abc&state=forged')).toMatchObject({ ok: false, reason: 'invalid' });
+  });
+
+  it('rejects a callback that was not started from this browser', () => {
+    expect(consumeZaloCallback('?code=abc&state=x')).toMatchObject({ ok: false, reason: 'invalid' });
+  });
+
+  it('treats a missing code as cancelled', async () => {
+    const url = await start();
+    expect(consumeZaloCallback(`?state=${url.searchParams.get('state')}`)).toMatchObject({ ok: false, reason: 'cancelled' });
+  });
+
+  it('can only be used once', async () => {
+    const url = await start();
+    const search = `?code=abc&state=${url.searchParams.get('state')}`;
+    expect(consumeZaloCallback(search).ok).toBe(true);
+    expect(consumeZaloCallback(search).ok).toBe(false);
+  });
+});

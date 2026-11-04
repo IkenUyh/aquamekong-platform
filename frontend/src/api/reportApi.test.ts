@@ -7,5 +7,9 @@ describe('percentChange', () => {
     expect(percentChange({ current: 2, previous: 3 })).toBe(-33.3);
   });
 
-
-// TODO: complete edge-case assertions and verification
+  it('returns null when a period has no data or the base is zero', () => {
+    expect(percentChange({ current: 3, previous: null })).toBeNull();
+    expect(percentChange({ current: null, previous: 3 })).toBeNull();
+    expect(percentChange({ current: 3, previous: 0 })).toBeNull();
+  });
+});

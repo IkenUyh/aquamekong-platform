@@ -19,5 +19,17 @@ describe('usableForecasts', () => {
     expect(usableForecasts(yesterday, 7, NOW)).toBeNull();
   });
 
+  it('keeps the old rule for forecasts that start from today', () => {
+    const week = ['07', '08', '09', '10', '11', '12', '13'].map((d) => f(`2026-10-${d}`));
+    expect(usableForecasts(week, 7, NOW)).toHaveLength(7);
+    expect(usableForecasts(week.slice(1), 6, NOW)).toBeNull();   // ngày đầu không phải ngày mai
+    expect(usableForecasts([], 7, NOW)).toBeNull();
+  });
+});
 
-// TODO: complete edge-case assertions and verification
+describe('storedForecasts', () => {
+  it('shows past ST-GNN days but drops past days of other models', () => {
+    expect(storedForecasts([f('2026-09-01', { dataUntil: '2026-08-31' })], 7, NOW)).toHaveLength(1);
+    expect(storedForecasts([f('2026-10-05'), f('2026-10-07')], 7, NOW).map((x) => x.forecastDate)).toEqual(['2026-10-07']);
+  });
+});
