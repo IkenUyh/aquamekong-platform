@@ -8,4 +8,8 @@ describe('roundedPercents', () => {
     expect(roundedPercents([1, 1, 1])).toEqual([34, 33, 33]);
   });
 
-// TODO: complete edge-case assertions and verification
+  it('is all zeros when there is nothing to count', () => {
+    expect(roundedPercents([0, 0])).toEqual([0, 0]);
+    expect(roundedPercents([])).toEqual([]);
+  });
+});

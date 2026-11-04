@@ -21,5 +21,19 @@ describe('formatDay', () => {
   });
 });
 
+describe('formatSalinity', () => {
+  it('always shows two decimals so one reading looks the same on every screen', () => {
+    expect(formatSalinity(1.9)).toBe('1,90');
+    expect(formatSalinity(24.37)).toBe('24,37');
+    expect(formatSalinity(null)).toBe('—');
+  });
+});
 
-// TODO: complete edge-case assertions and verification
+describe('isReporting', () => {
+  it('still counts a daily station whose latest reading is the day before yesterday', () => {
+    // Số liệu ngày 07/10 (00:00) về sáng 08/10; tới gần sáng 09/10 vẫn là số mới nhất (~54 giờ)
+    const now = new Date(2026, 9, 9, 5, 59).getTime();
+    expect(isReporting(new Date(2026, 9, 7, 0, 0).toISOString(), now)).toBe(true);
+    expect(isReporting(new Date(now - ONLINE_WINDOW_MS - 1).toISOString(), now)).toBe(false);
+  });
+});

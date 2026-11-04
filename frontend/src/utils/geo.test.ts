@@ -19,5 +19,17 @@ describe('nearestStations', () => {
       { id: 1, latitude: MY_THO.lat, longitude: MY_THO.lng },
       { id: 2, latitude: 10.05, longitude: 105.75 },
       { id: 3, latitude: 9.6, longitude: 105.97 },
+    ];
+    const near = nearestStations(stations, CAN_THO, 2);
+    expect(near.map((n) => n.station.id)).toEqual([2, 3]);
+    expect(near[0].km).toBeLessThan(1);
+  });
+});
 
-// TODO: complete edge-case assertions and verification
+describe('formatDistance', () => {
+  it('uses metres under 1 km and one decimal under 10 km', () => {
+    expect(formatDistance(0.43)).toBe('450 m');
+    expect(formatDistance(4.21)).toBe('4,2 km');
+    expect(formatDistance(35.4)).toBe('35 km');
+  });
+});

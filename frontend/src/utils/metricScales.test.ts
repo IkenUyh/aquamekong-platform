@@ -13,5 +13,14 @@ describe('METRIC_SCALES', () => {
   it('puts water level and flow into ascending bins, lowest range first in the data', () => {
     const wl = METRIC_SCALES.waterLevel;
     expect(wl.binOf(0.2).label).toBe('< 0,5 m');
+    expect(wl.binOf(1.2).label).toBe('1 – 1,5 m');
+    expect(wl.binOf(4.4).label).toBe('≥ 2 m');
+    expect(METRIC_SCALES.flowRate.binOf(250).label).toBe('≥ 100 m³/s');
+  });
 
-// TODO: complete edge-case assertions and verification
+  it('lists legend bins from high to low, ending with no data', () => {
+    const labels = METRIC_SCALES.waterLevel.bins.map((b) => b.label);
+    expect(labels[0]).toBe('≥ 2 m');
+    expect(labels[labels.length - 1]).toBe('Chưa có dữ liệu');
+  });
+});

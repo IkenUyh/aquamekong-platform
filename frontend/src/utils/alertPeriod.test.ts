@@ -10,5 +10,11 @@ const alert = (over: Partial<AlertDto>): AlertDto => ({ id: 1, stationId: 1, cre
 describe('activeSince', () => {
   it('keeps an alert that started before the period and is still open', () => {
     expect(activeSince(alert({ status: 'ACTIVE' }), since)).toBe(true);
+    expect(activeSince(alert({ status: 'ACKNOWLEDGED' }), since)).toBe(true);
+  });
 
-// TODO: complete edge-case assertions and verification
+  it('keeps a resolved alert only if it was still open during the period', () => {
+    expect(activeSince(alert({ status: 'RESOLVED', resolvedAt: '2026-10-12T00:00:00Z' }), since)).toBe(true);
+    expect(activeSince(alert({ status: 'RESOLVED', resolvedAt: '2026-10-09T00:00:00Z' }), since)).toBe(false);
+  });
+});
