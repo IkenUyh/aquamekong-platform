@@ -12,7 +12,7 @@ import { FilterPanel } from '../components/filters/FilterPanel';
 
 function MapPageContent() {
   const { selectedStationId, setSelectedStation, activeLayers, colorMetric } = useFilters();
-  const { data: geoJson } = useStations();
+  const { data: geoJson, isError, refetch } = useStations();
   const { data: stationsList } = useStationsList();
 
   const queryClient = useQueryClient();
@@ -61,13 +61,22 @@ function MapPageContent() {
         </div>
       }
       centerContent={
-        <MapView
-          features={features}
-          selectedStationId={selectedStationId}
-          onSelectStation={setSelectedStation}
-          activeLayers={activeLayers}
-          colorMetric={colorMetric}
-        />
+        <>
+          <MapView
+            features={features}
+            selectedStationId={selectedStationId}
+            onSelectStation={setSelectedStation}
+            activeLayers={activeLayers}
+            colorMetric={colorMetric}
+          />
+          {/* API lỗi thì bản đồ chỉ còn nền, trông như mọi trạm biến mất: báo rõ (vd. bản app build sai địa chỉ API) */}
+          {isError && features.length === 0 && (
+            <div role="alert" className="absolute left-14 right-4 top-3 z-[1000] mx-auto max-w-md card p-4 text-sm text-gray-700">
+              Không tải được danh sách trạm. Máy chủ có thể đang khởi động lại, trang sẽ tự thử lại.
+              <button type="button" onClick={() => void refetch()} className="btn-secondary mt-3 block">Thử lại</button>
+            </div>
+          )}
+        </>
       }
       bottomContent={
         selectedStationId ? (
