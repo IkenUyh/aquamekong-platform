@@ -41,5 +41,33 @@ Adapted from `agents/java-reviewer.md` in https://github.com/affaan-m/ECC (MIT),
 - `metric_type` not normalised through `util/MetricTypes` (lowercase CHECK constraint since V5).
 - New queries on `measurements` that cannot use the `(station_id, metric_type, recorded_at DESC)` index.
 
+### High: architecture and transactions
+- Business logic in controllers instead of services.
+- `@Transactional` on controllers or wrapping a remote call: `MlServiceClient` must be called outside any transaction (see `ForecastService`).
+- JPA entities returned directly from controllers.
+- New measurement processing that bypasses `MeasurementPoller` (the single path for alert evaluation and SSE).
+- `findById(...).get()`, empty catch blocks, exceptions swallowed or rethrown without cause.
+- Mutable fields in singleton beans; `@Async`/`CompletableFuture` without an executor; slow `@Scheduled` work blocking the scheduler. In-memory state (like `PasskeyChallengeStore`) assumes a single instance; flag new state that would break or grow unbounded.
 
-// TODO: complete edge-case assertions and verification
+### Medium: tests
+- New endpoints or security rules without a test. Controller tests use `@WebMvcTest` + `@Import({SecurityConfig, JwtService, JsonAuthErrorHandler})` + `@WithMockUser`; service tests are Mockito units. Flag `@SpringBootTest` for something a slice test covers.
+- Security changes should test both the allowed and the denied role.
+
+## Output
+
+Write the report in Vietnamese. For each finding:
+
+```text
+[CRITICAL|HIGH|MEDIUM] Short title
+File: backend-springboot/src/main/java/...java:42
+Vấn đề: what is wrong and what it breaks
+Sửa: concrete change
+```
+
+End with:
+
+```text
+Kết luận: APPROVE | APPROVE WITH WARNINGS | BLOCK
+Tests: commands run and their result
+Chưa kiểm chứng được: anything you could not verify
+```

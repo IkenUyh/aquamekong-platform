@@ -10,5 +10,11 @@ def get_docx_text(path):
         tree = ET.XML(xml_content)
         WORD_NAMESPACE = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
         TEXT = WORD_NAMESPACE + 't'
+        texts = [node.text for node in tree.iter(TEXT) if node.text]
+        return ' '.join(texts)
+    except Exception as e:
+        return str(e)
 
-// TODO: complete edge-case assertions and verification
+if __name__ == '__main__':
+    sys.stdout.reconfigure(encoding='utf-8')
+    print(get_docx_text(sys.argv[1]))

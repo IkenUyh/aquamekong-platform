@@ -41,5 +41,33 @@ Adapted from `agents/mle-reviewer.md` and `agents/silent-failure-hunter.md` in h
 
 ### High: silent failures
 - `except Exception` that logs and returns a "valid looking" result. Every fallback result must carry an honest `model_version` (`statistical-v1.0`, `simulated-v1.0`, …) so the backend and UI can tell. A hard-coded `prophet-v1.0` on a non-Prophet result is a finding.
+- Simulated or statistical results written to the Redis cache (only real model output may be cached). Cache not invalidated after `/train`.
+- The crawler marking data as processed in Redis before the DB insert succeeded (it must be after).
+- Missing timeouts on `requests` calls in the crawler. Errors swallowed in the scheduler job so a broken pipeline looks healthy.
+- Lost context: `raise HTTPException(500, str(e))` leaking internals, or re-raising without the original exception.
 
-// TODO: complete edge-case assertions and verification
+### Medium
+- No guard on input ranges (`days_ahead`, empty or too-short series) before fitting.
+- New behaviour without a test in `ml-service/tests` (use the `FakeRedis` in `conftest.py`). Leakage and fallback-signalling fixes should come with a regression test.
+- NaN / inf reaching the response or the DB.
+
+## Output
+
+Write the report in Vietnamese. For each finding:
+
+```text
+[CRITICAL|HIGH|MEDIUM] Short title
+File: ml-service/app/...py:42
+Vấn đề: what is wrong and what it breaks
+Sửa: concrete change
+```
+
+End with:
+
+```text
+Kết luận: APPROVE | APPROVE WITH WARNINGS | BLOCK
+Tests: commands run and their result
+Chưa kiểm chứng được: anything you could not verify
+```
+
+BLOCK on any plausible leakage, unsafe model loading, or a fallback that is indistinguishable from a real prediction.
