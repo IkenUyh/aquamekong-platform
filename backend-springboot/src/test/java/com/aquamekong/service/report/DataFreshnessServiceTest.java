@@ -62,5 +62,46 @@ class DataFreshnessServiceTest {
         assertThat(status.latestMeasurementAt()).isEqualTo(OffsetDateTime.of(2026, 10, 8, 0, 0, 0, 0, VN));
         assertThat(status.stationsReporting()).isEqualTo(1);
         assertThat(status.activeStations()).isEqualTo(2);
+    }
 
-// TODO: complete edge-case assertions and verification
+    @Test
+    void beforeTheDeadlineTheDayBeforeIsStillEnough() {
+        when(measurementRepository.findLatestMeasurementPerStation()).thenReturn(List.of(daily(1, 7)));
+
+        DataFreshness status = service.status(vn(9, 8));
+
+        assertThat(status.expectedDate()).isEqualTo(LocalDate.of(2026, 10, 7));
+        assertThat(status.stale()).isFalse();
+    }
+
+    @Test
+    void missingYesterdayAfterTheDeadlineIsStale() {
+        when(measurementRepository.findLatestMeasurementPerStation()).thenReturn(List.of(daily(1, 7), daily(2, 7)));
+
+        DataFreshness status = service.status(vn(9, 9));
+
+        assertThat(status.stale()).isTrue();
+        assertThat(status.stationsReporting()).isZero();
+    }
+
+    @Test
+    void inactiveStationsDoNotCount() {
+        Measurement fromInactive = daily(3, 8);
+        when(measurementRepository.findLatestMeasurementPerStation()).thenReturn(List.of(daily(1, 6), fromInactive));
+
+        DataFreshness status = service.status(vn(9, 10));
+
+        assertThat(status.stale()).isTrue();
+        assertThat(status.latestMeasurementAt()).isEqualTo(OffsetDateTime.of(2026, 10, 6, 0, 0, 0, 0, VN));
+    }
+
+    @Test
+    void noMeasurementsAtAllIsStale() {
+        when(measurementRepository.findLatestMeasurementPerStation()).thenReturn(List.of());
+
+        DataFreshness status = service.status(vn(9, 10));
+
+        assertThat(status.stale()).isTrue();
+        assertThat(status.latestMeasurementAt()).isNull();
+    }
+}

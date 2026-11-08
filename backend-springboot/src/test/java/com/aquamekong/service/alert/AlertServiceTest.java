@@ -53,5 +53,41 @@ class AlertServiceTest {
 
     @Test
     void createsAlertWhenThresholdExceeded() {
+        when(alertRuleRepository.findByStationIdAndMetricTypeAndIsActiveTrue(1L, "salinity")).thenReturn(List.of(rule));
+        when(alertRepository.existsByRuleIdAndStatusIn(7L, AlertService.OPEN_STATUSES)).thenReturn(false);
+        when(alertRepository.save(any())).thenAnswer(invocation -> {
+            Alert saved = invocation.getArgument(0);
+            saved.setId(42L);
+            return saved;
+        });
 
-// TODO: complete edge-case assertions and verification
+        alertService.evaluateMeasurement(measurement(5.2));
+
+        ArgumentCaptor<Alert> alert = ArgumentCaptor.forClass(Alert.class);
+        verify(alertRepository).save(alert.capture());
+        assertThat(alert.getValue().getValue()).isEqualTo(5.2);
+        assertThat(alert.getValue().getSeverity()).isEqualTo(AlertSeverity.HIGH);
+        assertThat(alert.getValue().getStatus()).isEqualTo(AlertStatus.ACTIVE);
+        verify(eventPublisher).publishEvent(new AlertCreatedEvent(42L, 1L, "Mỹ Tho", "salinity", ">", 5.2, 4.0, AlertSeverity.HIGH));
+    }
+
+    @Test
+    void doesNotDuplicateWhileRuleHasOpenAlert() {
+        when(alertRuleRepository.findByStationIdAndMetricTypeAndIsActiveTrue(1L, "salinity")).thenReturn(List.of(rule));
+        when(alertRepository.existsByRuleIdAndStatusIn(7L, AlertService.OPEN_STATUSES)).thenReturn(true);
+
+        alertService.evaluateMeasurement(measurement(5.2));
+
+        verify(alertRepository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void ignoresValuesBelowThreshold() {
+        when(alertRuleRepository.findByStationIdAndMetricTypeAndIsActiveTrue(1L, "salinity")).thenReturn(List.of(rule));
+
+        alertService.evaluateMeasurement(measurement(3.9));
+
+        verify(alertRepository, never()).save(any());
+    }
+}
