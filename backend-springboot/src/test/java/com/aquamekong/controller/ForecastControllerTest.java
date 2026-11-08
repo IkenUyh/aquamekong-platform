@@ -78,5 +78,57 @@ class ForecastControllerTest {
     void missingRunIsNotFound() throws Exception {
         when(forecastService.getRunById(5L)).thenThrow(new EntityNotFoundException("not found"));
         mvc.perform(get("/api/v1/forecasts/runs/5")).andExpect(status().isNotFound());
+    }
 
-// TODO: complete edge-case assertions and verification
+    @Test
+    void unexpectedErrorDoesNotLeakInternalMessage() throws Exception {
+        when(forecastService.getRunById(5L)).thenThrow(new RuntimeException("SQL password=secret"));
+        mvc.perform(get("/api/v1/forecasts/runs/5"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string(not(containsString("secret"))));
+    }
+
+    // ===== Phân quyền =====
+
+    @Test
+    @WithAnonymousUser
+    void anonymousCanReadButNotRunPrediction() throws Exception {
+        mvc.perform(get("/api/v1/forecasts/runs")).andExpect(status().isOk());
+        mvc.perform(post("/api/v1/forecasts/predict").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"stationId\":1,\"daysAhead\":7}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void userCanReadAndRunPrediction() throws Exception {
+        mvc.perform(get("/api/v1/forecasts/runs")).andExpect(status().isOk());
+        mvc.perform(post("/api/v1/forecasts/predict").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"stationId\":1,\"daysAhead\":7}"))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void userCannotWrite() throws Exception {
+        mvc.perform(post("/api/v1/forecasts/runs").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void validJwtAuthenticates() throws Exception {
+        String token = jwtService.issue("alice", java.util.List.of("ROLE_USER"));
+        mvc.perform(get("/api/v1/forecasts/runs").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void tamperedJwtIsRejected() throws Exception {
+        String token = jwtService.issue("alice", java.util.List.of("ROLE_ADMIN"));
+        String tampered = token.substring(0, token.length() - 2) + (token.endsWith("A") ? "BB" : "AA");
+        mvc.perform(get("/api/v1/forecasts/runs").header("Authorization", "Bearer " + tampered))
+                .andExpect(status().isUnauthorized());
+    }
+}

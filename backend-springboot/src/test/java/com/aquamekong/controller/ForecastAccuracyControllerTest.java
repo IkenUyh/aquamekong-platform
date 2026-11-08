@@ -31,5 +31,25 @@ class ForecastAccuracyControllerTest {
     @MockBean ForecastAccuracyService accuracyService;
     @MockBean UserDetailsService userDetailsService;
 
+    @Test
+    @WithAnonymousUser
+    void anonymousUsersCanSeeHowAccurateForecastsAre() throws Exception {
+        when(accuracyService.accuracy(180)).thenReturn(Map.of("modelVersion", "statistical-v2"));
+        when(accuracyService.verification(3L, 30)).thenReturn(List.of());
 
-// TODO: complete edge-case assertions and verification
+        mvc.perform(get("/api/v1/forecasts/accuracy")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.modelVersion").value("statistical-v2"));
+        mvc.perform(get("/api/v1/forecasts/station/3/verification")).andExpect(status().isOk());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void earlyWarningScoresAreNotFoundUntilTheModelHasTrained() throws Exception {
+        when(accuracyService.earlyWarning()).thenReturn(Optional.empty());
+        mvc.perform(get("/api/v1/forecasts/early-warning")).andExpect(status().isNotFound());
+
+        when(accuracyService.earlyWarning()).thenReturn(Optional.of(Map.of("modelVersion", "gb-risk-v1")));
+        mvc.perform(get("/api/v1/forecasts/early-warning")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.modelVersion").value("gb-risk-v1"));
+    }
+}

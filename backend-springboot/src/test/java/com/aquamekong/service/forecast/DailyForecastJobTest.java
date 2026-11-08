@@ -107,5 +107,76 @@ class DailyForecastJobTest {
         lastRunInDb(vn(10, 9, 30));
         newestImport(vn(10, 9, 12));
 
+        job("0 */30 6-22 * * *").refreshIfNeeded(vn(10, 10, 0).toInstant());
 
-// TODO: complete edge-case assertions and verification
+        verifyNoInteractions(forecastService, eventPublisher);
+    }
+
+    private void riskModelTrainedAt(String trainedAt) {
+        when(mlServiceClient.earlyWarning()).thenReturn(Optional.of(Map.of("trainedAt", trainedAt)));
+    }
+
+    @Test
+    void reRunsWhenTheRiskModelIsRetrained() {
+        // Sau deploy (hay số đo mới về), ML service học lại vài phút sau lượt chạy: lượt đó dùng mô hình cũ
+        lastRunInDb(vn(10, 9, 30));
+        newestImport(vn(10, 9, 12));
+        DailyForecastJob job = job("0 */30 6-22 * * *");
+        riskModelTrainedAt("2026-10-10T02:00:00Z");
+
+        job.refreshIfNeeded(vn(10, 10, 0).toInstant());   // vừa khởi động: chưa biết lượt trước dùng mô hình nào
+        job.refreshIfNeeded(vn(10, 10, 30).toInstant());  // vẫn mô hình đó: không chạy
+        riskModelTrainedAt("2026-10-10T03:40:00Z");
+        job.refreshIfNeeded(vn(10, 11, 0).toInstant());
+
+        verify(forecastService, times(6)).predict(anyLong(), anyInt());
+    }
+
+    @Test
+    void mlServiceDownDoesNotTriggerOrBreakTheCheck() {
+        lastRunInDb(vn(10, 9, 30));
+        newestImport(vn(10, 9, 12));
+        when(mlServiceClient.earlyWarning()).thenThrow(new MlServiceException("ML không trả lời", null));
+
+        job("0 */30 6-22 * * *").refreshIfNeeded(vn(10, 10, 0).toInstant());
+
+        verifyNoInteractions(forecastService, eventPublisher);
+    }
+
+    @Test
+    void oneFailingStationDoesNotStopTheRunAndWatchersAreToldAfterwards() {
+        lastRunInDb(null);
+        when(forecastService.predict(2L, DailyForecastJob.DAYS_AHEAD)).thenThrow(new MlServiceException("ML lỗi", null));
+
+        job("0 */30 6-22 * * *").refreshIfNeeded(vn(10, 7, 0).toInstant());
+
+        verify(forecastService).predict(1L, DailyForecastJob.DAYS_AHEAD);
+        verify(forecastService).predict(3L, DailyForecastJob.DAYS_AHEAD);
+        ArgumentCaptor<ForecastsRefreshedEvent> event = ArgumentCaptor.forClass(ForecastsRefreshedEvent.class);
+        verify(eventPublisher).publishEvent(event.capture());
+        assertThat(event.getValue().succeeded()).isEqualTo(2);
+        assertThat(event.getValue().failed()).isEqualTo(1);
+    }
+
+    @Test
+    void silentStationIsNeitherSucceededNorFailed() {
+        // Trạm mất tín hiệu vẫn ACTIVE, ml-service trả 422
+        lastRunInDb(null);
+        when(forecastService.predict(2L, DailyForecastJob.DAYS_AHEAD))
+                .thenThrow(new InsufficientDataException("Trạm 2 không có số đo độ mặn trong 30 ngày qua", null));
+
+        job("0 */30 6-22 * * *").refreshIfNeeded(vn(10, 7, 0).toInstant());
+
+        ArgumentCaptor<ForecastsRefreshedEvent> event = ArgumentCaptor.forClass(ForecastsRefreshedEvent.class);
+        verify(eventPublisher).publishEvent(event.capture());
+        assertThat(event.getValue().succeeded()).isEqualTo(2);
+        assertThat(event.getValue().failed()).isZero();
+    }
+
+    @Test
+    void disabledCronSchedulesNoCatchUp() {
+        job("-").scheduleCatchUp();
+
+        verify(taskScheduler, never()).schedule(any(Runnable.class), any(Instant.class));
+    }
+}
