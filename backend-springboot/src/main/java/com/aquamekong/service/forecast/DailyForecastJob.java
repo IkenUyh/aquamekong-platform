@@ -5,6 +5,7 @@ import com.aquamekong.entity.enums.StationStatus;
 import com.aquamekong.entity.forecast.ForecastRun;
 import com.aquamekong.entity.station.Station;
 import com.aquamekong.entity.telemetry.Measurement;
+import com.aquamekong.exception.InsufficientDataException;
 import com.aquamekong.repository.forecast.ForecastRunRepository;
 import com.aquamekong.repository.station.StationRepository;
 import com.aquamekong.repository.telemetry.MeasurementRepository;
@@ -106,17 +107,21 @@ public class DailyForecastJob {
 
     void runDaily() {
         int ok = 0;
+        int skipped = 0;
         int failed = 0;
         for (Station station : stationRepository.findByStatus(StationStatus.ACTIVE)) {
             try {
                 forecastService.predict(station.getId(), DAYS_AHEAD);
                 ok++;
+            } catch (InsufficientDataException e) {
+                // Trạm mất tín hiệu vẫn ACTIVE: ml-service từ chối dự báo là đúng, không tính là lỗi
+                skipped++;
             } catch (RuntimeException e) {
                 failed++;
                 log.warn("Dự báo hằng ngày lỗi ở trạm {}: {}", station.getCode(), e.getMessage());
             }
         }
-        log.info("Dự báo hằng ngày: {} trạm thành công, {} trạm lỗi", ok, failed);
+        log.info("Dự báo hằng ngày: {} trạm thành công, {} trạm không đủ số đo, {} trạm lỗi", ok, skipped, failed);
         eventPublisher.publishEvent(new ForecastsRefreshedEvent(LocalDate.now(ZONE), ok, failed));
     }
 
