@@ -9,6 +9,7 @@ import { DataFreshnessBanner } from '../components/DataFreshnessBanner';
 import { NearbyStations } from '../components/NearbyStations';
 import { SituationStrip } from '../components/SituationStrip';
 import { RecommendationList } from '../components/RecommendationList';
+import { Disclaimer } from '../components/Disclaimer';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
 import { useStationsList } from '../hooks/useStations';
 import { useUnresolvedAlerts } from '../hooks/useAlerts';
@@ -207,6 +208,7 @@ export function OverviewPage() {
             <section className="card p-4">
               <h2 className="text-sm font-semibold text-gray-900 mb-3">Khuyến nghị vận hành</h2>
               <RecommendationList items={recommendations} />
+              <Disclaimer className="mt-3" />
             </section>
           </div>
         </div>

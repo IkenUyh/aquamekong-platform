@@ -15,6 +15,7 @@ import { useEarlyWarningEvaluation, useForecastAccuracy } from '../hooks/useFore
 import type { StationAccuracy as StationAccuracyData } from '../api/accuracyApi';
 import type { SalinityForecast, StgnnModelInfo } from '../types';
 import { formatDay, formatFullDate, formatMeasuredAt, formatSalinity, isReporting, SALINITY_THRESHOLD } from '../utils/salinity';
+import { Disclaimer } from '../components/Disclaimer';
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const HORIZONS = [7, 14];
@@ -365,6 +366,7 @@ export function ForecastPage() {
                   Đang chạy dự báo: {items.length - pending}/{items.length} trạm
                 </p>
               )}
+              <Disclaimer className="basis-full" />
             </div>
 
             {dataUntil && (
