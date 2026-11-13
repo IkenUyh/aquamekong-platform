@@ -55,6 +55,15 @@ public class RecommendationService {
                 .filter(m -> "salinity".equalsIgnoreCase(m.getMetricType()) && m.getValue() != null && m.getStation() != null
                         && m.getRecordedAt() != null && !m.getRecordedAt().toInstant().isBefore(now.minus(MAX_MEASUREMENT_AGE)))
                 .toList();
+        // Không trạm nào có số đo mới (pipeline RYNAN dừng, DB mới): không biết độ mặn thì không được báo "an toàn"
+        if (latest.isEmpty()) {
+            return List.of(RecommendationDto.builder()
+                    .type("NO_DATA")
+                    .priority("LOW")
+                    .message("Chưa có số đo độ mặn trong " + MAX_MEASUREMENT_AGE.toDays()
+                            + " ngày qua nên chưa thể khuyến nghị. Hỏi cơ quan thủy lợi địa phương trước khi lấy nước.")
+                    .build());
+        }
         Map<Long, List<SalinityForecast>> forecasts = forecastRepository
                 .findLatestRunForecastsBetween(today, today.plusDays(OUTLOOK_DAYS)).stream()
                 .collect(Collectors.groupingBy(f -> f.getStation().getId()));

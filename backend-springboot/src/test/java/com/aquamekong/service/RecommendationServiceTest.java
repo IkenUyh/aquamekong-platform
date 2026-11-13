@@ -112,7 +112,26 @@ class RecommendationServiceTest {
 
         assertThat(recommendationService.getRecommendations())
             .extracting(RecommendationDto::getType)
-            .containsExactly("WATER_SAVING");
+            .containsExactly("NO_DATA");
+    }
+
+    @Test
+    void neverSaysSafeWhenThereAreNoReadings() {
+        when(measurementRepository.findLatestMeasurementPerStation()).thenReturn(List.of());
+
+        List<RecommendationDto> result = recommendationService.getRecommendations();
+
+        assertThat(result).extracting(RecommendationDto::getType).containsExactly("NO_DATA");
+        assertThat(result.get(0).getMessage()).startsWith("Chưa có số đo độ mặn trong 3 ngày qua").doesNotContain("an toàn");
+    }
+
+    @Test
+    void waterLevelAloneDoesNotCountAsASalinityReading() {
+        when(measurementRepository.findLatestMeasurementPerStation()).thenReturn(List.of(latest("Kim Quy", "water_level", 1.2)));
+
+        assertThat(recommendationService.getRecommendations())
+            .extracting(RecommendationDto::getType)
+            .containsExactly("NO_DATA");
     }
 
     @Test
