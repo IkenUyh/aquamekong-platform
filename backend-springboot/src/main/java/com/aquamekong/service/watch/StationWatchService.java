@@ -56,13 +56,17 @@ public class StationWatchService {
         User user = user(username);
         Instant now = Instant.now();
         return watchRepository.findByUserIdOrderByCreatedAtAsc(user.getId()).stream()
-                .map(w -> toDto(w, outlook(snapshot(w.getStation().getId()), w.getThreshold(), w.getRiskUntil(), now)))
+                .map(w -> toDto(w, outlook(snapshot(w.getStation().getId()), w.getThreshold(), w.getMinThreshold(),
+                        w.getRiskUntil(), now)))
                 .toList();
     }
 
     /** Theo dõi trạm; đã theo dõi thì đổi ngưỡng và loại cây */
     @Transactional
     public WatchDto save(String username, WatchRequest request) {
+        if (request.minThreshold() != null && request.minThreshold() >= request.threshold()) {
+            throw new IllegalArgumentException("Cận dưới phải nhỏ hơn ngưỡng trên");
+        }
         User user = user(username);
         Station station = stationRepository.findById(request.stationId())
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy trạm: " + request.stationId()));
@@ -74,9 +78,10 @@ public class StationWatchService {
             watch = StationWatch.builder().user(user).station(station).build();
         }
         watch.setThreshold(request.threshold());
+        watch.setMinThreshold(request.minThreshold());
         watch.setCrop(request.crop() == null || request.crop().isBlank() ? null : request.crop().trim());
         // Ngưỡng có thể đã đổi: ngày giữ cảnh báo tính lại từ dự báo hiện tại
-        Outlook outlook = outlook(snapshot(station.getId()), request.threshold(), null, Instant.now());
+        Outlook outlook = outlook(snapshot(station.getId()), request.threshold(), request.minThreshold(), null, Instant.now());
         // Đã thấy tình hình lúc lưu: job sáng mai chỉ báo khi nó đổi
         watch.setForecastExceeding(outlook.exceeding());
         watch.setRiskUntil(outlook.riskUntil());
@@ -104,6 +109,15 @@ public class StationWatchService {
      *                  thì app báo "đã giảm" ngay trước khi mặn vượt thật.
      */
     static Outlook outlook(StationSnapshot snapshot, double threshold, LocalDate riskUntil, Instant now) {
+        return outlook(snapshot, threshold, null, riskUntil, now);
+    }
+
+    /**
+     * @param minThreshold cận dưới (nuôi tôm cần mặn trong một khoảng), null = không có. Chỉ so với số đo và dự báo:
+     *                     mô hình rủi ro chỉ cho mức "có thể lên tới", không nói gì về mức thấp, nên không giữ ngày như
+     *                     riskUntil. ml-service episodes.py chỉ chấm cận trên.
+     */
+    static Outlook outlook(StationSnapshot snapshot, double threshold, Double minThreshold, LocalDate riskUntil, Instant now) {
         LocalDate today = now.atZone(ZONE).toLocalDate();
         LocalDate horizon = today.plusDays(OUTLOOK_DAYS);
         Measurement latest = snapshot.latest();
@@ -135,14 +149,23 @@ public class StationWatchService {
             until = until == null || last.isAfter(until) ? last : until;
         }
 
-        boolean exceeding = (fresh && latest.getValue() > threshold) || firstExceed != null || until != null;
+        LocalDate firstBelow = minThreshold == null ? null : upcoming.stream()
+                .filter(f -> f.getPredictedSalinity() < minThreshold)
+                .map(SalinityForecast::getForecastDate)
+                .min(LocalDate::compareTo).orElse(null);
+        Double forecastMin = upcoming.stream().map(SalinityForecast::getPredictedSalinity)
+                .min(Double::compareTo).orElse(null);
+        boolean below = minThreshold != null && ((fresh && latest.getValue() < minThreshold) || firstBelow != null);
+
+        boolean exceeding = (fresh && latest.getValue() > threshold) || firstExceed != null || until != null || below;
         return new Outlook(fresh ? latest.getValue() : null, fresh ? latest.getRecordedAt() : null,
-                firstExceed, forecastMax, riskDates.isEmpty() ? null : riskDates.get(0), riskMax, until, exceeding);
+                firstExceed, forecastMax, riskDates.isEmpty() ? null : riskDates.get(0), riskMax, until, exceeding,
+                firstBelow, forecastMin);
     }
 
     private static WatchDto toDto(StationWatch watch, Outlook outlook) {
         return new WatchDto(watch.getId(), watch.getStation().getId(), watch.getStation().getName(),
-                watch.getThreshold(), watch.getCrop(), outlook);
+                watch.getThreshold(), watch.getMinThreshold(), watch.getCrop(), outlook);
     }
 
     private User user(String username) {

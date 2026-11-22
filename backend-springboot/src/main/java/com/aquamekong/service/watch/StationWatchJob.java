@@ -59,7 +59,8 @@ public class StationWatchJob {
         int reported = 0;
         for (StationWatch watch : watchRepository.findAllByOrderByStationIdAsc()) {
             StationSnapshot snapshot = snapshots.computeIfAbsent(watch.getStation().getId(), watchService::snapshot);
-            Outlook outlook = StationWatchService.outlook(snapshot, watch.getThreshold(), watch.getRiskUntil(), now);
+            Outlook outlook = StationWatchService.outlook(snapshot, watch.getThreshold(), watch.getMinThreshold(),
+                    watch.getRiskUntil(), now);
             boolean stateChanged = outlook.exceeding() != watch.isForecastExceeding();
             if (!stateChanged && Objects.equals(outlook.riskUntil(), watch.getRiskUntil())) continue;
             if (stateChanged) {
@@ -76,14 +77,36 @@ public class StationWatchJob {
 
     static PushMessage message(StationWatch watch, Outlook outlook) {
         String station = watch.getStation().getName();
-        String limit = number(watch.getThreshold()) + "‰" + (watch.getCrop() == null ? "" : " cho " + watch.getCrop().toLowerCase(Locale.ROOT));
+        String forCrop = watch.getCrop() == null ? "" : " cho " + watch.getCrop().toLowerCase(Locale.ROOT);
+        String limit = number(watch.getThreshold()) + "‰" + forCrop;
         String tag = "watch-" + watch.getId();
+        Double min = watch.getMinThreshold();
         if (!outlook.exceeding()) {
+            if (min != null) {
+                return new PushMessage("Độ mặn đã ổn định: " + station,
+                        "Số đo mới nhất và dự báo 7 ngày tới đều trong khoảng " + number(min) + "–" + limit + ".",
+                        "/forecast", tag);
+            }
             return new PushMessage("Độ mặn đã giảm: " + station,
                     "Số đo mới nhất và dự báo 7 ngày tới đều dưới ngưỡng " + limit + ", có thể lấy nước.", "/forecast", tag);
         }
         List<String> parts = new ArrayList<>();
+        boolean measuredLow = min != null && outlook.latestSalinity() != null && outlook.latestSalinity() < min;
+        boolean forecastLow = min != null && outlook.firstBelowDate() != null;
+        if (measuredLow) {
+            parts.add("Độ mặn đo ngày " + DAY.format(outlook.latestAt().atZoneSameInstant(ZONE)) + " là "
+                    + number(outlook.latestSalinity()) + "‰, dưới mức tối thiểu " + number(min) + "‰" + forCrop + ".");
+        }
+        if (forecastLow) {
+            parts.add("Dự báo xuống dưới " + number(min) + "‰ từ ngày " + DAY.format(outlook.firstBelowDate())
+                    + ", thấp nhất " + number(outlook.forecastMin()) + "‰.");
+        }
         boolean measured = outlook.latestSalinity() != null && outlook.latestSalinity() > watch.getThreshold();
+        boolean high = measured || outlook.firstExceedDate() != null || outlook.firstRiskDate() != null
+                || outlook.riskUntil() != null;
+        if ((measuredLow || forecastLow) && !high) {
+            return new PushMessage("Độ mặn thấp: " + station, String.join(" ", parts), "/forecast", tag);
+        }
         if (measured) {
             parts.add("Độ mặn đo ngày " + DAY.format(outlook.latestAt().atZoneSameInstant(ZONE)) + " là "
                     + number(outlook.latestSalinity()) + "‰, vượt ngưỡng " + limit + ".");

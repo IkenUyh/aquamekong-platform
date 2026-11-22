@@ -65,7 +65,7 @@ class StationWatchJobTest {
     void forecastMessageTellsWhenToStoreWater() {
         PushMessage message = StationWatchJob.message(watch(1, 10, 2.0, false),
                 new Outlook(1.2, OffsetDateTime.of(2026, 10, 8, 0, 0, 0, 0, ZoneOffset.ofHours(7)),
-                        LocalDate.of(2026, 10, 12), 2.85, null, null, null, true));
+                        LocalDate.of(2026, 10, 12), 2.85, null, null, null, true, null, null));
 
         assertThat(message.title()).isEqualTo("Cảnh báo mặn: Mỹ Tho");
         assertThat(message.body()).isEqualTo("Dự báo vượt 2‰ cho lúa từ ngày 12/10, cao nhất 2,85‰. Nên trữ nước ngọt trước ngày này.");
@@ -74,7 +74,7 @@ class StationWatchJobTest {
     @Test
     void backBelowMessageSaysWaterCanBeTaken() {
         PushMessage message = StationWatchJob.message(watch(1, 10, 2.0, true),
-                new Outlook(1.2, null, null, 1.5, null, 1.9, null, false));
+                new Outlook(1.2, null, null, 1.5, null, 1.9, null, false, null, null));
 
         assertThat(message.title()).isEqualTo("Độ mặn đã giảm: Mỹ Tho");
         assertThat(message.body()).contains("dưới ngưỡng 2‰ cho lúa");
@@ -84,10 +84,35 @@ class StationWatchJobTest {
     void riskMessageWarnsBeforeTheForecastItself() {
         PushMessage message = StationWatchJob.message(watch(1, 10, 2.0, false),
                 new Outlook(1.2, OffsetDateTime.of(2026, 10, 8, 0, 0, 0, 0, ZoneOffset.ofHours(7)),
-                        null, 1.2, LocalDate.of(2026, 10, 11), 2.6, LocalDate.of(2026, 10, 13), true));
+                        null, 1.2, LocalDate.of(2026, 10, 11), 2.6, LocalDate.of(2026, 10, 13), true, null, null));
 
         assertThat(message.title()).isEqualTo("Nguy cơ mặn: Mỹ Tho");
         assertThat(message.body()).isEqualTo("Có thể vượt 2‰ cho lúa từ ngày 11/10 (có thể lên tới 2,6‰). Nên trữ nước ngọt trước ngày này.");
+    }
+
+    private StationWatch shrimpWatch(boolean exceeding) {
+        return StationWatch.builder().id(1L).user(User.builder().id(10L).build()).station(station)
+                .threshold(35.0).minThreshold(5.0).crop("Nuôi tôm sú").forecastExceeding(exceeding).build();
+    }
+
+    @Test
+    void lowSalinityMessageForARangeWatch() {
+        PushMessage message = StationWatchJob.message(shrimpWatch(false),
+                new Outlook(4.2, OffsetDateTime.of(2026, 10, 8, 0, 0, 0, 0, ZoneOffset.ofHours(7)),
+                        null, 6.0, null, null, null, true, LocalDate.of(2026, 10, 10), 3.1));
+
+        assertThat(message.title()).isEqualTo("Độ mặn thấp: Mỹ Tho");
+        assertThat(message.body()).isEqualTo("Độ mặn đo ngày 08/10 là 4,2‰, dưới mức tối thiểu 5‰ cho nuôi tôm sú."
+                + " Dự báo xuống dưới 5‰ từ ngày 10/10, thấp nhất 3,1‰.");
+    }
+
+    @Test
+    void backInRangeMessageGivesTheRange() {
+        PushMessage message = StationWatchJob.message(shrimpWatch(true),
+                new Outlook(12.0, null, null, 14.0, null, null, null, false, null, 10.0));
+
+        assertThat(message.title()).isEqualTo("Độ mặn đã ổn định: Mỹ Tho");
+        assertThat(message.body()).contains("trong khoảng 5–35‰ cho nuôi tôm sú");
     }
 
     @Test

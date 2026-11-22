@@ -13,7 +13,11 @@ export interface WatchOutlook {
   riskMax: number | null;
   /** YYYY-MM-DD, cảnh báo nguy cơ giữ tới hết ngày này (đã từng báo có thể vượt ngày đó) */
   riskUntil: string | null;
+  /** Ra ngoài ngưỡng: vượt ngưỡng trên, có nguy cơ vượt, hoặc xuống dưới cận dưới (khi có) */
   exceeding: boolean;
+  /** YYYY-MM-DD, ngày đầu tiên dự báo xuống dưới cận dưới; null = không có cận dưới hoặc không xuống dưới */
+  firstBelowDate: string | null;
+  forecastMin: number | null;
 }
 
 export interface StationWatch {
@@ -21,6 +25,8 @@ export interface StationWatch {
   stationId: number;
   stationName: string;
   threshold: number;
+  /** Cận dưới (‰) cho mức cần khoảng mặn như nuôi tôm, null = không có */
+  minThreshold: number | null;
   /** Loại cây đã chọn, null = tự đặt ngưỡng */
   crop: string | null;
   outlook: WatchOutlook;
@@ -30,6 +36,8 @@ export interface WatchRequest {
   stationId: number;
   threshold: number;
   crop: string | null;
+  /** Phải nhỏ hơn threshold; bỏ trống = không có cận dưới */
+  minThreshold?: number | null;
 }
 
 export const watchApi = {

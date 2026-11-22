@@ -3,10 +3,11 @@ import { watchStatus } from './watchStatus';
 import type { StationWatch } from '../api/watchApi';
 
 const watch = (outlook: Partial<StationWatch['outlook']>): StationWatch => ({
-  id: 1, stationId: 3, stationName: 'Mỹ Tho', threshold: 2, crop: 'Lúa',
+  id: 1, stationId: 3, stationName: 'Mỹ Tho', threshold: 2, minThreshold: null, crop: 'Lúa',
   outlook: {
     latestSalinity: null, latestAt: null, firstExceedDate: null, forecastMax: null,
-    firstRiskDate: null, riskMax: null, riskUntil: null, exceeding: false, ...outlook,
+    firstRiskDate: null, riskMax: null, riskUntil: null, exceeding: false,
+    firstBelowDate: null, forecastMin: null, ...outlook,
   },
 });
 
