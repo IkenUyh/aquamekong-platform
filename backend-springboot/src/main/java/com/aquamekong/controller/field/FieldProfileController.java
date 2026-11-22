@@ -1,0 +1,50 @@
+package com.aquamekong.controller.field;
+
+import com.aquamekong.dto.field.FieldDtos.FieldDto;
+import com.aquamekong.dto.field.FieldDtos.FieldRequest;
+import com.aquamekong.service.field.FieldProfileService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1/fields")
+@RequiredArgsConstructor
+@Tag(name = "Fields", description = "Hồ sơ ruộng của tài khoản đang đăng nhập")
+public class FieldProfileController {
+
+    private final FieldProfileService fieldService;
+
+    @GetMapping
+    @Operation(summary = "Các ruộng đã khai, kèm giai đoạn cây hiện tại và ngưỡng đang theo dõi")
+    public ResponseEntity<List<FieldDto>> list(Authentication authentication) {
+        return ResponseEntity.ok(fieldService.list(authentication.getName()));
+    }
+
+    @PostMapping
+    @Operation(summary = "Khai ruộng mới; tự theo dõi trạm gần ruộng với ngưỡng theo cây và giai đoạn")
+    public ResponseEntity<FieldDto> create(@Valid @RequestBody FieldRequest request, Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(fieldService.create(authentication.getName(), request));
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Sửa hồ sơ ruộng")
+    public ResponseEntity<FieldDto> update(@PathVariable Long id, @Valid @RequestBody FieldRequest request,
+                                           Authentication authentication) {
+        return ResponseEntity.ok(fieldService.update(authentication.getName(), id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Xoá ruộng (bỏ luôn theo dõi trạm của ruộng)")
+    public ResponseEntity<Void> delete(@PathVariable Long id, Authentication authentication) {
+        fieldService.delete(authentication.getName(), id);
+        return ResponseEntity.noContent().build();
+    }
+}

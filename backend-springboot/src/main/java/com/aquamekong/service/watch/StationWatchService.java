@@ -3,6 +3,7 @@ package com.aquamekong.service.watch;
 import com.aquamekong.dto.watch.WatchDtos.Outlook;
 import com.aquamekong.dto.watch.WatchDtos.WatchDto;
 import com.aquamekong.dto.watch.WatchDtos.WatchRequest;
+import com.aquamekong.entity.field.FieldProfile;
 import com.aquamekong.entity.forecast.SalinityForecast;
 import com.aquamekong.entity.station.Station;
 import com.aquamekong.entity.telemetry.Measurement;
@@ -70,7 +71,8 @@ public class StationWatchService {
         User user = user(username);
         Station station = stationRepository.findById(request.stationId())
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy trạm: " + request.stationId()));
-        StationWatch watch = watchRepository.findByUserIdAndStationId(user.getId(), station.getId()).orElse(null);
+        StationWatch watch = watchRepository.findByUserIdAndStationIdAndFieldProfileIsNull(user.getId(), station.getId())
+                .orElse(null);
         if (watch == null) {
             if (watchRepository.countByUserId(user.getId()) >= MAX_WATCHES_PER_USER) {
                 throw new IllegalArgumentException("Chỉ theo dõi được tối đa " + MAX_WATCHES_PER_USER + " trạm");
@@ -88,13 +90,54 @@ public class StationWatchService {
         return toDto(watchRepository.save(watch), outlook);
     }
 
-    /** Chỉ xoá trạm theo dõi của chính tài khoản; không có thì bỏ qua */
+    /** Chỉ xoá trạm theo dõi của chính tài khoản; không có thì bỏ qua. Theo dõi của hồ sơ ruộng thì xoá ruộng. */
     @Transactional
     public void delete(String username, Long watchId) {
         User user = user(username);
-        watchRepository.findById(watchId)
+        StationWatch watch = watchRepository.findById(watchId)
                 .filter(w -> w.getUser().getId().equals(user.getId()))
-                .ifPresent(watchRepository::delete);
+                .orElse(null);
+        if (watch == null) return;
+        if (watch.getFieldProfile() != null) {
+            throw new IllegalArgumentException("Trạm này đang theo dõi theo hồ sơ ruộng \"" + watch.getFieldProfile().getName()
+                    + "\": sửa hoặc xoá hồ sơ ruộng để đổi");
+        }
+        watchRepository.delete(watch);
+    }
+
+    /**
+     * Theo dõi tạo từ hồ sơ ruộng: tạo, cập nhật (trạm, ngưỡng theo cây và giai đoạn) hoặc bỏ khi ruộng không còn trạm
+     * hay giai đoạn không có ngưỡng. Ngưỡng đổi thì tính lại trạng thái như khi người dùng tự lưu, để job chỉ báo khi đổi.
+     *
+     * @return theo dõi sau khi lưu, null khi không theo dõi
+     */
+    @Transactional
+    public StationWatch syncFieldWatch(FieldProfile field, Double threshold, Double minThreshold) {
+        StationWatch watch = field.getId() == null ? null : watchRepository.findByFieldProfileId(field.getId()).orElse(null);
+        if (field.getStation() == null || threshold == null) {
+            if (watch != null) watchRepository.delete(watch);
+            return null;
+        }
+        if (watch == null) {
+            if (watchRepository.countByUserId(field.getUser().getId()) >= MAX_WATCHES_PER_USER) {
+                throw new IllegalArgumentException("Chỉ theo dõi được tối đa " + MAX_WATCHES_PER_USER
+                        + " trạm (tính cả các ruộng)");
+            }
+            watch = StationWatch.builder().user(field.getUser()).fieldProfile(field).build();
+        }
+        boolean changed = watch.getStation() == null || !watch.getStation().getId().equals(field.getStation().getId())
+                || !threshold.equals(watch.getThreshold()) || !Objects.equals(minThreshold, watch.getMinThreshold());
+        watch.setStation(field.getStation());
+        watch.setThreshold(threshold);
+        watch.setMinThreshold(minThreshold);
+        String crop = field.getCrop().getName();
+        watch.setCrop(crop.length() > 30 ? crop.substring(0, 30) : crop);
+        if (changed) {
+            Outlook outlook = outlook(snapshot(field.getStation().getId()), threshold, minThreshold, null, Instant.now());
+            watch.setForecastExceeding(outlook.exceeding());
+            watch.setRiskUntil(outlook.riskUntil());
+        }
+        return watchRepository.save(watch);
     }
 
     public StationSnapshot snapshot(Long stationId) {
@@ -165,7 +208,9 @@ public class StationWatchService {
 
     private static WatchDto toDto(StationWatch watch, Outlook outlook) {
         return new WatchDto(watch.getId(), watch.getStation().getId(), watch.getStation().getName(),
-                watch.getThreshold(), watch.getMinThreshold(), watch.getCrop(), outlook);
+                watch.getThreshold(), watch.getMinThreshold(), watch.getCrop(),
+                watch.getFieldProfile() == null ? null : watch.getFieldProfile().getId(),
+                watch.getFieldProfile() == null ? null : watch.getFieldProfile().getName(), outlook);
     }
 
     private User user(String username) {

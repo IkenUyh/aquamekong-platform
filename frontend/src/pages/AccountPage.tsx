@@ -4,6 +4,7 @@ import { Navbar } from '../components/Navbar';
 import { BottomNav } from '../components/BottomNav';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { ZaloButton } from '../components/ZaloButton';
+import { FieldProfileSettings } from '../components/FieldProfileSettings';
 import { PushSettings } from '../components/PushSettings';
 import { StationWatchSettings } from '../components/StationWatchSettings';
 import { useAuth } from '../contexts/AuthContext';
@@ -255,6 +256,7 @@ export function AccountPage() {
           </div>
 
           <PushSettings />
+          <FieldProfileSettings />
           <StationWatchSettings />
           <PasswordForm />
           {config?.passkeyEnabled && passkeySupported() && <Passkeys />}

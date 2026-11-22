@@ -1,5 +1,6 @@
 package com.aquamekong.entity.user;
 
+import com.aquamekong.entity.field.FieldProfile;
 import com.aquamekong.entity.station.Station;
 import jakarta.persistence.*;
 import lombok.*;
@@ -28,6 +29,11 @@ public class StationWatch {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "station_id", nullable = false)
     private Station station;
+
+    /** Hồ sơ ruộng đã tạo theo dõi này (ngưỡng theo cây và giai đoạn), null = người dùng đặt tay (V15) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "field_profile_id")
+    private FieldProfile fieldProfile;
 
     @Column(nullable = false)
     private Double threshold;

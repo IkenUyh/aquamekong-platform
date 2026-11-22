@@ -29,6 +29,9 @@ export interface StationWatch {
   minThreshold: number | null;
   /** Loại cây đã chọn, null = tự đặt ngưỡng */
   crop: string | null;
+  /** Hồ sơ ruộng đã tạo theo dõi này (ngưỡng theo cây và giai đoạn), null = đặt tay */
+  fieldProfileId: number | null;
+  fieldName: string | null;
   outlook: WatchOutlook;
 }
 

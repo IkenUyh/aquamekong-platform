@@ -5,6 +5,7 @@ import { useStationsList } from '../hooks/useStations';
 import { useRemoveWatch, useSaveWatch, useWatches } from '../hooks/useWatches';
 import { CROP_PRESETS, CUSTOM_CROP } from '../utils/crops';
 import { formatDistance, nearestStations, type LatLng } from '../utils/geo';
+import { thresholdText } from '../utils/fieldForm';
 import { formatNumber } from '../utils/salinity';
 import { watchStatus } from '../utils/watchStatus';
 
@@ -25,13 +26,15 @@ export function StationWatchSettings() {
   const [nearestNote, setNearestNote] = useState<string | null>(null);
   const myLocation = useMyLocation();
 
-  const existing = watches.find((w) => w.stationId === stationId);
+  // Theo dõi đặt tay; theo dõi của hồ sơ ruộng sửa ở phần Hồ sơ ruộng
+  const manualWatches = watches.filter((w) => w.fieldProfileId == null);
+  const existing = manualWatches.find((w) => w.stationId === stationId);
   const sortedStations = [...stations].sort((a, b) => a.name.localeCompare(b.name, 'vi'));
 
   const pickStation = (id: number | '') => {
     setStationId(id);
     // Trạm đã theo dõi: điền sẵn ngưỡng đang dùng để sửa
-    const current = watches.find((w) => w.stationId === id);
+    const current = manualWatches.find((w) => w.stationId === id);
     if (current) {
       setCrop(current.crop ?? CUSTOM_CROP);
       setThreshold(String(current.threshold));
@@ -103,13 +106,19 @@ export function StationWatchSettings() {
               <li key={w.id} className="py-3 flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900">{w.stationName}</p>
-                  <p className="text-xs text-gray-500 num">{w.crop ?? 'Tự đặt'} · ngưỡng {formatNumber(w.threshold)}‰</p>
+                  <p className="text-xs text-gray-500 num">
+                    {w.fieldName != null ? `Ruộng ${w.fieldName} · ` : ''}{w.crop ?? 'Tự đặt'} · {thresholdText(w.threshold, w.minThreshold)}
+                  </p>
                   <p className={`mt-0.5 text-xs num ${status.exceeding ? 'text-red-700 font-medium' : 'text-gray-500'}`}>{status.text}</p>
                 </div>
-                <button type="button" disabled={remove.isPending} onClick={() => void onRemove(w.id)}
-                  className="text-xs font-medium text-gray-500 hover:text-red-700 shrink-0">
-                  Bỏ theo dõi
-                </button>
+                {w.fieldProfileId == null ? (
+                  <button type="button" disabled={remove.isPending} onClick={() => void onRemove(w.id)}
+                    className="text-xs font-medium text-gray-500 hover:text-red-700 shrink-0">
+                    Bỏ theo dõi
+                  </button>
+                ) : (
+                  <span className="text-xs text-gray-400 shrink-0">Theo hồ sơ ruộng</span>
+                )}
               </li>
             );
           })}
@@ -123,7 +132,7 @@ export function StationWatchSettings() {
             onChange={(e) => { setNearestNote(null); pickStation(e.target.value === '' ? '' : Number(e.target.value)); }}>
             <option value="">Chọn trạm...</option>
             {sortedStations.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}{watches.some((w) => w.stationId === s.id) ? ' (đang theo dõi)' : ''}</option>
+              <option key={s.id} value={s.id}>{s.name}{manualWatches.some((w) => w.stationId === s.id) ? ' (đang theo dõi)' : ''}</option>
             ))}
           </select>
           <div className="mt-1 flex flex-wrap items-baseline justify-between gap-2 text-xs">
