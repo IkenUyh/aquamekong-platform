@@ -40,4 +40,13 @@ describe('watchStatus', () => {
     expect(watchStatus(watch({ latestSalinity: 1.2, forecastMax: 1.5 })).text).toBe('Dưới ngưỡng (mới nhất 1,20‰, dự báo cao nhất 1,50‰)');
     expect(watchStatus(watch({})).text).toBe('Chưa có số đo gần đây');
   });
+
+  it('a range watch (shrimp) reports low salinity and says "in range" otherwise', () => {
+    const shrimp = (outlook: Partial<StationWatch['outlook']>) => ({ ...watch(outlook), threshold: 35, minThreshold: 5 });
+    expect(watchStatus(shrimp({ latestSalinity: 4.2, latestAt: new Date(2026, 9, 8).toISOString(), exceeding: true })))
+      .toEqual({ text: 'Dưới mức tối thiểu: 4,20‰ ngày 08/10', exceeding: true });
+    expect(watchStatus(shrimp({ latestSalinity: 6, firstBelowDate: '2026-10-11', forecastMin: 3.1, exceeding: true })).text)
+      .toBe('Dự báo xuống dưới mức tối thiểu từ ngày 11/10, thấp nhất 3,10‰');
+    expect(watchStatus(shrimp({ latestSalinity: 5.21, riskMax: 7.3 })).text).toBe('Trong khoảng (mới nhất 5,21‰, có thể lên tới 7,30‰)');
+  });
 });

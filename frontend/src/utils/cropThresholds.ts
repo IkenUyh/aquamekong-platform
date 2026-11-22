@@ -12,6 +12,13 @@ export interface WatchPreset {
   minThreshold: number | null;
   source: string | null;
   note: string | null;
+  /** Giai đoạn chính của cây (giai đoạn co giãn theo giống, vd. lúa đẻ nhánh) */
+  main: boolean;
+}
+
+/** Mức chọn sẵn: giai đoạn chính của cây đầu bảng (lúa đẻ nhánh), không phải mạ chưa có mốc ngày */
+export function defaultPreset(presets: WatchPreset[]): WatchPreset | undefined {
+  return presets.find((p) => p.main) ?? presets[0];
 }
 
 /** Giá trị của lựa chọn "Tự đặt ngưỡng" */
@@ -33,6 +40,7 @@ export function watchPresets(crops: Crop[]): WatchPreset[] {
       minThreshold: s.minSalinity,
       source: s.thresholdSource,
       note: s.thresholdNote,
+      main: s.flexible,
     })));
 }
 

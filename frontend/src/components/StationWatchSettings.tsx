@@ -4,7 +4,7 @@ import { useMyLocation } from '../hooks/useMyLocation';
 import { useStationsList } from '../hooks/useStations';
 import { useRemoveWatch, useSaveWatch, useWatches } from '../hooks/useWatches';
 import { useCrops } from '../hooks/useCrops';
-import { CUSTOM_PRESET, presetFor, watchPresets } from '../utils/cropThresholds';
+import { CUSTOM_PRESET, defaultPreset, presetFor, watchPresets } from '../utils/cropThresholds';
 import { formatDistance, nearestStations, type LatLng } from '../utils/geo';
 import { decimal, thresholdText } from '../utils/fieldForm';
 import { formatNumber } from '../utils/salinity';
@@ -38,7 +38,7 @@ export function StationWatchSettings() {
   const existing = manualWatches.find((w) => w.stationId === stationId);
   const sortedStations = [...stations].sort((a, b) => a.name.localeCompare(b.name, 'vi'));
 
-  const key = presetKey ?? presets[0]?.key ?? CUSTOM_PRESET;
+  const key = presetKey ?? defaultPreset(presets)?.key ?? CUSTOM_PRESET;
   const preset = presets.find((p) => p.key === key);
   const threshold = thresholdInput ?? (preset ? formatNumber(preset.threshold) : '');
   const minText = minInput ?? (preset?.minThreshold != null ? formatNumber(preset.minThreshold) : '');
@@ -125,7 +125,7 @@ export function StationWatchSettings() {
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900">{w.stationName}</p>
                   <p className="text-xs text-gray-500 num">
-                    {w.fieldName != null ? `Ruộng ${w.fieldName} · ` : ''}{w.crop ?? 'Tự đặt'} · {thresholdText(w.threshold, w.minThreshold)}
+                    {w.fieldName != null ? `${w.fieldName} · ` : ''}{w.crop ?? 'Tự đặt'} · {thresholdText(w.threshold, w.minThreshold)}
                   </p>
                   <p className={`mt-0.5 text-xs num ${status.exceeding ? 'text-red-700 font-medium' : 'text-gray-500'}`}>{status.text}</p>
                 </div>

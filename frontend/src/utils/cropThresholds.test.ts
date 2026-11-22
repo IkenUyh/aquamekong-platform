@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Crop, CropStage } from '../api/cropApi';
-import { cropsAtThreshold, presetFor, watchPresets } from './cropThresholds';
+import { cropsAtThreshold, defaultPreset, presetFor, watchPresets } from './cropThresholds';
 
 const stage = (code: string, name: string, max: number | null, min: number | null = null): CropStage => ({
-  code, name, order: 1, durationDays: null, flexible: true, durationSource: null,
+  code, name, order: 1, durationDays: null, flexible: code !== 'ma', durationSource: null,
   maxSalinity: max, minSalinity: min, thresholdSource: max == null ? null : 'Nguồn', thresholdNote: null,
 });
 const crop = (code: string, name: string, stages: CropStage[]): Crop => ({
@@ -30,6 +30,10 @@ describe('watchPresets', () => {
     expect(presetFor(presets, 'Lúa', 4, null)?.key).toBe('lua:de_nhanh');
     expect(presetFor(presets, 'Lúa', 2.5, null)?.key).toBe('lua:ma');
     expect(presetFor(presets, null, 2, null)).toBeUndefined();
+  });
+
+  it('defaults to the main rice stage, not the seedling stage', () => {
+    expect(defaultPreset(watchPresets(CROPS))?.key).toBe('lua:de_nhanh');
   });
 });
 
