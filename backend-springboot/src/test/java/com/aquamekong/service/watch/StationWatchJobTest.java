@@ -1,6 +1,9 @@
 package com.aquamekong.service.watch;
 
 import com.aquamekong.dto.watch.WatchDtos.Outlook;
+import com.aquamekong.entity.crop.Crop;
+import com.aquamekong.entity.crop.CropStage;
+import com.aquamekong.entity.field.FieldProfile;
 import com.aquamekong.entity.station.Station;
 import com.aquamekong.entity.telemetry.Measurement;
 import com.aquamekong.entity.user.StationWatch;
@@ -113,6 +116,47 @@ class StationWatchJobTest {
 
         assertThat(message.title()).isEqualTo("Độ mặn đã ổn định: Mỹ Tho");
         assertThat(message.body()).contains("trong khoảng 5–35‰ cho nuôi tôm sú");
+    }
+
+    /** Ruộng lúa giống 95 ngày gieo cách đây 40 ngày: hôm nay đang làm đòng – trổ (4‰) */
+    private StationWatch riceFieldWatch(double threshold, boolean exceeding) {
+        Crop rice = Crop.builder().name("Lúa").stages(List.of(
+                CropStage.builder().code("de_nhanh").stageOrder(1).flexible(true).maxSalinity(3.0).build(),
+                CropStage.builder().code("lam_dong_tro").stageOrder(2).durationDays(35).maxSalinity(4.0).build(),
+                CropStage.builder().code("chin").stageOrder(3).durationDays(30).maxSalinity(4.0).build())).build();
+        FieldProfile field = FieldProfile.builder().id(9L).name("Ruộng sau nhà").crop(rice).varietyDays(95)
+                .plantedOn(LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).minusDays(40)).build();
+        return StationWatch.builder().id(1L).user(User.builder().id(10L).build()).station(station).crop("Lúa")
+                .fieldProfile(field).threshold(threshold).forecastExceeding(exceeding).build();
+    }
+
+    @Test
+    void fieldWatchFollowsTheCropStage() {
+        StationWatch watch = riceFieldWatch(3.0, false);
+
+        assertThat(StationWatchJob.applyStageThreshold(watch, LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")))).isTrue();
+        assertThat(watch.getThreshold()).isEqualTo(4.0);
+        assertThat(StationWatchJob.applyStageThreshold(watch, LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")))).isFalse();
+        // Theo dõi đặt tay không đổi
+        assertThat(StationWatchJob.applyStageThreshold(watch(2, 11, 1.0, false), LocalDate.now())).isFalse();
+    }
+
+    @Test
+    void newStageThresholdIsSavedAndComparedTheSameRun() {
+        // 3,5‰: vượt ngưỡng đẻ nhánh cũ (3‰) nhưng dưới ngưỡng làm đòng – trổ (4‰)
+        when(watchService.snapshot(3L)).thenReturn(new StationSnapshot(
+                Measurement.builder().value(3.5).recordedAt(OffsetDateTime.now()).build(), List.of()));
+        StationWatch quiet = riceFieldWatch(3.0, false);
+        StationWatch wasExceeding = riceFieldWatch(3.0, true);
+        when(watchRepository.findAllByOrderByStationIdAsc()).thenReturn(List.of(quiet, wasExceeding));
+
+        new StationWatchJob(watchRepository, watchService, pushService).check();
+
+        // Ngưỡng mới lưu cho cả hai; ruộng đang báo vượt thì nay báo "đã giảm" theo ngưỡng mới
+        assertThat(quiet.getThreshold()).isEqualTo(4.0);
+        assertThat(wasExceeding.isForecastExceeding()).isFalse();
+        verify(pushService, times(1)).notifyUser(eq(10L), any());
+        verify(watchRepository).saveAll(List.of(quiet, wasExceeding));
     }
 
     @Test

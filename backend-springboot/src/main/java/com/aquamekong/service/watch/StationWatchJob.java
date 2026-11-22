@@ -1,6 +1,9 @@
 package com.aquamekong.service.watch;
 
 import com.aquamekong.dto.watch.WatchDtos.Outlook;
+import com.aquamekong.entity.field.FieldProfile;
+import com.aquamekong.service.crop.CropStages;
+import com.aquamekong.service.crop.CropStages.CurrentStage;
 import com.aquamekong.entity.user.StationWatch;
 import com.aquamekong.repository.user.StationWatchRepository;
 import com.aquamekong.service.forecast.ForecastsRefreshedEvent;
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -57,12 +61,18 @@ public class StationWatchJob {
         Map<Long, StationSnapshot> snapshots = new HashMap<>();
         List<StationWatch> changed = new ArrayList<>();
         int reported = 0;
+        LocalDate today = now.atZone(ZONE).toLocalDate();
         for (StationWatch watch : watchRepository.findAllByOrderByStationIdAsc()) {
+            // Ruộng sang giai đoạn mới: đổi ngưỡng trước khi so, để báo ngay nếu với ngưỡng mới trạm ra ngoài ngưỡng
+            boolean thresholdChanged = applyStageThreshold(watch, today);
             StationSnapshot snapshot = snapshots.computeIfAbsent(watch.getStation().getId(), watchService::snapshot);
             Outlook outlook = StationWatchService.outlook(snapshot, watch.getThreshold(), watch.getMinThreshold(),
                     watch.getRiskUntil(), now);
             boolean stateChanged = outlook.exceeding() != watch.isForecastExceeding();
-            if (!stateChanged && Objects.equals(outlook.riskUntil(), watch.getRiskUntil())) continue;
+            if (!stateChanged && Objects.equals(outlook.riskUntil(), watch.getRiskUntil())) {
+                if (thresholdChanged) changed.add(watch);
+                continue;
+            }
             if (stateChanged) {
                 pushService.notifyUser(watch.getUser().getId(), message(watch, outlook));
                 watch.setForecastExceeding(outlook.exceeding());
@@ -73,6 +83,25 @@ public class StationWatchJob {
         }
         watchRepository.saveAll(changed);
         log.info("Theo dõi trạm: {} lượt đổi trạng thái đã báo", reported);
+    }
+
+    /**
+     * Theo dõi của hồ sơ ruộng: đặt ngưỡng theo giai đoạn cây hôm nay (vd. lúa hết mạ). Giữ trạng thái đã báo, để vòng
+     * so sánh ngay sau đó báo nếu với ngưỡng mới trạm đổi trạng thái. Giai đoạn chưa có ngưỡng thì giữ ngưỡng cũ.
+     *
+     * @return ngưỡng đã đổi
+     */
+    static boolean applyStageThreshold(StationWatch watch, LocalDate today) {
+        FieldProfile field = watch.getFieldProfile();
+        if (field == null) return false;
+        CurrentStage current = CropStages.current(field.getCrop().getStages(), field.getPlantedOn(), field.getVarietyDays(), today);
+        if (current == null || current.stage().getMaxSalinity() == null) return false;
+        Double max = current.stage().getMaxSalinity();
+        Double min = current.stage().getMinSalinity();
+        if (max.equals(watch.getThreshold()) && Objects.equals(min, watch.getMinThreshold())) return false;
+        watch.setThreshold(max);
+        watch.setMinThreshold(min);
+        return true;
     }
 
     static PushMessage message(StationWatch watch, Outlook outlook) {
