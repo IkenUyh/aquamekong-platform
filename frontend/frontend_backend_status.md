@@ -80,7 +80,7 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
 - Ngưỡng gợi ý lấy từ `GET /api/v1/crops` 🌐 (bảng `crops`, mỗi số có nguồn hiện dưới ô chọn): lúa theo từng giai đoạn, sầu riêng, bưởi, xoài, dừa, mía, rau màu, nước sinh hoạt, nuôi tôm sú/thẻ (khoảng mặn, có cận dưới `minThreshold`); người dùng sửa được.
 
 ### 5c. Hồ sơ ruộng (Fields)
-- **Trang:** `/account`, mục "Hồ sơ ruộng" (`components/FieldProfileSettings.tsx`, `api/fieldApi.ts`)
+- **Trang:** `/fields` "Ruộng của tôi" (`pages/FieldsPage.tsx`, `components/fields/`, `api/fieldApi.ts`); trang Tài khoản chỉ có đường dẫn sang
 - **Trạng thái:** 🟢 Đã liên kết
 - **Endpoints:** `GET/POST /api/v1/fields`, `PUT/DELETE /api/v1/fields/{id}` 👤: trạm gần nhất (chọn bằng GPS trên máy, toạ độ không gửi lên), cây và giống kèm số ngày, ngày gieo, diện tích, ao trữ và dung tích ao; trả kèm giai đoạn cây hiện tại.
 - Lưu ruộng thì backend tự theo dõi trạm với ngưỡng của giai đoạn hiện tại; sau mỗi lượt dự báo, ngưỡng đổi theo khi cây sang giai đoạn mới.

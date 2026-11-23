@@ -4,7 +4,9 @@ import { Navbar } from '../components/Navbar';
 import { BottomNav } from '../components/BottomNav';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { ZaloButton } from '../components/ZaloButton';
-import { FieldProfileSettings } from '../components/FieldProfileSettings';
+import { Link } from 'react-router-dom';
+import { ChevronRight } from 'lucide-react';
+import { CropArt } from '../components/fields/CropArt';
 import { PushSettings } from '../components/PushSettings';
 import { StationWatchSettings } from '../components/StationWatchSettings';
 import { useAuth } from '../contexts/AuthContext';
@@ -256,7 +258,14 @@ export function AccountPage() {
           </div>
 
           <PushSettings />
-          <FieldProfileSettings />
+          <Link to="/fields" className="card p-5 flex items-center gap-3 hover:border-primary-300">
+            <CropArt code="lua" size={40} />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-gray-900">Ruộng của tôi</p>
+              <p className="text-sm text-gray-500">Hồ sơ ruộng, giai đoạn cây và ngưỡng mặn đang theo dõi</p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-gray-400" aria-hidden="true" />
+          </Link>
           <StationWatchSettings />
           <PasswordForm />
           {config?.passkeyEnabled && passkeySupported() && <Passkeys />}

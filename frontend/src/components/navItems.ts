@@ -1,5 +1,5 @@
 import {
-  Bell, History, LayoutDashboard, Map as MapIcon, RadioTower, Settings, TrendingUp, FileBarChart, type LucideIcon,
+  Bell, History, LayoutDashboard, Map as MapIcon, RadioTower, Settings, Sprout, TrendingUp, FileBarChart, type LucideIcon,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -15,6 +15,8 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Tổng quan',      short: 'Tổng quan', path: '/',         icon: LayoutDashboard, primary: true },
+  // Cần đăng nhập: khách bấm vào thì được đưa tới trang đăng nhập
+  { label: 'Ruộng của tôi',  short: 'Ruộng',     path: '/fields',   icon: Sprout,          primary: true },
   { label: 'Bản đồ độ mặn',  short: 'Bản đồ',    path: '/map',      icon: MapIcon,         primary: true },
   { label: 'Trạm quan trắc', short: 'Trạm',      path: '/stations', icon: RadioTower },
   { label: 'Dự báo',         short: 'Dự báo',    path: '/forecast', icon: TrendingUp,      primary: true },

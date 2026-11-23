@@ -14,6 +14,7 @@ const ForecastPage = lazy(() => import('./pages/ForecastPage').then((m) => ({ de
 const AlertsPage = lazy(() => import('./pages/AlertsPage').then((m) => ({ default: m.AlertsPage })));
 const ReplayPage = lazy(() => import('./pages/ReplayPage').then((m) => ({ default: m.ReplayPage })));
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then((m) => ({ default: m.ReportsPage })));
+const FieldsPage = lazy(() => import('./pages/FieldsPage').then((m) => ({ default: m.FieldsPage })));
 const AccountPage = lazy(() => import('./pages/AccountPage').then((m) => ({ default: m.AccountPage })));
 const RegisterPage = lazy(() => import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })));
 const ZaloCallbackPage = lazy(() => import('./pages/ZaloCallbackPage').then((m) => ({ default: m.ZaloCallbackPage })));
@@ -49,6 +50,7 @@ export const router = createBrowserRouter([
     errorElement: <RouteError />,
     children: [
       { path: '/account',   element: page(<AccountPage />) },
+      { path: '/fields',    element: page(<FieldsPage />) },
       {
         element: <RequireRole roles={['ROLE_OPERATOR', 'ROLE_ADMIN']} />,
         children: [{ path: '/admin', element: page(<AdminPage />) }],
