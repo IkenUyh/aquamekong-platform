@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -38,11 +39,14 @@ class FieldProfileControllerTest {
 
     @Test
     @WithAnonymousUser
-    void anonymousCannotReadOrWriteFields() throws Exception {
-        mvc.perform(get("/api/v1/fields")).andExpect(status().isUnauthorized());
+    void guestsShareTheFieldsWithoutSigningIn() throws Exception {
+        mvc.perform(get("/api/v1/fields")).andExpect(status().isOk());
+        verify(fieldService).list(null);
         mvc.perform(post("/api/v1/fields").contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isUnauthorized());
-        verifyNoInteractions(fieldService);
+                .andExpect(status().isCreated());
+        verify(fieldService).create(isNull(), any());
+        mvc.perform(delete("/api/v1/fields/9")).andExpect(status().isNoContent());
+        verify(fieldService).delete(9L);
     }
 
     @Test
@@ -52,8 +56,6 @@ class FieldProfileControllerTest {
                 .andExpect(status().isCreated());
         verify(fieldService).create(eq("alice"), any());
 
-        mvc.perform(delete("/api/v1/fields/9")).andExpect(status().isNoContent());
-        verify(fieldService).delete("alice", 9L);
     }
 
     @Test

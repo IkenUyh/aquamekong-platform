@@ -29,6 +29,8 @@ const page = (element: React.ReactNode) => <Suspense fallback={<PageFallback />}
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage />, errorElement: <RouteError /> },
   { path: '/register', element: page(<RegisterPage />), errorElement: <RouteError /> },
+  // Hồ sơ ruộng dùng chung: không cần đăng nhập, kể cả khi tắt xem công khai (PUBLIC_READ_ENABLED=false)
+  { path: '/fields', element: page(<FieldsPage />), errorElement: <RouteError /> },
   { path: ZALO_CALLBACK_PATH, element: page(<ZaloCallbackPage />), errorElement: <RouteError /> },
   {
     // Trang dữ liệu: ai cũng xem được (nếu backend bật PUBLIC_READ_ENABLED), thao tác ghi cần đăng nhập
@@ -50,7 +52,6 @@ export const router = createBrowserRouter([
     errorElement: <RouteError />,
     children: [
       { path: '/account',   element: page(<AccountPage />) },
-      { path: '/fields',    element: page(<FieldsPage />) },
       {
         element: <RequireRole roles={['ROLE_OPERATOR', 'ROLE_ADMIN']} />,
         children: [{ path: '/admin', element: page(<AdminPage />) }],

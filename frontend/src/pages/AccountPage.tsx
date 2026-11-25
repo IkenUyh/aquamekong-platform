@@ -6,7 +6,7 @@ import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { ZaloButton } from '../components/ZaloButton';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
-import { CropArt } from '../components/fields/CropArt';
+import { CropImage } from '../components/fields/CropImage';
 import { PushSettings } from '../components/PushSettings';
 import { StationWatchSettings } from '../components/StationWatchSettings';
 import { useAuth } from '../contexts/AuthContext';
@@ -259,7 +259,7 @@ export function AccountPage() {
 
           <PushSettings />
           <Link to="/fields" className="card p-5 flex items-center gap-3 hover:border-primary-300">
-            <CropArt code="lua" size={40} />
+            <CropImage code="lua" name="Lúa" className="h-10 w-10 shrink-0 rounded-md" />
             <div className="min-w-0 flex-1">
               <p className="font-semibold text-gray-900">Ruộng của tôi</p>
               <p className="text-sm text-gray-500">Hồ sơ ruộng, giai đoạn cây và ngưỡng mặn đang theo dõi</p>

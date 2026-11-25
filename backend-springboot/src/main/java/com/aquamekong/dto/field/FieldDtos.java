@@ -8,6 +8,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import com.aquamekong.dto.watch.WatchDtos.Outlook;
+
 import java.time.LocalDate;
 
 /** DTO cho /api/v1/fields: hồ sơ ruộng của tài khoản đang đăng nhập. */
@@ -36,14 +38,17 @@ public final class FieldDtos {
     }
 
     /**
-     * @param stage     giai đoạn cây hiện tại, null khi cây không có giai đoạn nào
-     * @param watchId   theo dõi trạm tạo từ ruộng này, null khi chưa theo dõi (trạm đã bị xoá)
-     * @param threshold ngưỡng đang theo dõi (‰) theo cây và giai đoạn
+     * @param stage        giai đoạn cây hiện tại, null khi cây không có giai đoạn nào
+     * @param threshold    ngưỡng (‰) của cây ở giai đoạn hiện tại, null = chưa có nguồn
+     * @param minThreshold cận dưới (‰) khi cần khoảng mặn (nuôi tôm)
+     * @param outlook      tình hình mặn của trạm so với ngưỡng trên, null khi không có trạm hoặc ngưỡng
+     * @param mine         ruộng do tài khoản đang xem khai
+     * @param notified     người khai ruộng nhận thông báo đẩy (ruộng của khách thì không)
      */
     public record FieldDto(Long id, String name, Long stationId, String stationName, String cropCode, String cropName,
                            String variety, Integer varietyDays, LocalDate plantedOn, Double areaHa,
                            boolean hasPond, Double pondVolumeM3, StageInfo stage,
-                           Long watchId, Double threshold, Double minThreshold) {
+                           Double threshold, Double minThreshold, Outlook outlook, boolean mine, boolean notified) {
     }
 
     /**

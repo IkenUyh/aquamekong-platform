@@ -9,42 +9,49 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/** Hồ sơ ruộng dùng chung toàn server: không cần đăng nhập. Đăng nhập thì ruộng mình khai có thông báo đẩy. */
 @RestController
 @RequestMapping("/api/v1/fields")
 @RequiredArgsConstructor
-@Tag(name = "Fields", description = "Hồ sơ ruộng của tài khoản đang đăng nhập")
+@Tag(name = "Fields", description = "Hồ sơ ruộng dùng chung, không cần đăng nhập")
 public class FieldProfileController {
 
     private final FieldProfileService fieldService;
 
     @GetMapping
-    @Operation(summary = "Các ruộng đã khai, kèm giai đoạn cây hiện tại và ngưỡng đang theo dõi")
+    @Operation(summary = "Mọi ruộng đã khai, kèm giai đoạn cây, ngưỡng và tình hình mặn của trạm")
     public ResponseEntity<List<FieldDto>> list(Authentication authentication) {
-        return ResponseEntity.ok(fieldService.list(authentication.getName()));
+        return ResponseEntity.ok(fieldService.list(username(authentication)));
     }
 
     @PostMapping
-    @Operation(summary = "Khai ruộng mới; tự theo dõi trạm gần ruộng với ngưỡng theo cây và giai đoạn")
+    @Operation(summary = "Khai ruộng mới; đã đăng nhập thì tự theo dõi trạm gần ruộng cho tài khoản")
     public ResponseEntity<FieldDto> create(@Valid @RequestBody FieldRequest request, Authentication authentication) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(fieldService.create(authentication.getName(), request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(fieldService.create(username(authentication), request));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Sửa hồ sơ ruộng")
     public ResponseEntity<FieldDto> update(@PathVariable Long id, @Valid @RequestBody FieldRequest request,
                                            Authentication authentication) {
-        return ResponseEntity.ok(fieldService.update(authentication.getName(), id, request));
+        return ResponseEntity.ok(fieldService.update(username(authentication), id, request));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Xoá ruộng (bỏ luôn theo dõi trạm của ruộng)")
-    public ResponseEntity<Void> delete(@PathVariable Long id, Authentication authentication) {
-        fieldService.delete(authentication.getName(), id);
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        fieldService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /** Tên tài khoản, null khi là khách */
+    private static String username(Authentication authentication) {
+        return authentication == null || authentication instanceof AnonymousAuthenticationToken ? null : authentication.getName();
     }
 }

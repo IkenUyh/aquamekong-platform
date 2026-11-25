@@ -7,14 +7,20 @@ import type { Station } from '../../types';
 import { cropStepError, fieldRequest, type FieldForm } from '../../utils/fieldForm';
 import { formatDistance, nearestStations, type LatLng } from '../../utils/geo';
 import { formatNumber } from '../../utils/salinity';
-import { CropArt } from './CropArt';
+import { CropImage } from './CropImage';
+
+/** Tên ngắn trên thẻ chọn: bỏ chữ "Nuôi" (thẻ đã có ảnh con vật), viết hoa chữ đầu */
+function shortName(name: string): string {
+  const s = name.replace(/^Nuôi /, '');
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 /** Gợi ý ngắn dưới tên cây trên thẻ chọn: ngưỡng, khoảng mặn, hoặc số giai đoạn */
 function cropHint(c: Crop): string {
   const counted = c.stages.filter((s) => s.durationDays != null || s.flexible);
   if (counted.length > 1) return `${counted.length} giai đoạn`;
   const s = c.stages[0];
-  if (!s || s.maxSalinity == null) return '';
+  if (!s || s.maxSalinity == null) return 'chưa có nguồn';
   return s.minSalinity != null ? `${formatNumber(s.minSalinity)}–${formatNumber(s.maxSalinity)}‰` : `dưới ${formatNumber(s.maxSalinity)}‰`;
 }
 
@@ -77,17 +83,17 @@ export function FieldWizard({ crops, stations, initial, isNew, saving, onSave, o
 
       {step === 1 ? (
         <>
-          <div role="radiogroup" aria-label="Cây trồng / mục đích" className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
+          <div role="radiogroup" aria-label="Cây trồng / vật nuôi" className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
             {crops.map((c) => {
               const selected = c.code === form.cropCode;
               return (
                 <button key={c.code} type="button" role="radio" aria-checked={selected}
                   onClick={() => { set('cropCode', c.code); setError(null); }}
-                  className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center transition-colors ${
-                    selected ? 'border-primary ring-1 ring-primary bg-primary-50' : 'border-gray-200 hover:border-primary-300'}`}>
-                  <CropArt code={c.code} size={48} />
-                  <span className="text-xs font-medium text-gray-900 leading-tight">{c.name}</span>
-                  <span className="text-[11px] text-gray-500 num leading-tight">{cropHint(c)}</span>
+                  className={`flex flex-col overflow-hidden rounded-lg border text-left transition-colors ${
+                    selected ? 'border-primary ring-2 ring-primary' : 'border-gray-200 hover:border-primary-300'}`}>
+                  <CropImage code={c.code} name={c.name} className="aspect-[4/3] w-full" />
+                  <span className="px-2 pt-1.5 text-xs font-medium text-gray-900 leading-tight">{shortName(c.name)}</span>
+                  <span className="px-2 pb-1.5 text-[11px] text-gray-500 num leading-tight">{cropHint(c)}</span>
                 </button>
               );
             })}
@@ -121,7 +127,7 @@ export function FieldWizard({ crops, stations, initial, isNew, saving, onSave, o
       ) : (
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm text-gray-700">
-            {crop && <CropArt code={crop.code} size={32} />}
+            {crop && <CropImage code={crop.code} name={crop.name} className="h-8 w-8 rounded-md" />}
             <span>{[crop?.name, form.variety.trim()].filter(Boolean).join(' ')}</span>
             <button type="button" className="ml-auto text-xs font-medium text-primary hover:underline" onClick={() => setStep(1)}>
               Đổi cây

@@ -15,7 +15,7 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Tổng quan',      short: 'Tổng quan', path: '/',         icon: LayoutDashboard, primary: true },
-  // Cần đăng nhập: khách bấm vào thì được đưa tới trang đăng nhập
+  // Dữ liệu ruộng dùng chung, không cần đăng nhập
   { label: 'Ruộng của tôi',  short: 'Ruộng',     path: '/fields',   icon: Sprout,          primary: true },
   { label: 'Bản đồ độ mặn',  short: 'Bản đồ',    path: '/map',      icon: MapIcon,         primary: true },
   { label: 'Trạm quan trắc', short: 'Trạm',      path: '/stations', icon: RadioTower },

@@ -1,25 +1,28 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { BottomNav } from '../components/BottomNav';
 import { FieldCard } from '../components/fields/FieldCard';
 import { FieldWizard } from '../components/fields/FieldWizard';
+import { PhotoCredits } from '../components/fields/PhotoCredits';
 import { apiErrorMessage } from '../api/client';
 import type { FieldRequest } from '../api/fieldApi';
+import { useAuth } from '../contexts/AuthContext';
 import { useCrops } from '../hooks/useCrops';
 import { useFields, useRemoveField, useSaveField } from '../hooks/useFields';
 import { useStationsList } from '../hooks/useStations';
-import { useWatches } from '../hooks/useWatches';
 import { EMPTY_FIELD_FORM, formFromField } from '../utils/fieldForm';
 
 /**
- * "Ruộng của tôi": hồ sơ các ruộng/ao của tài khoản. Chưa có ruộng thì mở ngay form khai theo bước; có rồi thì mỗi
- * ruộng một thẻ với hình cây, thanh tiến độ giai đoạn, trạm gần nhất và ngưỡng mặn của giai đoạn hiện tại.
+ * "Ruộng của tôi": hồ sơ ruộng/ao dùng chung toàn server, không cần đăng nhập. Chưa có ruộng nào thì mở ngay form
+ * khai theo bước; có rồi thì mỗi ruộng một thẻ với ảnh cây, thanh tiến độ giai đoạn, trạm gần nhất, ngưỡng mặn của
+ * giai đoạn hiện tại và tình hình mặn của trạm. Ruộng do tài khoản khai thì tài khoản đó nhận thông báo đẩy.
  */
 export function FieldsPage() {
+  const { user } = useAuth();
   const { data: fields = [], isLoading } = useFields();
   const { data: crops = [] } = useCrops();
   const { data: stations = [] } = useStationsList();
-  const { data: watches = [] } = useWatches();
   const save = useSaveField();
   const remove = useRemoveField();
 
@@ -36,7 +39,7 @@ export function FieldsPage() {
   };
 
   const onRemove = async (id: number, name: string) => {
-    if (!window.confirm(`Xoá hồ sơ "${name}"? App sẽ bỏ theo dõi trạm của ruộng này.`)) return;
+    if (!window.confirm(`Xoá hồ sơ "${name}"? Ruộng này dùng chung nên sẽ mất với mọi người.`)) return;
     setError(null);
     try {
       await remove.mutateAsync(id);
@@ -55,8 +58,15 @@ export function FieldsPage() {
             <div>
               <h1 className="text-xl font-semibold text-gray-900">Ruộng của tôi</h1>
               <p className="mt-1 text-sm text-gray-500">
-                Khai một lần cho mỗi ruộng hoặc ao. App tự theo dõi trạm gần ruộng với ngưỡng mặn theo cây và giai đoạn hiện tại.
+                Khai một lần cho mỗi ruộng hoặc ao, dùng chung cho mọi người. App so độ mặn của trạm gần ruộng với ngưỡng theo cây
+                và giai đoạn hiện tại.
               </p>
+              {!user && (
+                <p className="mt-1 text-sm text-gray-500">
+                  Không cần đăng nhập. <Link to="/login" className="font-medium text-primary hover:underline">Đăng nhập</Link> trước
+                  khi khai nếu muốn nhận thông báo khi trạm vượt ngưỡng của ruộng.
+                </p>
+              )}
             </div>
             {!wizardOpen && fields.length > 0 && (
               <button type="button" className="btn-primary" onClick={() => setEditing('new')}>Khai ruộng mới</button>
@@ -84,12 +94,13 @@ export function FieldsPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {fields.map((f) => (
-                <FieldCard key={f.id} field={f} crop={crops.find((c) => c.code === f.cropCode)}
-                  watch={watches.find((w) => w.fieldProfileId === f.id)} busy={remove.isPending}
+                <FieldCard key={f.id} field={f} crop={crops.find((c) => c.code === f.cropCode)} busy={remove.isPending}
                   onEdit={() => setEditing(f.id)} onRemove={() => void onRemove(f.id, f.name)} />
               ))}
             </div>
           )}
+
+          <PhotoCredits crops={crops} />
         </div>
       </div>
       <BottomNav />

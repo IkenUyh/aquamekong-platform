@@ -114,7 +114,8 @@ public class StationWatchService {
     @Transactional
     public StationWatch syncFieldWatch(FieldProfile field, Double threshold, Double minThreshold) {
         StationWatch watch = field.getId() == null ? null : watchRepository.findByFieldProfileId(field.getId()).orElse(null);
-        if (field.getStation() == null || threshold == null) {
+        // Ruộng của khách (không có người khai) không có ai để báo
+        if (field.getUser() == null || field.getStation() == null || threshold == null) {
             if (watch != null) watchRepository.delete(watch);
             return null;
         }
@@ -160,7 +161,7 @@ public class StationWatchService {
      *                     mô hình rủi ro chỉ cho mức "có thể lên tới", không nói gì về mức thấp, nên không giữ ngày như
      *                     riskUntil. ml-service episodes.py chỉ chấm cận trên.
      */
-    static Outlook outlook(StationSnapshot snapshot, double threshold, Double minThreshold, LocalDate riskUntil, Instant now) {
+    public static Outlook outlook(StationSnapshot snapshot, double threshold, Double minThreshold, LocalDate riskUntil, Instant now) {
         LocalDate today = now.atZone(ZONE).toLocalDate();
         LocalDate horizon = today.plusDays(OUTLOOK_DAYS);
         Measurement latest = snapshot.latest();
