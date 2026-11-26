@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FieldDamage, FieldExposure } from '../api/fieldApi';
-import { damageSummary, exposureSummary, formatVnd } from './exposure';
+import { damageSummary, exposureSummary, formatVnd, missingHint } from './exposure';
 
 const exposure = (over: Partial<FieldExposure>): FieldExposure => ({
   seasonKind: 'CROP_SEASON', seasonStart: '2026-11-01', seasonEnd: '2027-02-04', computedThrough: '2026-11-26',
@@ -45,6 +45,8 @@ describe('exposureSummary', () => {
     expect(s.headline).toBe('Nước ở trạm đã vượt ngưỡng của sầu riêng 40 ngày');
     expect(s.details[0]).toBe('Mùa khô 01/12/2025 – 31/05/2026');
     expect(s.details[1]).toBe('Vượt 0,50‰ (ngưỡng khuyến cáo) 40 ngày');
+    // Cây cả năm có hệ số 1: không nói "đã nhân hệ số nhạy của giai đoạn"
+    expect(s.details[3]).toBe('Mặn tích lũy 30‰·ngày');
   });
 
   it('says when the station has no readings in the season', () => {
@@ -74,23 +76,35 @@ describe('formatVnd', () => {
 
 describe('damageSummary', () => {
   it('shows the estimate, the formula with its defaults, and what 1% is worth', () => {
-    expect(damageSummary(damage({}), 25)).toEqual({
+    expect(damageSummary(damage({}), 25, 'CROP_SEASON')).toEqual({
       headline: 'Thiệt hại ước tính khoảng 20,8 triệu đồng',
       details: [
         '1,5 ha × 25% × 7,4 tấn/ha × 7.500 đ/kg (năng suất mặc định, giá mặc định ngày 26/11/2026)',
         'Mỗi 1% năng suất của ruộng ≈ 833.000 đồng; cả vụ ≈ 83,3 triệu đồng',
       ],
+      missing: [],
     });
   });
 
+  it('says a year, not a season, for crops counted over the dry season', () => {
+    const s = damageSummary(damage({}), 25, 'DRY_SEASON');
+    expect(s.details[1]).toBe('Mỗi 1% năng suất của ruộng ≈ 833.000 đồng; cả năm ≈ 83,3 triệu đồng');
+  });
+
   it('does not mention defaults the user replaced', () => {
-    const s = damageSummary(damage({ yieldDefault: false, priceDefault: false, priceAsOf: null, priceVndKg: 8000 }), 25);
+    const s = damageSummary(damage({ yieldDefault: false, priceDefault: false, priceAsOf: null, priceVndKg: 8000 }), 25, 'CROP_SEASON');
     expect(s.details[0]).toBe('1,5 ha × 25% × 7,4 tấn/ha × 8.000 đ/kg');
   });
 
   it('asks for the missing numbers instead of guessing', () => {
-    const s = damageSummary(damage({ areaHa: null, priceVndKg: null, seasonValueVnd: null, perPercentVnd: null, lossVnd: null }), 25);
-    expect(s.headline).toBeNull();
-    expect(s.details).toEqual(['Nhập diện tích, giá bán của ruộng ở trang Ruộng để ước thiệt hại ra tiền.']);
+    const s = damageSummary(damage({ areaHa: null, priceVndKg: null, seasonValueVnd: null, perPercentVnd: null, lossVnd: null }), 25, 'CROP_SEASON');
+    expect(s).toEqual({ headline: null, details: [], missing: ['diện tích', 'giá bán'] });
+  });
+});
+
+describe('missingHint', () => {
+  it('points at the Sửa button on the field card and at the Fields page from the map panel', () => {
+    expect(missingHint(['diện tích'], false)).toBe('Bấm Sửa, nhập diện tích để ước thiệt hại ra tiền.');
+    expect(missingHint(['diện tích', 'giá bán'], true)).toBe('Nhập diện tích, giá bán của ruộng ở trang Ruộng để ước thiệt hại ra tiền.');
   });
 });

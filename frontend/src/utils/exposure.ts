@@ -59,7 +59,9 @@ export function exposureSummary(e: FieldExposure, cropName: string): ExposureSum
       + (e.lastExceededOn ? `, lần vượt gần nhất ${formatDay(e.lastExceededOn)}` : ''));
   }
   if (e.daysExceeded > 0) {
-    details.push(`Mặn tích lũy ${formatNumber(e.cumulative, 1)}‰·ngày, đã nhân hệ số nhạy của giai đoạn`);
+    // Chỉ cây chia giai đoạn (lúa) mới có hệ số nhạy khác 1; cây cả năm thì không nhắc
+    details.push(`Mặn tích lũy ${formatNumber(e.cumulative, 1)}‰·ngày`
+      + (e.seasonKind === 'CROP_SEASON' ? ', đã nhân hệ số nhạy của giai đoạn' : ''));
   }
 
   return { headline, severe: (e.yieldLossPercent ?? 0) >= NOTABLE_YIELD_LOSS, details };
@@ -76,22 +78,32 @@ export function formatVnd(vnd: number): string {
 export interface DamageSummary {
   /** "Thiệt hại ước tính khoảng 20,8 triệu đồng", null khi còn thiếu số */
   headline: string | null;
-  /** Phép tính và giá trị mỗi 1% năng suất, hoặc câu nhắc nhập số còn thiếu */
+  /** Phép tính và giá trị mỗi 1% năng suất; rỗng khi còn thiếu số */
   details: string[];
+  /** Số ruộng chưa có để quy ra tiền ("diện tích", "giá bán"...) */
+  missing: string[];
+}
+
+/** Câu nhắc nhập số còn thiếu. inPanel: đang ở panel trạm, không có nút Sửa nên chỉ sang trang Ruộng. */
+export function missingHint(missing: string[], inPanel: boolean): string {
+  const what = missing.join(', ');
+  return inPanel
+    ? `Nhập ${what} của ruộng ở trang Ruộng để ước thiệt hại ra tiền.`
+    : `Bấm Sửa, nhập ${what} để ước thiệt hại ra tiền.`;
 }
 
 /**
  * Lời cho phần thiệt hại ra tiền: diện tích × % giảm × năng suất × giá. Luôn ghi đây là số ước tính,
- * và số nào lấy mặc định của cây (giá kèm ngày lấy giá).
+ * và số nào lấy mặc định của cây (giá kèm ngày lấy giá). Cây cả năm (mùa khô) tính giá trị cả năm, không phải cả vụ.
  */
-export function damageSummary(d: FieldDamage, lossPercent: number): DamageSummary {
+export function damageSummary(d: FieldDamage, lossPercent: number, seasonKind: FieldExposure['seasonKind']): DamageSummary {
   const missing = [
     d.areaHa == null && 'diện tích',
     d.yieldTHa == null && 'năng suất bình thường',
     d.priceVndKg == null && 'giá bán',
   ].filter((x): x is string => !!x);
   if (missing.length > 0 || d.lossVnd == null || d.seasonValueVnd == null || d.perPercentVnd == null) {
-    return { headline: null, details: [`Nhập ${missing.join(', ')} của ruộng ở trang Ruộng để ước thiệt hại ra tiền.`] };
+    return { headline: null, details: [], missing };
   }
 
   const defaults = [
@@ -106,7 +118,9 @@ export function damageSummary(d: FieldDamage, lossPercent: number): DamageSummar
       : `Thiệt hại ước tính khoảng ${formatVnd(d.lossVnd)}`,
     details: [
       formula,
-      `Mỗi 1% năng suất của ruộng ≈ ${formatVnd(d.perPercentVnd)}; cả vụ ≈ ${formatVnd(d.seasonValueVnd)}`,
+      `Mỗi 1% năng suất của ruộng ≈ ${formatVnd(d.perPercentVnd)}; `
+        + `${seasonKind === 'CROP_SEASON' ? 'cả vụ' : 'cả năm'} ≈ ${formatVnd(d.seasonValueVnd)}`,
     ],
+    missing: [],
   };
 }
