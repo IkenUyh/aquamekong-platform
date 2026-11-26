@@ -1,4 +1,5 @@
 import apiClient from './client';
+import type { WatchOutlook } from './watchApi';
 
 export interface FieldStage {
   code: string;
@@ -26,10 +27,16 @@ export interface FieldProfile {
   hasPond: boolean;
   pondVolumeM3: number | null;
   stage: FieldStage | null;
-  /** Theo dõi trạm tạo từ ruộng này */
-  watchId: number | null;
+  /** Ngưỡng (‰) của cây ở giai đoạn hiện tại, null = loài chưa có nguồn */
   threshold: number | null;
+  /** Cận dưới (‰) khi cần khoảng mặn (nuôi tôm) */
   minThreshold: number | null;
+  /** Tình hình mặn của trạm so với ngưỡng ruộng, null khi không có trạm hoặc ngưỡng */
+  outlook: WatchOutlook | null;
+  /** Ruộng do tài khoản đang xem khai */
+  mine: boolean;
+  /** Người khai ruộng nhận thông báo đẩy (ruộng do khách khai thì không) */
+  notified: boolean;
 }
 
 export interface FieldRequest {

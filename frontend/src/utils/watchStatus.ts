@@ -5,7 +5,7 @@ import { formatDay, formatMeasuredAt, formatSalinity } from './salinity';
  * Một dòng tình hình: đang vượt, dự báo sẽ vượt, có nguy cơ vượt, hay dưới ngưỡng. Theo dõi có cận dưới (nuôi tôm)
  * thì báo cả khi mặn xuống dưới mức tối thiểu, và lúc bình thường ghi "Trong khoảng".
  */
-export function watchStatus(w: StationWatch): { text: string; exceeding: boolean } {
+export function watchStatus(w: Pick<StationWatch, 'threshold' | 'minThreshold' | 'outlook'>): { text: string; exceeding: boolean } {
   const { latestSalinity, latestAt, firstExceedDate, forecastMax, firstRiskDate, riskMax, riskUntil, firstBelowDate, forecastMin } = w.outlook;
   const min = w.minThreshold;
   if (latestSalinity != null && latestSalinity > w.threshold && latestAt) {
