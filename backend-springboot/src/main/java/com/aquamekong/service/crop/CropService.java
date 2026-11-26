@@ -38,11 +38,12 @@ public class CropService {
 
     private static StageDto toDto(CropStage s) {
         return new StageDto(s.getCode(), s.getName(), s.getStageOrder(), s.getDurationDays(), s.isFlexible(),
-                s.getDurationSource(), s.getMaxSalinity(), s.getMinSalinity(), s.getThresholdSource(), s.getThresholdNote());
+                s.getDurationSource(), s.getMaxSalinity(), s.getMinSalinity(), s.getThresholdSource(), s.getThresholdNote(),
+                s.getSaltSensitivity(), s.getSensitivitySource());
     }
 
     /** dS/m → ‰, làm tròn 2 chữ số */
-    static double toPpt(double dsPerM) {
+    public static double toPpt(double dsPerM) {
         return Math.round(dsPerM * PPT_PER_DS_M * 100) / 100.0;
     }
 }

@@ -86,6 +86,7 @@ Tài liệu này liệt kê các tính năng trên Frontend, endpoint Backend t�
 - Lưu ruộng thì backend tự theo dõi trạm với ngưỡng của giai đoạn hiện tại; sau mỗi lượt dự báo, ngưỡng đổi theo khi cây sang giai đoạn mới.
 - Sau mỗi lượt dự báo (backend chạy lại dự báo khi có số đo mới), backend báo khi trạm đổi trạng thái: số đo mới nhất, dự báo hoặc mức có thể lên tới (mô hình rủi ro) của 7 ngày tới bắt đầu vượt ngưỡng, hoặc đã xuống dưới ngưỡng và hết nguy cơ. Đã báo có thể vượt ngày nào thì giữ cảnh báo tới hết ngày đó (`riskUntil`). Không báo lặp mỗi ngày.
 - Tài khoản đã theo dõi ít nhất một trạm thì chỉ nhận cảnh báo đo được (mục 5) của các trạm đó; chưa theo dõi trạm nào thì nhận mọi trạm. Quản trị/Vận hành luôn nhận mọi trạm.
+- **Mức mặn cây đã chịu:** `GET /api/v1/fields/{id}/exposure` 🌐 (204 khi không tính được: nuôi thuỷ sản, nước sinh hoạt, chưa gieo, không có trạm). Hiện ở thẻ ruộng (`FieldCard`) và ở panel trạm trên bản đồ (`RightPanel`, tối đa 3 ruộng của trạm đó), qua `components/fields/ExposureBlock.tsx` và `utils/exposure.ts`: số ngày vượt ngưỡng, mặn cao nhất, lần vượt gần nhất, mức mặn tích lũy và "Nếu tưới nước này, năng suất lúa có thể giảm khoảng X%".
 
 ### 6. Khuyến nghị (Recommendations)
 - **Trang:** `/` (Tổng quan), panel trên bản đồ

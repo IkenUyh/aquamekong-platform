@@ -5,6 +5,7 @@ import { thresholdText } from '../../utils/fieldForm';
 import { formatDay, formatNumber } from '../../utils/salinity';
 import { watchStatus } from '../../utils/watchStatus';
 import { CropImage } from './CropImage';
+import { ExposureBlock } from './ExposureBlock';
 import { StageBar } from './StageBar';
 
 /** Dòng giai đoạn: "Làm đòng – trổ · ngày 41/95", "Gieo ngày 01/12 (còn 8 ngày)", "Đã quá 95 ngày của giống" */
@@ -73,6 +74,8 @@ export function FieldCard({ field: f, crop, onEdit, onRemove, busy }: {
           )}
           {f.mine && f.notified && <p className="text-xs text-gray-400">Bạn nhận thông báo khi trạm vượt ngưỡng của ruộng này.</p>}
         </div>
+
+        <ExposureBlock field={f} className="border-t border-gray-100 pt-3" />
       </div>
 
       <div className="flex gap-4 border-t border-gray-100 px-4 py-2">

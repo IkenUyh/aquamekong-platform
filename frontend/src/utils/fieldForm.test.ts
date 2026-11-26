@@ -4,7 +4,7 @@ import { decimal, EMPTY_FIELD_FORM, fieldRequest, thresholdText } from './fieldF
 
 const stage = (code: string, order: number, durationDays: number | null, flexible = false) => ({
   code, name: code, order, durationDays, flexible, durationSource: null,
-  maxSalinity: 4, minSalinity: null, thresholdSource: 'x', thresholdNote: null,
+  maxSalinity: 4, minSalinity: null, thresholdSource: 'x', thresholdNote: null, saltSensitivity: 1, sensitivitySource: null,
 });
 
 const rice: Crop = {

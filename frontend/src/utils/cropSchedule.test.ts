@@ -4,7 +4,7 @@ import { seasonDay, stageSegments } from './cropSchedule';
 
 const stage = (code: string, order: number, durationDays: number | null, flexible = false): CropStage => ({
   code, name: code, order, durationDays, flexible, durationSource: null,
-  maxSalinity: 4, minSalinity: null, thresholdSource: 'x', thresholdNote: null,
+  maxSalinity: 4, minSalinity: null, thresholdSource: 'x', thresholdNote: null, saltSensitivity: 1, sensitivitySource: null,
 });
 
 const rice: Crop = {

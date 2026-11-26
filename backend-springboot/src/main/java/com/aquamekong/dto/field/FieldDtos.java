@@ -58,4 +58,27 @@ public final class FieldDtos {
      */
     public record StageInfo(String code, String name, Integer day, boolean beforePlanting, boolean pastHarvest) {
     }
+
+    /**
+     * Mức mặn cây đã chịu trong mùa nếu tưới bằng nước ở trạm của ruộng, và năng suất có thể giảm (FAO 29).
+     *
+     * @param seasonKind        CROP_SEASON (từ ngày gieo tới hết số ngày của giống) hoặc DRY_SEASON (01/12 – 31/05)
+     * @param computedThrough   ngày cuối đã tính (hôm nay, hoặc ngày cuối mùa nếu mùa đã qua)
+     * @param seasonDays        số ngày cả mùa, mẫu số khi quy mức mặn tích lũy về mức mặn hiệu dụng
+     * @param daysElapsed       số ngày từ đầu mùa tới computedThrough
+     * @param daysWithData      số ngày trong đó có số đo độ mặn
+     * @param daysExceeded      số ngày độ mặn cao nhất vượt ngưỡng
+     * @param maxSalinity       độ mặn cao nhất trong mùa (‰), null khi chưa có số đo
+     * @param threshold         ngưỡng đã dùng (‰)
+     * @param thresholdBasis    FAO (mức năng suất còn 100%) hoặc STAGE (ngưỡng khuyến cáo của giai đoạn, cây không có số FAO)
+     * @param cumulative        Σ (mặn − ngưỡng) × hệ số nhạy của giai đoạn (‰·ngày)
+     * @param effectiveSalinity ngưỡng + cumulative / seasonDays (‰), null khi chưa có số đo
+     * @param yieldLossPercent  % năng suất có thể giảm, null khi cây không có số FAO hoặc chưa có số đo
+     */
+    public record Exposure(String seasonKind, LocalDate seasonStart, LocalDate seasonEnd, LocalDate computedThrough,
+                           int seasonDays, int daysElapsed, int daysWithData, int daysExceeded,
+                           Double maxSalinity, LocalDate maxOn, LocalDate lastExceededOn,
+                           Double threshold, String thresholdBasis, double cumulative, Double effectiveSalinity,
+                           Integer yieldLossPercent, String faoSource) {
+    }
 }

@@ -26,6 +26,16 @@ export function useSaveField() {
   });
 }
 
+/** Mức mặn cây đã chịu trong mùa và năng suất có thể giảm. Key nằm dưới ['fields'] nên sửa ruộng thì tính lại. */
+export function useFieldExposure(id: number | null) {
+  return useQuery({
+    queryKey: [...FIELDS_KEY, 'exposure', id],
+    queryFn: () => fieldApi.exposure(id as number),
+    enabled: id != null,
+    staleTime: 10 * 60_000,
+  });
+}
+
 export function useRemoveField() {
   const queryClient = useQueryClient();
   return useMutation({

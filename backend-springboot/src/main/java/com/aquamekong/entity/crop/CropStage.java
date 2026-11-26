@@ -56,4 +56,12 @@ public class CropStage {
 
     @Column(name = "threshold_note", columnDefinition = "TEXT")
     private String thresholdNote;
+
+    /** Hệ số nhân phần mặn vượt ngưỡng khi tính mức mặn tích lũy (V17); 1 = như FAO 29 */
+    @Column(name = "salt_sensitivity", nullable = false)
+    @Builder.Default
+    private double saltSensitivity = 1.0;
+
+    @Column(name = "sensitivity_source", columnDefinition = "TEXT")
+    private String sensitivitySource;
 }

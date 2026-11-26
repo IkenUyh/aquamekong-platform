@@ -5,6 +5,7 @@ import com.aquamekong.security.JsonAuthErrorHandler;
 import com.aquamekong.security.JwtService;
 import com.aquamekong.security.SecurityConfig;
 import com.aquamekong.service.field.FieldProfileService;
+import com.aquamekong.service.field.SalinityExposureService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -35,6 +36,7 @@ class FieldProfileControllerTest {
 
     @Autowired MockMvc mvc;
     @MockBean FieldProfileService fieldService;
+    @MockBean SalinityExposureService exposureService;
     @MockBean UserDetailsService userDetailsService;
 
     @Test
@@ -47,6 +49,16 @@ class FieldProfileControllerTest {
         verify(fieldService).create(isNull(), any());
         mvc.perform(delete("/api/v1/fields/9")).andExpect(status().isNoContent());
         verify(fieldService).delete(9L);
+    }
+
+    @Test
+    @WithAnonymousUser
+    void guestsSeeTheExposureAndGetNoContentWhenItCannotBeEstimated() throws Exception {
+        when(exposureService.exposure(4L)).thenReturn(java.util.Optional.of(new com.aquamekong.dto.field.FieldDtos.Exposure(
+                "CROP_SEASON", null, null, null, 95, 10, 10, 2, 3.0, null, null, 1.28, "FAO", 2.72, 1.31, 1, null)));
+        when(exposureService.exposure(5L)).thenReturn(java.util.Optional.empty());
+        mvc.perform(get("/api/v1/fields/4/exposure")).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/fields/5/exposure")).andExpect(status().isNoContent());
     }
 
     @Test

@@ -7,6 +7,7 @@ import { ForecastChart } from './ForecastChart';
 import { RecommendationPanel } from './RecommendationPanel';
 import { AlertPanel } from './AlertPanel';
 import { SummaryMetricCards } from './SummaryMetricCards';
+import { StationFieldsExposure } from './fields/ExposureBlock';
 
 /** Panel phải trang Bản đồ: khuyến nghị, cảnh báo, chỉ số chung luôn hiện; dự báo khi đã chọn trạm. */
 export function RightPanel({ stationId }: { stationId: number | null }) {
@@ -43,6 +44,8 @@ export function RightPanel({ stationId }: { stationId: number | null }) {
           </div>
         </>
       ) : null}
+
+      {stationId !== null && <StationFieldsExposure stationId={stationId} />}
 
       <SummaryMetricCards />
     </>
