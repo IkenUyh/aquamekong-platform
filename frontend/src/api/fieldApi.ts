@@ -26,6 +26,10 @@ export interface FieldProfile {
   areaHa: number | null;
   hasPond: boolean;
   pondVolumeM3: number | null;
+  /** Năng suất bình thường người dùng nhập (tấn/ha), null = dùng mặc định của cây */
+  yieldTHa: number | null;
+  /** Giá bán người dùng nhập (đồng/kg), null = dùng mặc định của cây */
+  priceVndKg: number | null;
   stage: FieldStage | null;
   /** Ngưỡng (‰) của cây ở giai đoạn hiện tại, null = loài chưa có nguồn */
   threshold: number | null;
@@ -66,6 +70,26 @@ export interface FieldExposure {
   /** % năng suất có thể giảm, null khi cây không có số FAO hoặc chưa có số đo */
   yieldLossPercent: number | null;
   faoSource: string | null;
+  /** Thiệt hại ước tính ra tiền, null khi không có % năng suất giảm */
+  damage: FieldDamage | null;
+}
+
+/**
+ * Thiệt hại = diện tích × % giảm năng suất × năng suất bình thường × giá bán (số ước tính).
+ * Số nào chưa có thì null, kéo theo các khoản tiền null.
+ */
+export interface FieldDamage {
+  areaHa: number | null;
+  yieldTHa: number | null;
+  /** Năng suất lấy mặc định của cây */
+  yieldDefault: boolean;
+  priceVndKg: number | null;
+  priceDefault: boolean;
+  /** Ngày lấy giá mặc định, null khi người dùng tự nhập giá */
+  priceAsOf: string | null;
+  seasonValueVnd: number | null;
+  perPercentVnd: number | null;
+  lossVnd: number | null;
 }
 
 export interface FieldRequest {
@@ -78,6 +102,8 @@ export interface FieldRequest {
   areaHa: number | null;
   hasPond: boolean;
   pondVolumeM3: number | null;
+  yieldTHa: number | null;
+  priceVndKg: number | null;
 }
 
 export const fieldApi = {

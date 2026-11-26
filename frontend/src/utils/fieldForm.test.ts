@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Crop } from '../api/cropApi';
+import { NO_ECONOMICS, type Crop } from '../api/cropApi';
 import { decimal, EMPTY_FIELD_FORM, fieldRequest, thresholdText } from './fieldForm';
 
 const stage = (code: string, order: number, durationDays: number | null, flexible = false) => ({
@@ -8,7 +8,7 @@ const stage = (code: string, order: number, durationDays: number | null, flexibl
 });
 
 const rice: Crop = {
-  code: 'lua', name: 'Lúa', category: 'CROP', faoYield: null, faoNote: null,
+  code: 'lua', name: 'Lúa', category: 'CROP', faoYield: null, faoNote: null, economics: NO_ECONOMICS,
   stages: [stage('ma', 1, null), stage('de_nhanh', 2, null, true), stage('lam_dong_tro', 3, 35), stage('chin', 4, 30)],
 };
 const durian: Crop = { ...rice, code: 'sau_rieng', name: 'Sầu riêng', stages: [stage('ca_nam', 1, null, true)] };
@@ -21,9 +21,18 @@ describe('fieldRequest', () => {
     expect(r).toEqual({
       req: {
         name: 'Ruộng sau nhà', stationId: 3, cropCode: 'lua', variety: null, varietyDays: 95, plantedOn: '2026-11-01',
-        areaHa: 1.5, hasPond: true, pondVolumeM3: 1200,
+        areaHa: 1.5, hasPond: true, pondVolumeM3: 1200, yieldTHa: null, priceVndKg: null,
       },
     });
+  });
+
+  it('reads yield and price the Vietnamese way, blank means the crop default', () => {
+    const base = { ...form, varietyDays: '95', plantedOn: '2026-11-01' };
+    const r = fieldRequest({ ...base, yieldTHa: '6,5', priceVndKg: '7.800' }, rice);
+    expect('req' in r && [r.req.yieldTHa, r.req.priceVndKg]).toEqual([6.5, 7800]);
+    const blank = fieldRequest(base, rice);
+    expect('req' in blank && [blank.req.yieldTHa, blank.req.priceVndKg]).toEqual([null, null]);
+    expect(fieldRequest({ ...base, priceVndKg: '0' }, rice)).toEqual({ error: 'Giá bán phải lớn hơn 0 đồng/kg.' });
   });
 
   it('rice needs a sowing date and a variety longer than the fixed stages', () => {

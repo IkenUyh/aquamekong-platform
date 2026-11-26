@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Crop, CropStage } from '../api/cropApi';
+import { NO_ECONOMICS, type Crop, type CropStage } from '../api/cropApi';
 import { cropsAtThreshold, defaultPreset, presetFor, watchPresets } from './cropThresholds';
 
 const stage = (code: string, name: string, max: number | null, min: number | null = null): CropStage => ({
@@ -7,7 +7,7 @@ const stage = (code: string, name: string, max: number | null, min: number | nul
   maxSalinity: max, minSalinity: min, thresholdSource: max == null ? null : 'Nguồn', thresholdNote: null, saltSensitivity: 1, sensitivitySource: null,
 });
 const crop = (code: string, name: string, stages: CropStage[]): Crop => ({
-  code, name, category: 'CROP', faoYield: null, faoNote: null, stages,
+  code, name, category: 'CROP', faoYield: null, faoNote: null, economics: NO_ECONOMICS, stages,
 });
 
 const CROPS = [

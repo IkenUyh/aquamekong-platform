@@ -167,6 +167,33 @@ export function FieldWizard({ crops, stations, initial, isNew, saving, onSave, o
             </div>
           </div>
 
+          {crop?.faoYield && (
+            <div className="space-y-2">
+              <p className="text-sm text-gray-700">
+                Để ước thiệt hại ra tiền. Để trống thì app dùng số mặc định của {crop.name.toLowerCase()}.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="field-yield" className="field-label">Năng suất bình thường (tấn/ha)</label>
+                  <input id="field-yield" className="field num" inputMode="decimal" value={form.yieldTHa}
+                    placeholder={crop.economics.yieldTHa != null ? `mặc định ${formatNumber(crop.economics.yieldTHa)}` : 'vd. 6,5'}
+                    onChange={(e) => set('yieldTHa', e.target.value)} />
+                </div>
+                <div>
+                  <label htmlFor="field-price" className="field-label">Giá bán (đồng/kg)</label>
+                  <input id="field-price" className="field num" inputMode="decimal" value={form.priceVndKg}
+                    placeholder={crop.economics.priceVndKg != null ? `mặc định ${formatNumber(crop.economics.priceVndKg, 0)}` : 'vd. 7.500'}
+                    onChange={(e) => set('priceVndKg', e.target.value)} />
+                </div>
+              </div>
+              {crop.economics.yieldSource && <p className="text-xs text-gray-400">Năng suất mặc định: {crop.economics.yieldSource}</p>}
+              {crop.economics.priceSource && <p className="text-xs text-gray-400">Giá mặc định: {crop.economics.priceSource}</p>}
+              {crop.economics.yieldTHa == null && crop.economics.priceVndKg == null && (
+                <p className="text-xs text-gray-400">Chưa có số mặc định có nguồn cho {crop.name.toLowerCase()}: nhập số của ruộng bạn.</p>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm text-gray-700">
               <input type="checkbox" checked={form.hasPond} onChange={(e) => set('hasPond', e.target.checked)} />

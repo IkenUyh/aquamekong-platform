@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import type { FieldExposure } from '../api/fieldApi';
-import { exposureSummary } from './exposure';
+import type { FieldDamage, FieldExposure } from '../api/fieldApi';
+import { damageSummary, exposureSummary, formatVnd } from './exposure';
 
 const exposure = (over: Partial<FieldExposure>): FieldExposure => ({
   seasonKind: 'CROP_SEASON', seasonStart: '2026-11-01', seasonEnd: '2027-02-04', computedThrough: '2026-11-26',
   seasonDays: 95, daysElapsed: 26, daysWithData: 26, daysExceeded: 0, maxSalinity: 0.8, maxOn: '2026-11-03',
   lastExceededOn: null, threshold: 1.28, thresholdBasis: 'FAO', cumulative: 0, effectiveSalinity: 1.28,
-  yieldLossPercent: 0, faoSource: 'FAO 29', ...over,
+  yieldLossPercent: 0, faoSource: 'FAO 29', damage: null, ...over,
 });
 
 describe('exposureSummary', () => {
@@ -56,5 +56,41 @@ describe('exposureSummary', () => {
   it('labels a finished crop season', () => {
     const s = exposureSummary(exposure({ computedThrough: '2027-02-04', daysElapsed: 95 }), 'Lúa');
     expect(s.details[0]).toBe('Vụ 01/11/2026 – 04/02/2027 (đã hết 95 ngày của giống)');
+  });
+});
+
+const damage = (over: Partial<FieldDamage>): FieldDamage => ({
+  areaHa: 1.5, yieldTHa: 7.4, yieldDefault: true, priceVndKg: 7500, priceDefault: true, priceAsOf: '2026-11-26',
+  seasonValueVnd: 83_250_000, perPercentVnd: 833_000, lossVnd: 20_813_000, ...over,
+});
+
+describe('formatVnd', () => {
+  it('reads like people say money', () => {
+    expect(formatVnd(20_813_000)).toBe('20,8 triệu đồng');
+    expect(formatVnd(1_250_000_000)).toBe('1,3 tỷ đồng');
+    expect(formatVnd(833_000)).toBe('833.000 đồng');
+  });
+});
+
+describe('damageSummary', () => {
+  it('shows the estimate, the formula with its defaults, and what 1% is worth', () => {
+    expect(damageSummary(damage({}), 25)).toEqual({
+      headline: 'Thiệt hại ước tính khoảng 20,8 triệu đồng',
+      details: [
+        '1,5 ha × 25% × 7,4 tấn/ha × 7.500 đ/kg (năng suất mặc định, giá mặc định ngày 26/11/2026)',
+        'Mỗi 1% năng suất của ruộng ≈ 833.000 đồng; cả vụ ≈ 83,3 triệu đồng',
+      ],
+    });
+  });
+
+  it('does not mention defaults the user replaced', () => {
+    const s = damageSummary(damage({ yieldDefault: false, priceDefault: false, priceAsOf: null, priceVndKg: 8000 }), 25);
+    expect(s.details[0]).toBe('1,5 ha × 25% × 7,4 tấn/ha × 8.000 đ/kg');
+  });
+
+  it('asks for the missing numbers instead of guessing', () => {
+    const s = damageSummary(damage({ areaHa: null, priceVndKg: null, seasonValueVnd: null, perPercentVnd: null, lossVnd: null }), 25);
+    expect(s.headline).toBeNull();
+    expect(s.details).toEqual(['Nhập diện tích, giá bán của ruộng ở trang Ruộng để ước thiệt hại ra tiền.']);
   });
 });

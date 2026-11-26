@@ -54,6 +54,23 @@ public class Crop {
     @Column(name = "fao_note", columnDefinition = "TEXT")
     private String faoNote;
 
+    /** Năng suất bình thường mặc định (tấn/ha), null = chưa có nguồn (V18) */
+    @Column(name = "default_yield_t_ha")
+    private Double defaultYieldTHa;
+
+    /** Giá bán mặc định (đồng/kg), null = chưa có nguồn (V18) */
+    @Column(name = "default_price_vnd_kg")
+    private Double defaultPriceVndKg;
+
+    @Column(name = "yield_source", columnDefinition = "TEXT")
+    private String yieldSource;
+
+    @Column(name = "price_source", columnDefinition = "TEXT")
+    private String priceSource;
+
+    @Column(name = "price_as_of")
+    private java.time.LocalDate priceAsOf;
+
     @OneToMany(mappedBy = "crop", fetch = FetchType.LAZY)
     @OrderBy("stageOrder ASC")
     @Builder.Default

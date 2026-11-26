@@ -38,8 +38,10 @@ public class SalinityExposureService {
         if (season == null) return Optional.empty();
         LocalDate through = today.isBefore(season.end()) ? today : season.end();
         Map<LocalDate, Double> daily = dailyMax(field.getStation().getId(), season.start(), through);
-        return Optional.of(SalinityExposure.compute(field.getCrop(), season, field.getPlantedOn(),
-                field.getVarietyDays(), daily, today));
+        Exposure exposure = SalinityExposure.compute(field.getCrop(), season, field.getPlantedOn(),
+                field.getVarietyDays(), daily, today);
+        return Optional.of(exposure.withDamage(SalinityExposure.damage(field.getCrop(), field.getAreaHa(),
+                field.getYieldTHa(), field.getPriceVndKg(), exposure.yieldLossPercent())));
     }
 
     private Map<LocalDate, Double> dailyMax(Long stationId, LocalDate from, LocalDate through) {

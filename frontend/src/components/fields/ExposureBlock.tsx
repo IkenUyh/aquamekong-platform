@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
-import type { FieldProfile } from '../../api/fieldApi';
+import type { FieldDamage, FieldProfile } from '../../api/fieldApi';
 import { useCrops } from '../../hooks/useCrops';
 import { useFieldExposure, useFields } from '../../hooks/useFields';
-import { exposureSummary } from '../../utils/exposure';
+import { damageSummary, exposureSummary, NOTABLE_YIELD_LOSS } from '../../utils/exposure';
 
 /**
  * Mức mặn cây đã chịu trong mùa của một ruộng và năng suất có thể giảm nếu tưới bằng nước ở trạm của ruộng.
@@ -26,6 +26,27 @@ export function ExposureBlock({ field, showName = false, className = '' }: {
       {exposure.yieldLossPercent != null && (
         <p className="text-xs text-gray-400">
           Ước theo đường giảm năng suất FAO 29, độ mặn cao nhất mỗi ngày ở trạm; ngày còn lại của mùa coi như không mặn.
+        </p>
+      )}
+      {exposure.damage && exposure.yieldLossPercent != null && (
+        <DamageLines damage={exposure.damage} lossPercent={exposure.yieldLossPercent} />
+      )}
+    </div>
+  );
+}
+
+/** Thiệt hại ra tiền: luôn ghi là số ước tính */
+function DamageLines({ damage, lossPercent }: { damage: FieldDamage; lossPercent: number }) {
+  const d = damageSummary(damage, lossPercent);
+  return (
+    <div className="mt-2 space-y-0.5 border-t border-gray-100 pt-2">
+      {d.headline && (
+        <p className={`font-medium num ${lossPercent >= NOTABLE_YIELD_LOSS ? 'text-red-700' : 'text-gray-900'}`}>{d.headline}</p>
+      )}
+      {d.details.map((line) => <p key={line} className="text-gray-500 num">{line}</p>)}
+      {d.headline && (
+        <p className="text-xs text-gray-400">
+          Số ước tính để tham khảo, không phải thiệt hại thực tế. Sửa năng suất và giá của ruộng ở trang Ruộng.
         </p>
       )}
     </div>

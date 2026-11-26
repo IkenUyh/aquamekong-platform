@@ -1,6 +1,7 @@
 package com.aquamekong.service.crop;
 
 import com.aquamekong.dto.crop.CropDtos.CropDto;
+import com.aquamekong.dto.crop.CropDtos.Economics;
 import com.aquamekong.dto.crop.CropDtos.FaoYield;
 import com.aquamekong.dto.crop.CropDtos.StageDto;
 import com.aquamekong.entity.crop.Crop;
@@ -33,7 +34,10 @@ public class CropService {
                 toPpt(crop.getFaoEcw100()), toPpt(crop.getFaoEcw90()), toPpt(crop.getFaoEcw75()), toPpt(crop.getFaoEcw50()),
                 crop.getFaoSource());
         List<StageDto> stages = crop.getStages().stream().map(CropService::toDto).toList();
-        return new CropDto(crop.getCode(), crop.getName(), crop.getCategory().name(), fao, crop.getFaoNote(), stages);
+        Economics economics = new Economics(crop.getDefaultYieldTHa(), crop.getYieldSource(),
+                crop.getDefaultPriceVndKg(), crop.getPriceSource(), crop.getPriceAsOf());
+        return new CropDto(crop.getCode(), crop.getName(), crop.getCategory().name(), fao, crop.getFaoNote(), stages,
+                economics);
     }
 
     private static StageDto toDto(CropStage s) {

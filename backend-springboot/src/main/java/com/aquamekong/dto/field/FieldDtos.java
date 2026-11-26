@@ -24,6 +24,8 @@ public final class FieldDtos {
      * @param varietyDays  số ngày của giống; bắt buộc với cây chia giai đoạn (lúa)
      * @param plantedOn    ngày gieo sạ / ngày trồng; bắt buộc với cây chia giai đoạn
      * @param pondVolumeM3 dung tích ao trữ nước ngọt (m³), chỉ khi hasPond
+     * @param yieldTHa     năng suất bình thường của ruộng (tấn/ha), null = dùng mặc định của cây
+     * @param priceVndKg   giá bán (đồng/kg), null = dùng mặc định của cây
      */
     public record FieldRequest(
             @NotBlank @Size(max = 60) String name,
@@ -34,7 +36,9 @@ public final class FieldDtos {
             LocalDate plantedOn,
             @DecimalMin(value = "0", inclusive = false) @DecimalMax("100000") Double areaHa,
             boolean hasPond,
-            @DecimalMin(value = "0", inclusive = false) @DecimalMax("10000000") Double pondVolumeM3) {
+            @DecimalMin(value = "0", inclusive = false) @DecimalMax("10000000") Double pondVolumeM3,
+            @DecimalMin(value = "0", inclusive = false) @DecimalMax("500") Double yieldTHa,
+            @DecimalMin(value = "0", inclusive = false) @DecimalMax("10000000") Double priceVndKg) {
     }
 
     /**
@@ -47,7 +51,7 @@ public final class FieldDtos {
      */
     public record FieldDto(Long id, String name, Long stationId, String stationName, String cropCode, String cropName,
                            String variety, Integer varietyDays, LocalDate plantedOn, Double areaHa,
-                           boolean hasPond, Double pondVolumeM3, StageInfo stage,
+                           boolean hasPond, Double pondVolumeM3, Double yieldTHa, Double priceVndKg, StageInfo stage,
                            Double threshold, Double minThreshold, Outlook outlook, boolean mine, boolean notified) {
     }
 
@@ -79,6 +83,27 @@ public final class FieldDtos {
                            int seasonDays, int daysElapsed, int daysWithData, int daysExceeded,
                            Double maxSalinity, LocalDate maxOn, LocalDate lastExceededOn,
                            Double threshold, String thresholdBasis, double cumulative, Double effectiveSalinity,
-                           Integer yieldLossPercent, String faoSource) {
+                           Integer yieldLossPercent, String faoSource, Damage damage) {
+
+        public Exposure withDamage(Damage d) {
+            return new Exposure(seasonKind, seasonStart, seasonEnd, computedThrough, seasonDays, daysElapsed, daysWithData,
+                    daysExceeded, maxSalinity, maxOn, lastExceededOn, threshold, thresholdBasis, cumulative,
+                    effectiveSalinity, yieldLossPercent, faoSource, d);
+        }
+    }
+
+    /**
+     * Thiệt hại ước tính ra tiền = diện tích × % năng suất giảm × năng suất bình thường × giá bán. Số nào chưa có
+     * (ruộng chưa nhập diện tích, cây chưa có năng suất/giá mặc định) thì null, kéo theo các khoản tiền null.
+     *
+     * @param yieldDefault   năng suất lấy mặc định của cây (người dùng chưa nhập)
+     * @param priceDefault   giá lấy mặc định của cây
+     * @param priceAsOf      ngày lấy giá mặc định, null khi người dùng tự nhập giá
+     * @param seasonValueVnd giá trị cả vụ của ruộng (đồng)
+     * @param perPercentVnd  mỗi 1% năng suất của ruộng đáng bao nhiêu (đồng)
+     * @param lossVnd        thiệt hại theo % năng suất có thể giảm tới hôm nay (đồng)
+     */
+    public record Damage(Double areaHa, Double yieldTHa, boolean yieldDefault, Double priceVndKg, boolean priceDefault,
+                         LocalDate priceAsOf, Long seasonValueVnd, Long perPercentVnd, Long lossVnd) {
     }
 }

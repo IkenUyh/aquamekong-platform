@@ -14,7 +14,18 @@ public final class CropDtos {
      * @param faoNote  ghi chú về dòng FAO được dùng, hoặc vì sao không có
      */
     public record CropDto(String code, String name, String category, FaoYield faoYield, String faoNote,
-                          List<StageDto> stages) {
+                          List<StageDto> stages, Economics economics) {
+    }
+
+    /**
+     * Năng suất và giá mặc định để ước thiệt hại ra tiền; null = chưa có nguồn, người dùng tự nhập.
+     *
+     * @param yieldTHa   tấn/ha mỗi vụ (cây lâu năm: mỗi năm)
+     * @param priceVndKg đồng/kg tại ruộng/vườn
+     * @param priceAsOf  ngày lấy giá
+     */
+    public record Economics(Double yieldTHa, String yieldSource, Double priceVndKg, String priceSource,
+                            java.time.LocalDate priceAsOf) {
     }
 
     /**

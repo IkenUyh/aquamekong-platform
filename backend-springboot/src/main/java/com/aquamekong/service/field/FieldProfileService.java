@@ -106,6 +106,8 @@ public class FieldProfileService {
         field.setAreaHa(request.areaHa());
         field.setHasPond(request.hasPond());
         field.setPondVolumeM3(request.hasPond() ? request.pondVolumeM3() : null);
+        field.setYieldTHa(request.yieldTHa());
+        field.setPriceVndKg(request.priceVndKg());
         FieldProfile saved = fieldRepository.save(field);
 
         CropStage stage = stage(saved, LocalDate.now(ZONE));
@@ -147,6 +149,7 @@ public class FieldProfileService {
         return new FieldDto(f.getId(), f.getName(), station == null ? null : station.getId(),
                 station == null ? null : station.getName(), f.getCrop().getCode(), f.getCrop().getName(),
                 f.getVariety(), f.getVarietyDays(), f.getPlantedOn(), f.getAreaHa(), f.isHasPond(), f.getPondVolumeM3(),
+                f.getYieldTHa(), f.getPriceVndKg(),
                 stageInfo, max, min, outlook, viewerId != null && Objects.equals(ownerId, viewerId),
                 ownerId != null && station != null && max != null);
     }

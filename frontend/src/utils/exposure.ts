@@ -1,4 +1,4 @@
-import type { FieldExposure } from '../api/fieldApi';
+import type { FieldDamage, FieldExposure } from '../api/fieldApi';
 import { formatDay, formatNumber, formatSalinity } from './salinity';
 
 /** Từ mức giảm này trở lên thì tô đỏ (đỏ dành cho mức mặn gây hại) */
@@ -63,4 +63,50 @@ export function exposureSummary(e: FieldExposure, cropName: string): ExposureSum
   }
 
   return { headline, severe: (e.yieldLossPercent ?? 0) >= NOTABLE_YIELD_LOSS, details };
+}
+
+/** Tiền đồng cho người đọc: "20,8 triệu đồng", "1,2 tỷ đồng", "833.000 đồng" */
+export function formatVnd(vnd: number): string {
+  const abs = Math.abs(vnd);
+  if (abs >= 1e9) return `${formatNumber(vnd / 1e9, 1)} tỷ đồng`;
+  if (abs >= 1e6) return `${formatNumber(vnd / 1e6, 1)} triệu đồng`;
+  return `${formatNumber(vnd, 0)} đồng`;
+}
+
+export interface DamageSummary {
+  /** "Thiệt hại ước tính khoảng 20,8 triệu đồng", null khi còn thiếu số */
+  headline: string | null;
+  /** Phép tính và giá trị mỗi 1% năng suất, hoặc câu nhắc nhập số còn thiếu */
+  details: string[];
+}
+
+/**
+ * Lời cho phần thiệt hại ra tiền: diện tích × % giảm × năng suất × giá. Luôn ghi đây là số ước tính,
+ * và số nào lấy mặc định của cây (giá kèm ngày lấy giá).
+ */
+export function damageSummary(d: FieldDamage, lossPercent: number): DamageSummary {
+  const missing = [
+    d.areaHa == null && 'diện tích',
+    d.yieldTHa == null && 'năng suất bình thường',
+    d.priceVndKg == null && 'giá bán',
+  ].filter((x): x is string => !!x);
+  if (missing.length > 0 || d.lossVnd == null || d.seasonValueVnd == null || d.perPercentVnd == null) {
+    return { headline: null, details: [`Nhập ${missing.join(', ')} của ruộng ở trang Ruộng để ước thiệt hại ra tiền.`] };
+  }
+
+  const defaults = [
+    d.yieldDefault && 'năng suất mặc định',
+    d.priceDefault && (d.priceAsOf ? `giá mặc định ngày ${formatDay(d.priceAsOf)}/${d.priceAsOf.slice(0, 4)}` : 'giá mặc định'),
+  ].filter(Boolean);
+  const formula = `${formatNumber(d.areaHa)} ha × ${lossPercent}% × ${formatNumber(d.yieldTHa)} tấn/ha × ${formatNumber(d.priceVndKg, 0)} đ/kg`
+    + (defaults.length ? ` (${defaults.join(', ')})` : '');
+  return {
+    headline: lossPercent === 0
+      ? 'Chưa có thiệt hại ước tính'
+      : `Thiệt hại ước tính khoảng ${formatVnd(d.lossVnd)}`,
+    details: [
+      formula,
+      `Mỗi 1% năng suất của ruộng ≈ ${formatVnd(d.perPercentVnd)}; cả vụ ≈ ${formatVnd(d.seasonValueVnd)}`,
+    ],
+  };
 }
