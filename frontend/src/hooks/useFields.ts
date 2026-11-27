@@ -22,6 +22,8 @@ export function useSaveField() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: FIELDS_KEY });
       void queryClient.invalidateQueries({ queryKey: ['watches'] });
+      // Khuyến nghị của người đã đăng nhập lập theo ruộng của họ
+      void queryClient.invalidateQueries({ queryKey: ['recommendations'] });
     },
   });
 }
@@ -46,6 +48,16 @@ export function useFieldWaterPlan(id: number | null) {
   });
 }
 
+/** Việc cần làm có ngày và câu trả lời "Tuần này lấy nước được không?". Key dưới ['fields'] như water-plan. */
+export function useFieldPlan(id: number | null) {
+  return useQuery({
+    queryKey: [...FIELDS_KEY, 'plan', id],
+    queryFn: () => fieldApi.plan(id as number),
+    enabled: id != null,
+    staleTime: 10 * 60_000,
+  });
+}
+
 export function useRemoveField() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -53,6 +65,8 @@ export function useRemoveField() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: FIELDS_KEY });
       void queryClient.invalidateQueries({ queryKey: ['watches'] });
+      // Khuyến nghị của người đã đăng nhập lập theo ruộng của họ
+      void queryClient.invalidateQueries({ queryKey: ['recommendations'] });
     },
   });
 }

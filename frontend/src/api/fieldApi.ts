@@ -146,6 +146,35 @@ export interface WaterPlan {
   pondSalinityAssumed: number;
 }
 
+/** RED: hôm nay vượt; YELLOW: hôm nay chưa vượt nhưng tuần này có ngày mặn; GREEN: cả tuần an toàn; GREY: chưa biết */
+export type PlanVerdict = 'RED' | 'YELLOW' | 'GREEN' | 'GREY';
+
+/**
+ * Một việc cần làm (backend ActionPlan). kind của kế hoạch nước: STORE, MIX, POND_ONLY, STOP_INTAKE, CHECK, POND_EMPTY,
+ * STAGE_CHANGE, TAKE_WATER; nguồn khác (bón phân) thêm loại riêng nên để string.
+ */
+export interface PlanAction {
+  kind: string;
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  /** YYYY-MM-DD */
+  from: string;
+  until: string;
+  /** Phần nước ao đã làm tròn (MIX 1/4 – 3/4, POND_ONLY 1), null với loại khác */
+  fraction: number | null;
+  message: string;
+  /** WATER (kế hoạch nước), FERTILIZER (bón phân) */
+  source: string;
+}
+
+/** Kế hoạch việc cần làm của một ruộng, với câu trả lời "Tuần này lấy nước được không?" */
+export interface FieldPlan {
+  verdict: PlanVerdict;
+  headline: string;
+  /** Theo ngày, "Lấy nước được" ở cuối */
+  actions: PlanAction[];
+  waterPlan: WaterPlan;
+}
+
 export interface FieldRequest {
   name: string;
   stationId: number;
@@ -170,5 +199,8 @@ export const fieldApi = {
     .then((r) => (r.status === 204 || !r.data ? null : r.data)),
   /** null (204) khi ruộng không có trạm hoặc giai đoạn cây hôm nay không có ngưỡng */
   waterPlan: (id: number) => apiClient.get<WaterPlan | ''>(`/fields/${id}/water-plan`)
+    .then((r) => (r.status === 204 || !r.data ? null : r.data)),
+  /** null (204) khi không lập được kế hoạch (như waterPlan) */
+  plan: (id: number) => apiClient.get<FieldPlan | ''>(`/fields/${id}/plan`)
     .then((r) => (r.status === 204 || !r.data ? null : r.data)),
 };
