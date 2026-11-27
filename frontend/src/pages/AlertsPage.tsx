@@ -12,6 +12,7 @@ import { alertApi } from '../api/alertApi';
 import { metricApi } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { PushSettings } from '../components/PushSettings';
+import { Disclaimer } from '../components/Disclaimer';
 import type { AlertDto, AlertStatus } from '../types';
 import { formatMeasuredAt, formatNumber, formatSalinity, isReporting, metricLabel, SALINITY_THRESHOLD } from '../utils/salinity';
 
@@ -234,6 +235,7 @@ export function AlertsPage() {
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Danh sách cảnh báo</h2>
             <p className="text-xs text-gray-500">Cảnh báo sinh tự động khi số đo vượt ngưỡng của rule cảnh báo</p>
+            <Disclaimer className="mt-1" />
           </div>
 
           <StaleDataNotice />
