@@ -79,7 +79,7 @@ class FieldProfileServiceTest {
     }
 
     private static FieldRequest rice(LocalDate sown, Integer days) {
-        return new FieldRequest(" Ruộng sau nhà ", 3L, "lua", "OM18", days, sown, 1.5, true, 800.0);
+        return new FieldRequest(" Ruộng sau nhà ", 3L, "lua", "OM18", days, sown, 1.5, true, 800.0, null, null);
     }
 
     @Test
@@ -102,7 +102,7 @@ class FieldProfileServiceTest {
 
     @Test
     void guestCanAddAFieldWithoutNotifications() {
-        FieldDto dto = service.create(null, new FieldRequest("Ao tôm", 3L, "tom_su", null, null, null, 0.8, false, 500.0));
+        FieldDto dto = service.create(null, new FieldRequest("Ao tôm", 3L, "tom_su", null, null, null, 0.8, false, 500.0, null, null));
 
         assertThat(dto.mine()).isFalse();
         assertThat(dto.notified()).isFalse();
@@ -115,7 +115,7 @@ class FieldProfileServiceTest {
 
     @Test
     void speciesWithoutASourceHasNoThresholdOrOutlook() {
-        FieldDto dto = service.create("alice", new FieldRequest("Ao basa", 3L, "ca_basa", null, null, null, null, false, null));
+        FieldDto dto = service.create("alice", new FieldRequest("Ao basa", 3L, "ca_basa", null, null, null, null, false, null, null, null));
 
         assertThat(dto.threshold()).isNull();
         assertThat(dto.outlook()).isNull();
@@ -127,7 +127,7 @@ class FieldProfileServiceTest {
         FieldProfile owned = FieldProfile.builder().id(9L).user(alice).name("Ruộng").station(station).crop(shrimp).build();
         when(fieldRepository.findById(9L)).thenReturn(Optional.of(owned));
 
-        FieldDto dto = service.update(null, 9L, new FieldRequest("Ao tôm mới", 3L, "tom_su", null, null, null, null, false, null));
+        FieldDto dto = service.update(null, 9L, new FieldRequest("Ao tôm mới", 3L, "tom_su", null, null, null, null, false, null, null, null));
 
         assertThat(dto.name()).isEqualTo("Ao tôm mới");
         assertThat(owned.getUser()).isSameAs(alice);
@@ -161,7 +161,7 @@ class FieldProfileServiceTest {
     @Test
     void unknownCropIsRejected() {
         assertThatThrownBy(() -> service.create("alice",
-                new FieldRequest("Ruộng", 3L, "ca_phe", null, null, null, null, false, null)))
+                new FieldRequest("Ruộng", 3L, "ca_phe", null, null, null, null, false, null, null, null)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

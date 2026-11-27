@@ -1,5 +1,6 @@
 package com.aquamekong.service.field;
 
+import com.aquamekong.dto.field.FieldDtos.Damage;
 import com.aquamekong.dto.field.FieldDtos.Exposure;
 import com.aquamekong.entity.crop.Crop;
 import com.aquamekong.entity.crop.CropStage;
@@ -105,7 +106,31 @@ public final class SalinityExposure {
         return new Exposure(season.kind(), season.start(), season.end(), through, season.length(), Math.max(0, elapsed),
                 withData, exceeded, peak == null ? null : round2(peak), peakOn, lastExceeded, threshold,
                 fao100 != null ? BASIS_FAO : BASIS_STAGE, round2(dose), effective, loss,
-                fao100 == null ? null : crop.getFaoSource());
+                fao100 == null ? null : crop.getFaoSource(), null);
+    }
+
+    /**
+     * Thiệt hại ra tiền = diện tích × % giảm × năng suất bình thường × giá bán, làm tròn tới nghìn đồng.
+     * Năng suất/giá người dùng nhập được ưu tiên, không có thì lấy mặc định của cây. null khi chưa có % năng suất
+     * (cây không có số FAO, hoặc chưa có số đo): khi đó không có gì để quy ra tiền.
+     */
+    public static Damage damage(Crop crop, Double areaHa, Double userYieldTHa, Double userPriceVndKg, Integer lossPercent) {
+        if (lossPercent == null) return null;
+        Double yield = userYieldTHa != null ? userYieldTHa : crop.getDefaultYieldTHa();
+        Double price = userPriceVndKg != null ? userPriceVndKg : crop.getDefaultPriceVndKg();
+        boolean priceDefault = userPriceVndKg == null && price != null;
+        Long seasonValue = areaHa == null || yield == null || price == null ? null
+                : roundThousand(areaHa * yield * KG_PER_TONNE * price);
+        Long perPercent = seasonValue == null ? null : roundThousand(seasonValue / 100.0);
+        Long loss = seasonValue == null ? null : roundThousand(seasonValue * lossPercent / 100.0);
+        return new Damage(areaHa, yield, userYieldTHa == null && yield != null, price, priceDefault,
+                priceDefault ? crop.getPriceAsOf() : null, seasonValue, perPercent, loss);
+    }
+
+    private static final double KG_PER_TONNE = 1000;
+
+    private static long roundThousand(double vnd) {
+        return Math.round(vnd / 1000) * 1000;
     }
 
     /** % năng suất có thể giảm ở độ mặn nước tưới {@code ppt} (‰), nội suy trên 4 điểm FAO 29 */

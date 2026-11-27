@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Crop, CropStage } from '../api/cropApi';
+import { NO_ECONOMICS, type Crop, type CropStage } from '../api/cropApi';
 import { seasonDay, stageSegments } from './cropSchedule';
 
 const stage = (code: string, order: number, durationDays: number | null, flexible = false): CropStage => ({
@@ -8,7 +8,7 @@ const stage = (code: string, order: number, durationDays: number | null, flexibl
 });
 
 const rice: Crop = {
-  code: 'lua', name: 'Lúa', category: 'CROP', faoYield: null, faoNote: null,
+  code: 'lua', name: 'Lúa', category: 'CROP', faoYield: null, faoNote: null, economics: NO_ECONOMICS,
   stages: [stage('chin', 4, 30), stage('ma', 1, null), stage('lam_dong_tro', 3, 35), stage('de_nhanh', 2, null, true)],
 };
 

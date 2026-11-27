@@ -27,6 +27,22 @@ export interface CropStage {
   sensitivitySource: string | null;
 }
 
+/** Năng suất và giá mặc định để ước thiệt hại ra tiền; null = chưa có nguồn, người dùng tự nhập */
+export interface CropEconomics {
+  /** Tấn/ha mỗi vụ (cây lâu năm: mỗi năm) */
+  yieldTHa: number | null;
+  yieldSource: string | null;
+  /** Đồng/kg tại ruộng/vườn */
+  priceVndKg: number | null;
+  priceSource: string | null;
+  /** YYYY-MM-DD, ngày lấy giá */
+  priceAsOf: string | null;
+}
+
+export const NO_ECONOMICS: CropEconomics = {
+  yieldTHa: null, yieldSource: null, priceVndKg: null, priceSource: null, priceAsOf: null,
+};
+
 export interface Crop {
   code: string;
   name: string;
@@ -34,6 +50,7 @@ export interface Crop {
   faoYield: FaoYield | null;
   faoNote: string | null;
   stages: CropStage[];
+  economics: CropEconomics;
 }
 
 /** Cây chia nhiều giai đoạn (lúa) cần ngày gieo và số ngày của giống */

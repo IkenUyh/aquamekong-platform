@@ -55,7 +55,7 @@ class FieldProfileControllerTest {
     @WithAnonymousUser
     void guestsSeeTheExposureAndGetNoContentWhenItCannotBeEstimated() throws Exception {
         when(exposureService.exposure(4L)).thenReturn(java.util.Optional.of(new com.aquamekong.dto.field.FieldDtos.Exposure(
-                "CROP_SEASON", null, null, null, 95, 10, 10, 2, 3.0, null, null, 1.28, "FAO", 2.72, 1.31, 1, null)));
+                "CROP_SEASON", null, null, null, 95, 10, 10, 2, 3.0, null, null, 1.28, "FAO", 2.72, 1.31, 1, null, null)));
         when(exposureService.exposure(5L)).thenReturn(java.util.Optional.empty());
         mvc.perform(get("/api/v1/fields/4/exposure")).andExpect(status().isOk());
         mvc.perform(get("/api/v1/fields/5/exposure")).andExpect(status().isNoContent());

@@ -144,6 +144,48 @@ class SalinityExposureTest {
     }
 
     @Test
+    void damageIsAreaTimesLossTimesYieldTimesPrice() {
+        Crop rice = rice();
+        rice.setDefaultYieldTHa(7.4);
+        rice.setDefaultPriceVndKg(7500.0);
+        rice.setPriceAsOf(LocalDate.of(2026, 11, 26));
+
+        // 1,5 ha × 7,4 t/ha × 1000 × 7.500 đ = 83.250.000 đ cả vụ; 25% = 20.812.500 → làm tròn nghìn
+        var d = SalinityExposure.damage(rice, 1.5, null, null, 25);
+        assertThat(d.seasonValueVnd()).isEqualTo(83_250_000L);
+        assertThat(d.perPercentVnd()).isEqualTo(833_000L); // 832.500 làm tròn lên
+        assertThat(d.lossVnd()).isEqualTo(20_813_000L);
+        assertThat(d.yieldDefault()).isTrue();
+        assertThat(d.priceDefault()).isTrue();
+        assertThat(d.priceAsOf()).isEqualTo(LocalDate.of(2026, 11, 26));
+    }
+
+    @Test
+    void userYieldAndPriceOverrideTheDefaults() {
+        Crop rice = rice();
+        rice.setDefaultYieldTHa(7.4);
+        rice.setDefaultPriceVndKg(7500.0);
+        var d = SalinityExposure.damage(rice, 2.0, 6.0, 8000.0, 10);
+        assertThat(d.seasonValueVnd()).isEqualTo(96_000_000L);
+        assertThat(d.lossVnd()).isEqualTo(9_600_000L);
+        assertThat(d.yieldDefault()).isFalse();
+        assertThat(d.priceDefault()).isFalse();
+        assertThat(d.priceAsOf()).isNull();
+    }
+
+    @Test
+    void missingAreaOrPriceLeavesNoAmountAndNoLossPercentNoDamage() {
+        Crop rice = rice();
+        rice.setDefaultYieldTHa(7.4);
+        var noPrice = SalinityExposure.damage(rice, 1.5, null, null, 25);
+        assertThat(noPrice.priceVndKg()).isNull();
+        assertThat(noPrice.lossVnd()).isNull();
+        assertThat(noPrice.yieldTHa()).isEqualTo(7.4);
+        assertThat(SalinityExposure.damage(rice, null, null, 8000.0, 25).lossVnd()).isNull();
+        assertThat(SalinityExposure.damage(rice, 1.5, 6.0, 8000.0, null)).isNull();
+    }
+
+    @Test
     void waterUsesOtherThanCropsAreNotEstimated() {
         Crop shrimp = Crop.builder().code("tom_su").category(Crop.Category.AQUACULTURE).build();
         shrimp.setStages(List.of(CropStage.builder().code("ca_vu").stageOrder(1).maxSalinity(35.0).minSalinity(5.0).build()));

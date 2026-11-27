@@ -61,6 +61,14 @@ public class FieldProfile {
     @Column(name = "pond_volume_m3")
     private Double pondVolumeM3;
 
+    /** Năng suất bình thường người dùng nhập (tấn/ha), null = dùng mặc định của cây (V18) */
+    @Column(name = "yield_t_ha")
+    private Double yieldTHa;
+
+    /** Giá bán người dùng nhập (đồng/kg), null = dùng mặc định của cây (V18) */
+    @Column(name = "price_vnd_kg")
+    private Double priceVndKg;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 

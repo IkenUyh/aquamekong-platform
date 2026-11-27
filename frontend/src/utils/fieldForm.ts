@@ -13,18 +13,26 @@ export interface FieldForm {
   areaHa: string;
   hasPond: boolean;
   pondVolumeM3: string;
+  /** Trống = dùng năng suất mặc định của cây */
+  yieldTHa: string;
+  /** Trống = dùng giá mặc định của cây */
+  priceVndKg: string;
 }
 
 export const EMPTY_FIELD_FORM: FieldForm = {
   name: '', stationId: '', cropCode: '', variety: '', varietyDays: '', plantedOn: '', areaHa: '', hasPond: false, pondVolumeM3: '',
+  yieldTHa: '', priceVndKg: '',
 };
+
+/** Số thập phân để hiện lại trong ô nhập, dấu phẩy kiểu Việt Nam */
+const asInput = (n: number | null) => (n == null ? '' : String(n).replace('.', ','));
 
 export function formFromField(f: FieldProfile): FieldForm {
   return {
     name: f.name, stationId: f.stationId ?? '', cropCode: f.cropCode, variety: f.variety ?? '',
     varietyDays: f.varietyDays == null ? '' : String(f.varietyDays), plantedOn: f.plantedOn ?? '',
-    areaHa: f.areaHa == null ? '' : String(f.areaHa).replace('.', ','), hasPond: f.hasPond,
-    pondVolumeM3: f.pondVolumeM3 == null ? '' : String(f.pondVolumeM3).replace('.', ','),
+    areaHa: asInput(f.areaHa), hasPond: f.hasPond, pondVolumeM3: asInput(f.pondVolumeM3),
+    yieldTHa: asInput(f.yieldTHa), priceVndKg: asInput(f.priceVndKg),
   };
 }
 
@@ -65,11 +73,15 @@ export function fieldRequest(form: FieldForm, crop: Crop | undefined): { req: Fi
   if (area != null && !(area > 0 && area <= 100000)) return { error: 'Diện tích phải lớn hơn 0.' };
   const pond = form.hasPond ? decimal(form.pondVolumeM3) : null;
   if (pond != null && !(pond > 0)) return { error: 'Dung tích ao phải lớn hơn 0.' };
+  const yieldTHa = decimal(form.yieldTHa);
+  if (yieldTHa != null && !(yieldTHa > 0 && yieldTHa <= 500)) return { error: 'Năng suất phải từ trên 0 tới 500 tấn/ha.' };
+  const price = decimal(form.priceVndKg);
+  if (price != null && !(price > 0 && price <= 10_000_000)) return { error: 'Giá bán phải lớn hơn 0 đồng/kg.' };
   return {
     req: {
       name: form.name.trim(), stationId: form.stationId, cropCode: crop.code,
       variety: form.variety.trim() || null, varietyDays: days, plantedOn: form.plantedOn || null,
-      areaHa: area, hasPond: form.hasPond, pondVolumeM3: pond,
+      areaHa: area, hasPond: form.hasPond, pondVolumeM3: pond, yieldTHa, priceVndKg: price,
     },
   };
 }
