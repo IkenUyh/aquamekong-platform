@@ -29,9 +29,11 @@ public final class CropDtos {
      * @param flexible     giai đoạn nhận phần ngày còn lại (số ngày của giống trừ các giai đoạn cố định)
      * @param maxSalinity  báo khi vượt mức này (‰), null = chưa có nguồn
      * @param minSalinity  báo khi xuống dưới mức này (‰), chỉ cho mức cần khoảng mặn
+     * @param saltSensitivity hệ số nhân phần mặn vượt ngưỡng khi tính mức mặn tích lũy, 1 = như FAO 29
      */
     public record StageDto(String code, String name, int order, Integer durationDays, boolean flexible,
                            String durationSource, Double maxSalinity, Double minSalinity,
-                           String thresholdSource, String thresholdNote) {
+                           String thresholdSource, String thresholdNote,
+                           double saltSensitivity, String sensitivitySource) {
     }
 }

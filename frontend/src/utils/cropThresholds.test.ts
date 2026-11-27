@@ -4,7 +4,7 @@ import { cropsAtThreshold, defaultPreset, presetFor, watchPresets } from './crop
 
 const stage = (code: string, name: string, max: number | null, min: number | null = null): CropStage => ({
   code, name, order: 1, durationDays: null, flexible: code !== 'ma', durationSource: null,
-  maxSalinity: max, minSalinity: min, thresholdSource: max == null ? null : 'Nguồn', thresholdNote: null,
+  maxSalinity: max, minSalinity: min, thresholdSource: max == null ? null : 'Nguồn', thresholdNote: null, saltSensitivity: 1, sensitivitySource: null,
 });
 const crop = (code: string, name: string, stages: CropStage[]): Crop => ({
   code, name, category: 'CROP', faoYield: null, faoNote: null, stages,

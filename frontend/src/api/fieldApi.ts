@@ -39,6 +39,35 @@ export interface FieldProfile {
   notified: boolean;
 }
 
+/**
+ * Mức mặn cây đã chịu trong mùa nếu tưới bằng nước ở trạm của ruộng (backend SalinityExposure).
+ * Ngày là YYYY-MM-DD; độ mặn tính bằng ‰.
+ */
+export interface FieldExposure {
+  /** CROP_SEASON: từ ngày gieo tới hết số ngày của giống; DRY_SEASON: mùa khô 01/12 – 31/05 */
+  seasonKind: 'CROP_SEASON' | 'DRY_SEASON';
+  seasonStart: string;
+  seasonEnd: string;
+  /** Ngày cuối đã tính: hôm nay, hoặc ngày cuối mùa nếu mùa đã qua */
+  computedThrough: string;
+  seasonDays: number;
+  daysElapsed: number;
+  daysWithData: number;
+  daysExceeded: number;
+  maxSalinity: number | null;
+  maxOn: string | null;
+  lastExceededOn: string | null;
+  threshold: number | null;
+  /** FAO: mức năng suất còn 100% (FAO 29); STAGE: ngưỡng khuyến cáo của giai đoạn (cây không có số FAO) */
+  thresholdBasis: 'FAO' | 'STAGE';
+  /** Σ (mặn − ngưỡng) × hệ số nhạy của giai đoạn, ‰·ngày */
+  cumulative: number;
+  effectiveSalinity: number | null;
+  /** % năng suất có thể giảm, null khi cây không có số FAO hoặc chưa có số đo */
+  yieldLossPercent: number | null;
+  faoSource: string | null;
+}
+
 export interface FieldRequest {
   name: string;
   stationId: number;
@@ -56,4 +85,7 @@ export const fieldApi = {
   create: (req: FieldRequest) => apiClient.post<FieldProfile>('/fields', req).then((r) => r.data),
   update: (id: number, req: FieldRequest) => apiClient.put<FieldProfile>(`/fields/${id}`, req).then((r) => r.data),
   remove: (id: number) => apiClient.delete(`/fields/${id}`),
+  /** null (204) khi không tính được: không có trạm, không phải cây trồng, chưa gieo, hoặc chưa có ngưỡng */
+  exposure: (id: number) => apiClient.get<FieldExposure | ''>(`/fields/${id}/exposure`)
+    .then((r) => (r.status === 204 || !r.data ? null : r.data)),
 };

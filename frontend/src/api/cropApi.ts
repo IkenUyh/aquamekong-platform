@@ -22,6 +22,9 @@ export interface CropStage {
   minSalinity: number | null;
   thresholdSource: string | null;
   thresholdNote: string | null;
+  /** Hệ số nhân phần mặn vượt ngưỡng khi tính mức mặn tích lũy, 1 = như FAO 29 */
+  saltSensitivity: number;
+  sensitivitySource: string | null;
 }
 
 export interface Crop {

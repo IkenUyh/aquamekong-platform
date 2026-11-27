@@ -1,8 +1,10 @@
 package com.aquamekong.controller.field;
 
+import com.aquamekong.dto.field.FieldDtos.Exposure;
 import com.aquamekong.dto.field.FieldDtos.FieldDto;
 import com.aquamekong.dto.field.FieldDtos.FieldRequest;
 import com.aquamekong.service.field.FieldProfileService;
+import com.aquamekong.service.field.SalinityExposureService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -23,11 +25,18 @@ import java.util.List;
 public class FieldProfileController {
 
     private final FieldProfileService fieldService;
+    private final SalinityExposureService exposureService;
 
     @GetMapping
     @Operation(summary = "Mọi ruộng đã khai, kèm giai đoạn cây, ngưỡng và tình hình mặn của trạm")
     public ResponseEntity<List<FieldDto>> list(Authentication authentication) {
         return ResponseEntity.ok(fieldService.list(username(authentication)));
+    }
+
+    @GetMapping("/{id}/exposure")
+    @Operation(summary = "Mức mặn cây đã chịu trong mùa và năng suất có thể giảm (FAO 29); 204 khi không tính được")
+    public ResponseEntity<Exposure> exposure(@PathVariable Long id) {
+        return exposureService.exposure(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @PostMapping
