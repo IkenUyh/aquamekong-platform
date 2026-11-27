@@ -6,6 +6,7 @@ import com.aquamekong.security.JwtService;
 import com.aquamekong.security.SecurityConfig;
 import com.aquamekong.service.field.FieldProfileService;
 import com.aquamekong.service.field.SalinityExposureService;
+import com.aquamekong.service.field.WaterPlanService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -37,6 +38,7 @@ class FieldProfileControllerTest {
     @Autowired MockMvc mvc;
     @MockBean FieldProfileService fieldService;
     @MockBean SalinityExposureService exposureService;
+    @MockBean WaterPlanService waterPlanService;
     @MockBean UserDetailsService userDetailsService;
 
     @Test
@@ -59,6 +61,16 @@ class FieldProfileControllerTest {
         when(exposureService.exposure(5L)).thenReturn(java.util.Optional.empty());
         mvc.perform(get("/api/v1/fields/4/exposure")).andExpect(status().isOk());
         mvc.perform(get("/api/v1/fields/5/exposure")).andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void guestsSeeTheWaterPlanAndGetNoContentWithoutStationOrThreshold() throws Exception {
+        when(waterPlanService.plan(4L)).thenReturn(java.util.Optional.of(new com.aquamekong.dto.field.FieldDtos.WaterPlan(
+                java.util.List.of(), null, 0)));
+        when(waterPlanService.plan(5L)).thenReturn(java.util.Optional.empty());
+        mvc.perform(get("/api/v1/fields/4/water-plan")).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/fields/5/water-plan")).andExpect(status().isNoContent());
     }
 
     @Test

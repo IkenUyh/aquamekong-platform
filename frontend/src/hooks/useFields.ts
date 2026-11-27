@@ -36,6 +36,16 @@ export function useFieldExposure(id: number | null) {
   });
 }
 
+/** Kế hoạch nước 7 ngày tới (ngày lấy được nước sông, tỷ lệ pha, ao đủ bao lâu). Key dưới ['fields'] như exposure. */
+export function useFieldWaterPlan(id: number | null) {
+  return useQuery({
+    queryKey: [...FIELDS_KEY, 'water-plan', id],
+    queryFn: () => fieldApi.waterPlan(id as number),
+    enabled: id != null,
+    staleTime: 10 * 60_000,
+  });
+}
+
 export function useRemoveField() {
   const queryClient = useQueryClient();
   return useMutation({
