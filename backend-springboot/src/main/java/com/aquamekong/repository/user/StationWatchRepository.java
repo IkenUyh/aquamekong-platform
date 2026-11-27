@@ -9,10 +9,13 @@ import java.util.Optional;
 
 public interface StationWatchRepository extends JpaRepository<StationWatch, Long> {
 
-    @EntityGraph(attributePaths = "station")
+    @EntityGraph(attributePaths = {"station", "fieldProfile"})
     List<StationWatch> findByUserIdOrderByCreatedAtAsc(Long userId);
 
-    Optional<StationWatch> findByUserIdAndStationId(Long userId, Long stationId);
+    /** Theo dõi đặt tay của tài khoản ở trạm này (không tính theo dõi tạo từ hồ sơ ruộng) */
+    Optional<StationWatch> findByUserIdAndStationIdAndFieldProfileIsNull(Long userId, Long stationId);
+
+    Optional<StationWatch> findByFieldProfileId(Long fieldProfileId);
 
     long countByUserId(Long userId);
 

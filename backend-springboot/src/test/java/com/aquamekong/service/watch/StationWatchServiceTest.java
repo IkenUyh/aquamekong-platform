@@ -2,6 +2,8 @@ package com.aquamekong.service.watch;
 
 import com.aquamekong.dto.watch.WatchDtos.Outlook;
 import com.aquamekong.dto.watch.WatchDtos.WatchRequest;
+import com.aquamekong.entity.crop.Crop;
+import com.aquamekong.entity.field.FieldProfile;
 import com.aquamekong.entity.forecast.SalinityForecast;
 import com.aquamekong.entity.station.Station;
 import com.aquamekong.entity.telemetry.Measurement;
@@ -165,7 +167,7 @@ class StationWatchServiceTest {
 
     @Test
     void savingStoresTheMinimum() {
-        when(watchRepository.findByUserIdAndStationId(1L, 3L)).thenReturn(Optional.empty());
+        when(watchRepository.findByUserIdAndStationIdAndFieldProfileIsNull(1L, 3L)).thenReturn(Optional.empty());
 
         var dto = service.save("alice", new WatchRequest(3L, 35.0, "Nuôi tôm sú", 5.0));
 
@@ -207,7 +209,7 @@ class StationWatchServiceTest {
 
     @Test
     void savingRemembersTheCurrentStateSoTheJobOnlyReportsChanges() {
-        when(watchRepository.findByUserIdAndStationId(1L, 3L)).thenReturn(Optional.empty());
+        when(watchRepository.findByUserIdAndStationIdAndFieldProfileIsNull(1L, 3L)).thenReturn(Optional.empty());
         when(measurementRepository.findLatestByStationIdAndMetricType(3L, "salinity"))
                 .thenReturn(Measurement.builder().value(5.0).recordedAt(OffsetDateTime.now()).build());
 
@@ -221,7 +223,7 @@ class StationWatchServiceTest {
     @Test
     void savingAnExistingWatchUpdatesTheThreshold() {
         StationWatch existing = StationWatch.builder().id(7L).user(alice).station(station).threshold(4.0).crop("Lúa").build();
-        when(watchRepository.findByUserIdAndStationId(1L, 3L)).thenReturn(Optional.of(existing));
+        when(watchRepository.findByUserIdAndStationIdAndFieldProfileIsNull(1L, 3L)).thenReturn(Optional.of(existing));
 
         var dto = service.save("alice", new WatchRequest(3L, 0.5, ""));
 
@@ -233,7 +235,7 @@ class StationWatchServiceTest {
 
     @Test
     void watchCountIsLimited() {
-        when(watchRepository.findByUserIdAndStationId(1L, 3L)).thenReturn(Optional.empty());
+        when(watchRepository.findByUserIdAndStationIdAndFieldProfileIsNull(1L, 3L)).thenReturn(Optional.empty());
         when(watchRepository.countByUserId(1L)).thenReturn((long) StationWatchService.MAX_WATCHES_PER_USER);
 
         assertThatThrownBy(() -> service.save("alice", new WatchRequest(3L, 2.0, null)))
@@ -254,5 +256,56 @@ class StationWatchServiceTest {
         service.delete("alice", 7L);
 
         verify(watchRepository, never()).delete(any());
+    }
+
+    private FieldProfile field() {
+        return FieldProfile.builder().id(9L).user(alice).name("Ruộng sau nhà").station(station)
+                .crop(Crop.builder().name("Lúa").build()).build();
+    }
+
+    @Test
+    void fieldWatchCanOnlyBeRemovedThroughTheField() {
+        when(watchRepository.findById(7L)).thenReturn(Optional.of(
+                StationWatch.builder().id(7L).user(alice).station(station).fieldProfile(field()).build()));
+
+        assertThatThrownBy(() -> service.delete("alice", 7L))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Ruộng sau nhà");
+        verify(watchRepository, never()).delete(any());
+    }
+
+    @Test
+    void syncingANewFieldCreatesItsWatchWithTheCurrentState() {
+        when(watchRepository.findByFieldProfileId(9L)).thenReturn(Optional.empty());
+        when(measurementRepository.findLatestByStationIdAndMetricType(3L, "salinity"))
+                .thenReturn(Measurement.builder().value(5.0).recordedAt(OffsetDateTime.now()).build());
+
+        StationWatch watch = service.syncFieldWatch(field(), 4.0, null);
+
+        assertThat(watch.getFieldProfile().getId()).isEqualTo(9L);
+        assertThat(watch.getThreshold()).isEqualTo(4.0);
+        assertThat(watch.getCrop()).isEqualTo("Lúa");
+        assertThat(watch.isForecastExceeding()).isTrue();
+    }
+
+    @Test
+    void syncingWithTheSameThresholdKeepsTheReportedState() {
+        StationWatch existing = StationWatch.builder().id(7L).user(alice).station(station).fieldProfile(field())
+                .threshold(4.0).forecastExceeding(true).build();
+        when(watchRepository.findByFieldProfileId(9L)).thenReturn(Optional.of(existing));
+
+        service.syncFieldWatch(field(), 4.0, null);
+
+        // Không tính lại: job vẫn so với trạng thái đã báo
+        assertThat(existing.isForecastExceeding()).isTrue();
+        verify(measurementRepository, never()).findLatestByStationIdAndMetricType(any(), any());
+    }
+
+    @Test
+    void fieldWithoutStationOrThresholdStopsWatching() {
+        StationWatch existing = StationWatch.builder().id(7L).fieldProfile(field()).build();
+        when(watchRepository.findByFieldProfileId(9L)).thenReturn(Optional.of(existing));
+
+        assertThat(service.syncFieldWatch(field(), null, null)).isNull();
+        verify(watchRepository).delete(existing);
     }
 }

@@ -32,8 +32,12 @@ public final class WatchDtos {
         }
     }
 
+    /**
+     * @param fieldProfileId hồ sơ ruộng đã tạo theo dõi này (ngưỡng theo cây và giai đoạn), null = đặt tay
+     * @param fieldName      tên ruộng đó
+     */
     public record WatchDto(Long id, Long stationId, String stationName, double threshold, Double minThreshold,
-                           String crop, Outlook outlook) {
+                           String crop, Long fieldProfileId, String fieldName, Outlook outlook) {
     }
 
     /**
