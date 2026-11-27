@@ -6,14 +6,14 @@ import com.aquamekong.entity.crop.Crop;
 import com.aquamekong.entity.crop.CropStage;
 import com.aquamekong.entity.field.FieldProfile;
 import com.aquamekong.entity.station.Station;
-import com.aquamekong.entity.user.StationWatch;
+import com.aquamekong.entity.telemetry.Measurement;
 import com.aquamekong.entity.user.User;
 import com.aquamekong.repository.crop.CropRepository;
 import com.aquamekong.repository.field.FieldProfileRepository;
 import com.aquamekong.repository.station.StationRepository;
-import com.aquamekong.repository.user.StationWatchRepository;
 import com.aquamekong.repository.user.UserRepository;
 import com.aquamekong.service.watch.StationWatchService;
+import com.aquamekong.service.watch.StationWatchService.StationSnapshot;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +32,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
@@ -43,7 +45,6 @@ class FieldProfileServiceTest {
     @Mock UserRepository userRepository;
     @Mock StationRepository stationRepository;
     @Mock CropRepository cropRepository;
-    @Mock StationWatchRepository watchRepository;
     @Mock StationWatchService watchService;
     FieldProfileService service;
 
@@ -57,22 +58,24 @@ class FieldProfileServiceTest {
     private final Crop shrimp = Crop.builder().code("tom_su").name("Nuôi tôm sú").category(Crop.Category.AQUACULTURE)
             .stages(List.of(CropStage.builder().code("ca_vu").name("Cả vụ").stageOrder(1).flexible(true)
                     .maxSalinity(35.0).minSalinity(5.0).build())).build();
+    private final Crop basa = Crop.builder().code("ca_basa").name("Nuôi cá basa").category(Crop.Category.AQUACULTURE)
+            .stages(List.of(CropStage.builder().code("ca_vu").name("Cả vụ").stageOrder(1).flexible(true).build())).build();
 
     @BeforeEach
     void setUp() {
-        service = new FieldProfileService(fieldRepository, userRepository, stationRepository, cropRepository,
-                watchRepository, watchService);
+        service = new FieldProfileService(fieldRepository, userRepository, stationRepository, cropRepository, watchService);
         when(userRepository.findByUsername("alice")).thenReturn(Optional.of(alice));
         when(stationRepository.findById(3L)).thenReturn(Optional.of(station));
         when(cropRepository.findByCode("lua")).thenReturn(Optional.of(rice));
         when(cropRepository.findByCode("tom_su")).thenReturn(Optional.of(shrimp));
+        when(cropRepository.findByCode("ca_basa")).thenReturn(Optional.of(basa));
+        when(watchService.snapshot(3L)).thenReturn(new StationSnapshot(
+                Measurement.builder().value(4.5).recordedAt(OffsetDateTime.now()).build(), List.of()));
         when(fieldRepository.save(any())).thenAnswer(i -> {
             FieldProfile f = i.getArgument(0);
             if (f.getId() == null) f.setId(9L);
             return f;
         });
-        when(watchService.syncFieldWatch(any(), any(), any())).thenAnswer(i ->
-                StationWatch.builder().id(5L).threshold(i.getArgument(1)).minThreshold(i.getArgument(2)).build());
     }
 
     private static FieldRequest rice(LocalDate sown, Integer days) {
@@ -80,7 +83,7 @@ class FieldProfileServiceTest {
     }
 
     @Test
-    void creatingARiceFieldWatchesTheStationWithTheCurrentStageThreshold() {
+    void signedInUserGetsTheStationWatchedWithTheCurrentStageThreshold() {
         LocalDate sown = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).minusDays(40);
 
         FieldDto dto = service.create("alice", rice(sown, 95));
@@ -89,19 +92,61 @@ class FieldProfileServiceTest {
         assertThat(dto.stage().code()).isEqualTo("lam_dong_tro");
         assertThat(dto.stage().day()).isEqualTo(41);
         assertThat(dto.name()).isEqualTo("Ruộng sau nhà");
-        assertThat(dto.watchId()).isEqualTo(5L);
-        verify(watchService).syncFieldWatch(any(FieldProfile.class), eq(4.0), isNull());
+        assertThat(dto.mine()).isTrue();
+        assertThat(dto.notified()).isTrue();
+        // Ai xem cũng thấy tình hình mặn: 4,5‰ vượt ngưỡng 4‰
+        assertThat(dto.threshold()).isEqualTo(4.0);
+        assertThat(dto.outlook().exceeding()).isTrue();
+        verify(watchService).syncFieldWatch(argThat(f -> f.getUser() == alice), eq(4.0), isNull());
     }
 
     @Test
-    void shrimpFieldWatchesARange() {
-        FieldDto dto = service.create("alice",
-                new FieldRequest("Ao tôm", 3L, "tom_su", null, null, null, 0.8, false, 500.0));
+    void guestCanAddAFieldWithoutNotifications() {
+        FieldDto dto = service.create(null, new FieldRequest("Ao tôm", 3L, "tom_su", null, null, null, 0.8, false, 500.0));
 
-        verify(watchService).syncFieldWatch(any(FieldProfile.class), eq(35.0), eq(5.0));
+        assertThat(dto.mine()).isFalse();
+        assertThat(dto.notified()).isFalse();
         assertThat(dto.minThreshold()).isEqualTo(5.0);
         // Không có ao trữ thì không lưu dung tích ao
         assertThat(dto.pondVolumeM3()).isNull();
+        // Không có người khai: không theo dõi trạm
+        verify(watchService).syncFieldWatch(argThat(f -> f.getUser() == null), isNull(), eq(5.0));
+    }
+
+    @Test
+    void speciesWithoutASourceHasNoThresholdOrOutlook() {
+        FieldDto dto = service.create("alice", new FieldRequest("Ao basa", 3L, "ca_basa", null, null, null, null, false, null));
+
+        assertThat(dto.threshold()).isNull();
+        assertThat(dto.outlook()).isNull();
+        assertThat(dto.notified()).isFalse();
+    }
+
+    @Test
+    void anyoneCanEditAFieldAndItKeepsItsOwner() {
+        FieldProfile owned = FieldProfile.builder().id(9L).user(alice).name("Ruộng").station(station).crop(shrimp).build();
+        when(fieldRepository.findById(9L)).thenReturn(Optional.of(owned));
+
+        FieldDto dto = service.update(null, 9L, new FieldRequest("Ao tôm mới", 3L, "tom_su", null, null, null, null, false, null));
+
+        assertThat(dto.name()).isEqualTo("Ao tôm mới");
+        assertThat(owned.getUser()).isSameAs(alice);
+        assertThat(dto.mine()).isFalse();
+        assertThat(dto.notified()).isTrue();
+    }
+
+    @Test
+    void listShowsEveryFieldAndReadsEachStationOnce() {
+        FieldProfile a = FieldProfile.builder().id(1L).user(alice).name("A").station(station).crop(shrimp).build();
+        FieldProfile b = FieldProfile.builder().id(2L).name("B").station(station).crop(shrimp).build();
+        when(fieldRepository.findAllByOrderByCreatedAtAsc()).thenReturn(List.of(a, b));
+
+        List<FieldDto> list = service.list(null);
+
+        assertThat(list).extracting(FieldDto::name).containsExactly("A", "B");
+        // 4,5‰ dưới cận dưới 5‰ của tôm sú: cả hai ao đều ra ngoài khoảng
+        assertThat(list).allMatch(f -> f.outlook() != null && f.outlook().exceeding());
+        verify(watchService, times(1)).snapshot(3L);
     }
 
     @Test
@@ -121,18 +166,18 @@ class FieldProfileServiceTest {
     }
 
     @Test
-    void fieldCountIsLimited() {
-        when(fieldRepository.countByUserId(1L)).thenReturn((long) FieldProfileService.MAX_FIELDS_PER_USER);
+    void totalFieldCountIsCapped() {
+        when(fieldRepository.count()).thenReturn((long) FieldProfileService.MAX_FIELDS_TOTAL);
 
-        assertThatThrownBy(() -> service.create("alice", rice(LocalDate.of(2026, 11, 1), 95)))
+        assertThatThrownBy(() -> service.create(null, rice(LocalDate.of(2026, 11, 1), 95)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    void cannotEditSomeoneElsesField() {
-        when(fieldRepository.findByIdAndUserId(9L, 1L)).thenReturn(Optional.empty());
+    void unknownFieldIsNotFound() {
+        when(fieldRepository.findById(9L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.update("alice", 9L, rice(LocalDate.of(2026, 11, 1), 95)))
+        assertThatThrownBy(() -> service.update(null, 9L, rice(LocalDate.of(2026, 11, 1), 95)))
                 .isInstanceOf(EntityNotFoundException.class);
         verify(fieldRepository, never()).save(any());
     }
@@ -140,13 +185,11 @@ class FieldProfileServiceTest {
     @Test
     void deletingAFieldDropsItsWatch() {
         FieldProfile field = FieldProfile.builder().id(9L).user(alice).build();
-        StationWatch watch = StationWatch.builder().id(5L).build();
-        when(fieldRepository.findByIdAndUserId(9L, 1L)).thenReturn(Optional.of(field));
-        when(watchRepository.findByFieldProfileId(9L)).thenReturn(Optional.of(watch));
+        when(fieldRepository.findById(9L)).thenReturn(Optional.of(field));
 
-        service.delete("alice", 9L);
+        service.delete(9L);
 
-        verify(watchRepository).delete(watch);
+        verify(watchService).syncFieldWatch(field, null, null);
         verify(fieldRepository).delete(field);
     }
 }

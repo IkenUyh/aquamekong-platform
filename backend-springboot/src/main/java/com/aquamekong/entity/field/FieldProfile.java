@@ -23,8 +23,10 @@ public class FieldProfile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
+    /** Tài khoản đã khai ruộng (nhận thông báo đẩy), null = khách khai (V16). Phải optional, không thì Hibernate
+     *  INNER JOIN và bỏ mất ruộng của khách. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
     private User user;
 
     @Column(nullable = false, length = 60)

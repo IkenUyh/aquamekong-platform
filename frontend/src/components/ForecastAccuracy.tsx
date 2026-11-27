@@ -4,7 +4,9 @@ import {
   skillPercent, type EarlyWarningEvaluation, type ForecastAccuracy, type LeadAccuracy, type SeasonForecastScore,
   type StationAccuracy,
 } from '../api/accuracyApi';
-import { CROP_PRESETS } from '../utils/crops';
+import type { Crop } from '../api/cropApi';
+import { useCrops } from '../hooks/useCrops';
+import { cropsAtThreshold } from '../utils/cropThresholds';
 import { useForecastVerification } from '../hooks/useForecastAccuracy';
 import { formatDay, formatNumber, formatSalinity, SALINITY_THRESHOLD } from '../utils/salinity';
 
@@ -105,10 +107,10 @@ export function ModelForecastCard({ evaluation }: { evaluation: EarlyWarningEval
 }
 
 /** Nhãn ngưỡng: ngưỡng chung 4‰ hoặc các loại cây dùng ngưỡng đó */
-function thresholdLabel(threshold: number): string {
+function thresholdLabel(threshold: number, crops: Crop[]): string {
   if (threshold === SALINITY_THRESHOLD) return `${formatNumber(threshold)}‰ (ngưỡng chung)`;
-  const crops = CROP_PRESETS.filter((c) => c.threshold === threshold).map((c) => c.crop.toLowerCase());
-  return crops.length > 0 ? `${formatNumber(threshold)}‰ (${crops.join(', ')})` : `${formatNumber(threshold)}‰`;
+  const names = cropsAtThreshold(crops, threshold);
+  return names.length > 0 ? `${formatNumber(threshold)}‰ (${names.join(', ')})` : `${formatNumber(threshold)}‰`;
 }
 
 /**
@@ -116,6 +118,7 @@ function thresholdLabel(threshold: number): string {
  * như app thật (ml-service app/early_warning/episodes.py mô phỏng đúng cách app báo người theo dõi trạm).
  */
 export function EarlyWarningCard({ evaluation }: { evaluation: EarlyWarningEvaluation }) {
+  const { data: crops = [] } = useCrops();
   const thresholds = evaluation.seasons[0]?.thresholds.map((t) => t.threshold) ?? [];
   const [threshold, setThreshold] = useState(thresholds.includes(SALINITY_THRESHOLD) ? SALINITY_THRESHOLD : thresholds[0]);
   const seasons = [...evaluation.seasons].reverse();
@@ -126,7 +129,7 @@ export function EarlyWarningCard({ evaluation }: { evaluation: EarlyWarningEvalu
         <label className="flex items-center gap-2">
           <span className="sr-only">Ngưỡng</span>
           <select className="field w-auto py-1 text-xs" value={threshold} onChange={(e) => setThreshold(Number(e.target.value))}>
-            {thresholds.map((t) => <option key={t} value={t}>{thresholdLabel(t)}</option>)}
+            {thresholds.map((t) => <option key={t} value={t}>{thresholdLabel(t, crops)}</option>)}
           </select>
         </label>
       </div>

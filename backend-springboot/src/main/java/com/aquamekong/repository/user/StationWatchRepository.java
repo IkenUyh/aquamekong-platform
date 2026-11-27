@@ -19,6 +19,7 @@ public interface StationWatchRepository extends JpaRepository<StationWatch, Long
 
     long countByUserId(Long userId);
 
-    @EntityGraph(attributePaths = {"station", "user"})
+    /** Mọi theo dõi, kèm hồ sơ ruộng và giai đoạn cây để job đổi ngưỡng khi cây sang giai đoạn mới */
+    @EntityGraph(attributePaths = {"station", "user", "fieldProfile.crop.stages"})
     List<StationWatch> findAllByOrderByStationIdAsc();
 }

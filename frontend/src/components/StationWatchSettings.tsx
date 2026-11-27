@@ -3,9 +3,10 @@ import { apiErrorMessage } from '../api/client';
 import { useMyLocation } from '../hooks/useMyLocation';
 import { useStationsList } from '../hooks/useStations';
 import { useRemoveWatch, useSaveWatch, useWatches } from '../hooks/useWatches';
-import { CROP_PRESETS, CUSTOM_CROP } from '../utils/crops';
+import { useCrops } from '../hooks/useCrops';
+import { CUSTOM_PRESET, defaultPreset, presetFor, watchPresets } from '../utils/cropThresholds';
 import { formatDistance, nearestStations, type LatLng } from '../utils/geo';
-import { thresholdText } from '../utils/fieldForm';
+import { decimal, thresholdText } from '../utils/fieldForm';
 import { formatNumber } from '../utils/salinity';
 import { watchStatus } from '../utils/watchStatus';
 
@@ -19,9 +20,15 @@ export function StationWatchSettings() {
   const save = useSaveWatch();
   const remove = useRemoveWatch();
 
+  const { data: crops = [] } = useCrops();
+  const presets = watchPresets(crops);
+
   const [stationId, setStationId] = useState<number | ''>('');
-  const [crop, setCrop] = useState(CROP_PRESETS[2].crop);
-  const [threshold, setThreshold] = useState(String(CROP_PRESETS[2].threshold));
+  /** null = chưa chọn: lấy mức gợi ý đầu tiên của bảng crops */
+  const [presetKey, setPresetKey] = useState<string | null>(null);
+  /** null = lấy theo mức gợi ý đang chọn; người dùng gõ thì giữ số đã gõ */
+  const [thresholdInput, setThresholdInput] = useState<string | null>(null);
+  const [minInput, setMinInput] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nearestNote, setNearestNote] = useState<string | null>(null);
   const myLocation = useMyLocation();
@@ -31,13 +38,21 @@ export function StationWatchSettings() {
   const existing = manualWatches.find((w) => w.stationId === stationId);
   const sortedStations = [...stations].sort((a, b) => a.name.localeCompare(b.name, 'vi'));
 
+  const key = presetKey ?? defaultPreset(presets)?.key ?? CUSTOM_PRESET;
+  const preset = presets.find((p) => p.key === key);
+  const threshold = thresholdInput ?? (preset ? formatNumber(preset.threshold) : '');
+  const minText = minInput ?? (preset?.minThreshold != null ? formatNumber(preset.minThreshold) : '');
+  // Cận dưới chỉ có nghĩa với mức cần khoảng mặn (nuôi tôm), hoặc khi tự đặt
+  const showMin = !preset || preset.minThreshold != null;
+
   const pickStation = (id: number | '') => {
     setStationId(id);
     // Trạm đã theo dõi: điền sẵn ngưỡng đang dùng để sửa
     const current = manualWatches.find((w) => w.stationId === id);
     if (current) {
-      setCrop(current.crop ?? CUSTOM_CROP);
-      setThreshold(String(current.threshold));
+      setPresetKey(presetFor(presets, current.crop, current.threshold, current.minThreshold)?.key ?? CUSTOM_PRESET);
+      setThresholdInput(formatNumber(current.threshold));
+      setMinInput(current.minThreshold == null ? '' : formatNumber(current.minThreshold));
     }
   };
 
@@ -55,19 +70,22 @@ export function StationWatchSettings() {
   };
 
   const pickCrop = (value: string) => {
-    setCrop(value);
-    const preset = CROP_PRESETS.find((p) => p.crop === value);
-    if (preset) setThreshold(String(preset.threshold));
+    setPresetKey(value);
+    // Đổi loại cây thì lấy lại ngưỡng của mức mới
+    setThresholdInput(null);
+    setMinInput(null);
   };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const value = Number(threshold.replace(',', '.'));
+    const value = decimal(threshold);
+    const min = showMin ? decimal(minText) : null;
     if (stationId === '') return setError('Chọn trạm cần theo dõi.');
-    if (!(value > 0 && value <= 40)) return setError('Ngưỡng phải lớn hơn 0 và không quá 40‰.');
+    if (value == null || !(value > 0 && value <= 40)) return setError('Ngưỡng phải lớn hơn 0 và không quá 40‰.');
+    if (min != null && !(min >= 0 && min < value)) return setError('Cận dưới phải nhỏ hơn ngưỡng trên.');
     try {
-      await save.mutateAsync({ stationId, threshold: value, crop: crop === CUSTOM_CROP ? null : crop });
+      await save.mutateAsync({ stationId, threshold: value, minThreshold: min, crop: preset ? preset.crop : null });
       setStationId('');
       setNearestNote(null);
     } catch (err) {
@@ -107,7 +125,7 @@ export function StationWatchSettings() {
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900">{w.stationName}</p>
                   <p className="text-xs text-gray-500 num">
-                    {w.fieldName != null ? `Ruộng ${w.fieldName} · ` : ''}{w.crop ?? 'Tự đặt'} · {thresholdText(w.threshold, w.minThreshold)}
+                    {w.fieldName != null ? `${w.fieldName} · ` : ''}{w.crop ?? 'Tự đặt'} · {thresholdText(w.threshold, w.minThreshold)}
                   </p>
                   <p className={`mt-0.5 text-xs num ${status.exceeding ? 'text-red-700 font-medium' : 'text-gray-500'}`}>{status.text}</p>
                 </div>
@@ -147,18 +165,30 @@ export function StationWatchSettings() {
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label htmlFor="watch-crop" className="field-label">Loại cây / mục đích</label>
+          <select id="watch-crop" className="field" value={key} onChange={(e) => pickCrop(e.target.value)}>
+            {presets.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+            <option value={CUSTOM_PRESET}>Tự đặt ngưỡng</option>
+          </select>
+          {preset?.source && (
+            <p className="mt-1 text-xs text-gray-400 break-words">
+              Nguồn: {preset.source}{preset.note ? ` ${preset.note}` : ''}
+            </p>
+          )}
+        </div>
+        <div className={showMin ? 'grid grid-cols-2 gap-3' : ''}>
+          {showMin && (
+            <div>
+              <label htmlFor="watch-min" className="field-label">Cận dưới (‰)</label>
+              <input id="watch-min" className="field num" inputMode="decimal" placeholder="Không bắt buộc" value={minText}
+                onChange={(e) => setMinInput(e.target.value)} />
+            </div>
+          )}
           <div>
-            <label htmlFor="watch-crop" className="field-label">Loại cây</label>
-            <select id="watch-crop" className="field" value={crop} onChange={(e) => pickCrop(e.target.value)}>
-              {CROP_PRESETS.map((p) => <option key={p.crop} value={p.crop}>{p.crop} ({formatNumber(p.threshold)}‰)</option>)}
-              <option value={CUSTOM_CROP}>Tự đặt ngưỡng</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="watch-threshold" className="field-label">Ngưỡng (‰)</label>
+            <label htmlFor="watch-threshold" className="field-label">{showMin ? 'Ngưỡng trên (‰)' : 'Ngưỡng (‰)'}</label>
             <input id="watch-threshold" className="field num" inputMode="decimal" value={threshold}
-              onChange={(e) => setThreshold(e.target.value)} />
+              onChange={(e) => setThresholdInput(e.target.value)} />
           </div>
         </div>
         <button type="submit" disabled={save.isPending} className="btn-primary">

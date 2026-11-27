@@ -39,21 +39,28 @@ export function decimal(text: string): number | null {
   return Number(t);
 }
 
+/** Lỗi ở phần cây trồng (bước 1 của form): cây, số ngày của giống, ngày gieo; null = hợp lệ */
+export function cropStepError(form: FieldForm, crop: Crop | undefined): string | null {
+  if (!crop) return 'Chọn cây trồng.';
+  const days = form.varietyDays.trim() === '' ? null : Number(form.varietyDays);
+  if (days != null && !(Number.isInteger(days) && days >= 1 && days <= 3650)) {
+    return 'Số ngày của giống phải là số nguyên từ 1 đến 3650.';
+  }
+  if (needsSchedule(crop)) {
+    if (!form.plantedOn) return `Nhập ngày gieo sạ để app tính giai đoạn ${crop.name.toLowerCase()}.`;
+    if (days == null) return 'Nhập số ngày của giống (vd. 95).';
+    if (days <= fixedDays(crop)) return `Số ngày của giống phải lớn hơn ${fixedDays(crop)} ngày.`;
+  }
+  return null;
+}
+
 /** Kiểm tra form và đổi sang request; lỗi trả về câu báo cho người dùng */
 export function fieldRequest(form: FieldForm, crop: Crop | undefined): { req: FieldRequest } | { error: string } {
   if (!form.name.trim()) return { error: 'Đặt tên cho ruộng (vd. Ruộng sau nhà).' };
   if (form.stationId === '') return { error: 'Chọn trạm gần ruộng.' };
-  if (!crop) return { error: 'Chọn cây trồng.' };
-  const schedule = needsSchedule(crop);
+  const cropError = cropStepError(form, crop);
+  if (cropError || !crop) return { error: cropError ?? 'Chọn cây trồng.' };
   const days = form.varietyDays.trim() === '' ? null : Number(form.varietyDays);
-  if (days != null && !(Number.isInteger(days) && days >= 1 && days <= 3650)) {
-    return { error: 'Số ngày của giống phải là số nguyên từ 1 đến 3650.' };
-  }
-  if (schedule) {
-    if (!form.plantedOn) return { error: `Nhập ngày gieo sạ để app tính giai đoạn ${crop.name.toLowerCase()}.` };
-    if (days == null) return { error: 'Nhập số ngày của giống (vd. 95).' };
-    if (days <= fixedDays(crop)) return { error: `Số ngày của giống phải lớn hơn ${fixedDays(crop)} ngày.` };
-  }
   const area = decimal(form.areaHa);
   if (area != null && !(area > 0 && area <= 100000)) return { error: 'Diện tích phải lớn hơn 0.' };
   const pond = form.hasPond ? decimal(form.pondVolumeM3) : null;
@@ -73,11 +80,3 @@ export function thresholdText(threshold: number | null, minThreshold: number | n
   return minThreshold == null ? `ngưỡng ${formatNumber(threshold)}‰` : `khoảng ${formatNumber(minThreshold)}–${formatNumber(threshold)}‰`;
 }
 
-/** "Làm đòng – trổ, ngày 41" / "Chưa gieo" / "Đã quá số ngày của giống" */
-export function stageText(f: FieldProfile): string | null {
-  const s = f.stage;
-  if (!s) return null;
-  if (s.beforePlanting) return 'Chưa tới ngày gieo';
-  if (s.pastHarvest) return `Đã quá ${f.varietyDays} ngày của giống`;
-  return s.day == null ? s.name : `${s.name}, ngày ${s.day}`;
-}

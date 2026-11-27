@@ -4,10 +4,13 @@ import { useAuth } from '../contexts/AuthContext';
 
 const FIELDS_KEY = ['fields'];
 
-/** Hồ sơ ruộng của tài khoản đang đăng nhập */
+/**
+ * Hồ sơ ruộng dùng chung toàn server, không cần đăng nhập. Key có tài khoản đang xem vì "ruộng của bạn" (mine) đổi
+ * khi đăng nhập/đăng xuất.
+ */
 export function useFields() {
   const { user } = useAuth();
-  return useQuery({ queryKey: FIELDS_KEY, queryFn: fieldApi.list, enabled: !!user });
+  return useQuery({ queryKey: [...FIELDS_KEY, user?.username ?? null], queryFn: fieldApi.list });
 }
 
 /** Lưu ruộng (tạo khi không có id); ruộng tự theo dõi trạm nên làm mới cả danh sách trạm theo dõi */

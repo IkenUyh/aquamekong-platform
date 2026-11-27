@@ -14,6 +14,7 @@ const ForecastPage = lazy(() => import('./pages/ForecastPage').then((m) => ({ de
 const AlertsPage = lazy(() => import('./pages/AlertsPage').then((m) => ({ default: m.AlertsPage })));
 const ReplayPage = lazy(() => import('./pages/ReplayPage').then((m) => ({ default: m.ReplayPage })));
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then((m) => ({ default: m.ReportsPage })));
+const FieldsPage = lazy(() => import('./pages/FieldsPage').then((m) => ({ default: m.FieldsPage })));
 const AccountPage = lazy(() => import('./pages/AccountPage').then((m) => ({ default: m.AccountPage })));
 const RegisterPage = lazy(() => import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })));
 const ZaloCallbackPage = lazy(() => import('./pages/ZaloCallbackPage').then((m) => ({ default: m.ZaloCallbackPage })));
@@ -28,6 +29,8 @@ const page = (element: React.ReactNode) => <Suspense fallback={<PageFallback />}
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage />, errorElement: <RouteError /> },
   { path: '/register', element: page(<RegisterPage />), errorElement: <RouteError /> },
+  // Hồ sơ ruộng dùng chung: không cần đăng nhập, kể cả khi tắt xem công khai (PUBLIC_READ_ENABLED=false)
+  { path: '/fields', element: page(<FieldsPage />), errorElement: <RouteError /> },
   { path: ZALO_CALLBACK_PATH, element: page(<ZaloCallbackPage />), errorElement: <RouteError /> },
   {
     // Trang dữ liệu: ai cũng xem được (nếu backend bật PUBLIC_READ_ENABLED), thao tác ghi cần đăng nhập

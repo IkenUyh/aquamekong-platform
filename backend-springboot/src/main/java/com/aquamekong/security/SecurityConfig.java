@@ -74,8 +74,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/push/**").hasAnyRole("USER", "OPERATOR", "ADMIN")
                         // Mọi tài khoản tự chọn trạm theo dõi của mình
                         .requestMatchers("/api/v1/watches/**").hasAnyRole("USER", "OPERATOR", "ADMIN")
-                        // Mọi tài khoản khai hồ sơ ruộng của mình
-                        .requestMatchers("/api/v1/fields/**").hasAnyRole("USER", "OPERATOR", "ADMIN")
+                        // Hồ sơ ruộng dùng chung: khách cũng xem, khai, sửa, xoá được (kể cả khi tắt PUBLIC_READ_ENABLED)
+                        .requestMatchers("/api/v1/fields/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/forecasts/predict").hasAnyRole("USER", "OPERATOR", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("USER", "OPERATOR", "ADMIN")
                         .requestMatchers("/api/**").hasAnyRole("OPERATOR", "ADMIN")
