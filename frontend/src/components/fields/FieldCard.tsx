@@ -4,9 +4,11 @@ import { seasonDay, stageSegments } from '../../utils/cropSchedule';
 import { thresholdText } from '../../utils/fieldForm';
 import { formatDay, formatNumber } from '../../utils/salinity';
 import { watchStatus } from '../../utils/watchStatus';
+import { ActionPlanBlock } from './ActionPlanBlock';
 import { CropImage } from './CropImage';
 import { ExposureBlock } from './ExposureBlock';
 import { StageBar } from './StageBar';
+import { WaterPlanBlock } from './WaterPlanBlock';
 
 /** Dòng giai đoạn: "Làm đòng – trổ · ngày 41/95", "Gieo ngày 01/12 (còn 8 ngày)", "Đã quá 95 ngày của giống" */
 function stageLine(f: FieldProfile, hasBar: boolean): string | null {
@@ -76,6 +78,8 @@ export function FieldCard({ field: f, crop, onEdit, onRemove, busy }: {
         </div>
 
         <ExposureBlock field={f} className="border-t border-gray-100 pt-3" />
+        <ActionPlanBlock field={f} className="border-t border-gray-100 pt-3" />
+        <WaterPlanBlock field={f} crop={crop} className="border-t border-gray-100 pt-3" />
       </div>
 
       <div className="flex gap-4 border-t border-gray-100 px-4 py-2">

@@ -1,5 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import type { RecommendationDto } from '../api/recommendationApi';
+import { splitFieldPrefix } from '../utils/actionPlan';
 
 const PRIORITY: Record<RecommendationDto['priority'], { label: string; dot: string; text: string }> = {
   HIGH: { label: 'Ưu tiên cao', dot: 'bg-red-500', text: 'text-red-700' },
@@ -7,7 +9,10 @@ const PRIORITY: Record<RecommendationDto['priority'], { label: string; dot: stri
   LOW: { label: 'Tham khảo', dot: 'bg-gray-400', text: 'text-gray-500' },
 };
 
-/** Danh sách khuyến nghị: chấm + nhãn mức ưu tiên (như StatusBadge), không viền trái, không icon. */
+/**
+ * Danh sách khuyến nghị: chấm + nhãn mức ưu tiên (như StatusBadge), không viền trái, không icon. Khuyến nghị theo ruộng
+ * in đậm tên ruộng, bấm để sang trang Ruộng của tôi.
+ */
 export function RecommendationList({ items }: { items: RecommendationDto[] }) {
   if (items.length === 0) {
     return <p className="text-sm text-gray-500">Chưa có khuyến nghị.</p>;
@@ -16,10 +21,17 @@ export function RecommendationList({ items }: { items: RecommendationDto[] }) {
     <ul className="space-y-2">
       {items.map((rec, i) => {
         const p = PRIORITY[rec.priority] ?? PRIORITY.LOW;
+        const own = splitFieldPrefix(rec);
         return (
           <li key={i} className="bg-gray-50 rounded-md px-3 py-2">
             <p className={`flex items-center gap-1.5 text-xs font-medium ${p.text}`}><span className={`dot ${p.dot}`} />{p.label}</p>
-            <p className="text-sm text-gray-800 leading-snug">{rec.message}</p>
+            {own ? (
+              <p className="text-sm text-gray-800 leading-snug num">
+                <Link to="/fields" className="font-medium text-gray-900 hover:underline">{own.field}</Link>: {own.text}
+              </p>
+            ) : (
+              <p className="text-sm text-gray-800 leading-snug">{rec.message}</p>
+            )}
           </li>
         );
       })}

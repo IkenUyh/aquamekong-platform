@@ -1,6 +1,14 @@
 package com.aquamekong.service;
 
 import com.aquamekong.dto.RecommendationDto;
+import com.aquamekong.dto.field.FieldDtos.FieldPlan;
+import com.aquamekong.dto.field.FieldDtos.PlanAction;
+import com.aquamekong.entity.crop.Crop;
+import com.aquamekong.entity.field.FieldProfile;
+import com.aquamekong.repository.field.FieldProfileRepository;
+import com.aquamekong.service.field.ActionPlan;
+import com.aquamekong.service.field.FieldPlanService;
+import com.aquamekong.service.watch.StationWatchService;
 import com.aquamekong.entity.forecast.SalinityForecast;
 import com.aquamekong.entity.station.Station;
 import com.aquamekong.entity.telemetry.Measurement;
@@ -18,9 +26,14 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +47,12 @@ class RecommendationServiceTest {
     private MeasurementRepository measurementRepository;
     @Mock
     private SalinityForecastRepository forecastRepository;
+    @Mock
+    private FieldProfileRepository fieldRepository;
+    @Mock
+    private FieldPlanService fieldPlanService;
+    @Mock
+    private StationWatchService watchService;
 
     @InjectMocks
     private RecommendationService recommendationService;
@@ -122,5 +141,77 @@ class RecommendationServiceTest {
         assertThat(recommendationService.getRecommendations())
             .extracting(RecommendationDto::getPriority)
             .containsExactly("LOW");
+    }
+
+    // ---- Khuyến nghị theo ruộng ----
+
+    private static FieldProfile field(long id, String name, String crop) {
+        return FieldProfile.builder().id(id).name(name).station(Station.builder().id(3L).build())
+                .crop(Crop.builder().name(crop).category(Crop.Category.CROP).build()).build();
+    }
+
+    private static PlanAction action(String kind, String priority, int from, String message) {
+        return new PlanAction(kind, priority, TODAY.plusDays(from), TODAY.plusDays(from), null, message, ActionPlan.WATER);
+    }
+
+    @Test
+    void signedInUserWithFieldsGetsTheirFieldActionsInsteadOfTheGeneralList() {
+        FieldProfile rice = field(1, "Ruộng A", "Lúa");
+        FieldProfile coconut = field(2, "Vườn dừa", "Dừa");
+        when(fieldRepository.findByUserUsernameOrderByCreatedAtAsc("alice")).thenReturn(List.of(rice, coconut));
+        when(fieldPlanService.plan(eq(rice), any(), any(), any())).thenReturn(Optional.of(new FieldPlan("YELLOW", "h", List.of(
+                action(ActionPlan.STORE, "HIGH", 1, "Trữ đầy ao trước hết ngày 15/11"),
+                action(ActionPlan.MIX, "MEDIUM", 2, "Từ 16/11 tới 18/11 tưới pha 2/3 nước ao, 1/3 nước sông"),
+                action(ActionPlan.TAKE_WATER, "LOW", 0, "Lấy nước được: 14/11–15/11")), null)));
+        when(fieldPlanService.plan(eq(coconut), any(), any(), any())).thenReturn(Optional.of(new FieldPlan("RED", "h", List.of(
+                action(ActionPlan.STOP_INTAKE, "HIGH", 0, "Từ 14/11 tới 20/11 không lấy nước sông tưới")), null)));
+
+        List<RecommendationDto> result = recommendationService.getRecommendations("alice");
+
+        assertThat(result).extracting(RecommendationDto::getMessage).containsExactly(
+                "Ruộng A (lúa): Trữ đầy ao trước hết ngày 15/11",
+                "Vườn dừa (dừa): Từ 14/11 tới 20/11 không lấy nước sông tưới",
+                "Ruộng A (lúa): Từ 16/11 tới 18/11 tưới pha 2/3 nước ao, 1/3 nước sông",
+                "Ruộng A (lúa): Lấy nước được: 14/11–15/11");
+        assertThat(result).extracting(RecommendationDto::getType)
+                .containsExactly("WATER_STORAGE", "IRRIGATION", "IRRIGATION", "WATER_SAVING");
+        assertThat(result).noneMatch(r -> "DAM_CHECK".equals(r.getType()));
+        assertThat(result.get(0).getFieldId()).isEqualTo(1L);
+        assertThat(result.get(0).getFieldName()).isEqualTo("Ruộng A");
+        assertThat(result.get(0).getFrom()).isEqualTo(TODAY.plusDays(1));
+        // Khuyến nghị chung không cần tới
+        verifyNoInteractions(measurementRepository);
+    }
+
+    @Test
+    void signedInUserWithoutFieldsGetsTheGeneralList() {
+        when(fieldRepository.findByUserUsernameOrderByCreatedAtAsc("bob")).thenReturn(List.of());
+        when(measurementRepository.findLatestMeasurementPerStation()).thenReturn(List.of(latest("Kim Quy", "salinity", 3.14)));
+
+        assertThat(recommendationService.getRecommendations("bob")).extracting(RecommendationDto::getType)
+                .containsExactly("WATER_SAVING");
+        verify(fieldPlanService, never()).plan(any(FieldProfile.class), any(), any(), any());
+    }
+
+    @Test
+    void fieldsWithoutAPlanFallBackToTheGeneralList() {
+        FieldProfile noStation = field(1, "Ruộng B", "Lúa");
+        when(fieldRepository.findByUserUsernameOrderByCreatedAtAsc("alice")).thenReturn(List.of(noStation));
+        when(fieldPlanService.plan(eq(noStation), any(), any(), any())).thenReturn(Optional.empty());
+        when(measurementRepository.findLatestMeasurementPerStation()).thenReturn(List.of(latest("Kim Quy", "salinity", 5.0)));
+
+        assertThat(recommendationService.getRecommendations("alice")).extracting(RecommendationDto::getType)
+                .containsExactly("IRRIGATION", "DAM_CHECK");
+    }
+
+    @Test
+    void guestGetsTheGeneralList() {
+        when(measurementRepository.findLatestMeasurementPerStation()).thenReturn(List.of(latest("Kim Quy", "salinity", 5.0)));
+
+        List<RecommendationDto> result = recommendationService.getRecommendations(null);
+
+        assertThat(result).extracting(RecommendationDto::getType).containsExactly("IRRIGATION", "DAM_CHECK");
+        assertThat(result.get(0).getFieldId()).isNull();
+        verifyNoInteractions(fieldRepository, fieldPlanService);
     }
 }

@@ -1,8 +1,13 @@
 package com.aquamekong.service.watch;
 
+import com.aquamekong.dto.field.FieldDtos.FieldPlan;
+import com.aquamekong.dto.field.FieldDtos.PlanAction;
 import com.aquamekong.dto.watch.WatchDtos.Outlook;
 import com.aquamekong.entity.field.FieldProfile;
 import com.aquamekong.service.crop.CropStages;
+import com.aquamekong.service.field.ActionPlan;
+import com.aquamekong.service.field.FieldPlanService;
+import com.aquamekong.service.field.WaterPlan.Et0;
 import com.aquamekong.service.crop.CropStages.CurrentStage;
 import com.aquamekong.entity.user.StationWatch;
 import com.aquamekong.repository.user.StationWatchRepository;
@@ -27,12 +32,18 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Sau mỗi lượt dự báo (DailyForecastJob chạy khi có số đo mới), so từng trạm theo dõi với ngưỡng của người theo dõi.
  * Chỉ báo khi kết quả đổi so với lần trước: bắt đầu vượt ngưỡng hoặc có nguy cơ vượt (để kịp trữ nước), hoặc đã xuống
  * dưới ngưỡng và hết nguy cơ (có thể lấy nước). Mùa khô trạm vượt ngưỡng nhiều tuần liền, báo lặp mỗi ngày thì người
  * dùng sẽ tắt thông báo.
+ * <p>
+ * Theo dõi của ruộng còn so kế hoạch nước của ruộng ({@link ActionPlan#digest}): việc quan trọng đổi (trữ trước ngày
+ * khác, pha tỷ lệ khác, ao cạn sớm hơn...) thì báo kế hoạch mới, thay cho thông báo vượt ngưỡng nếu cả hai cùng đổi.
  */
 @Slf4j
 @Component
@@ -45,6 +56,7 @@ public class StationWatchJob {
     private final StationWatchRepository watchRepository;
     private final StationWatchService watchService;
     private final PushService pushService;
+    private final FieldPlanService fieldPlanService;
 
     @EventListener
     public void onForecastsRefreshed(ForecastsRefreshedEvent event) {
@@ -59,30 +71,65 @@ public class StationWatchJob {
     public void check() {
         Instant now = Instant.now();
         Map<Long, StationSnapshot> snapshots = new HashMap<>();
+        Function<Long, StationSnapshot> snapshot = id -> snapshots.computeIfAbsent(id, watchService::snapshot);
+        Map<Integer, Et0> et0 = null;
         List<StationWatch> changed = new ArrayList<>();
         int reported = 0;
+        int planReported = 0;
         LocalDate today = now.atZone(ZONE).toLocalDate();
         for (StationWatch watch : watchRepository.findAllByOrderByStationIdAsc()) {
             // Ruộng sang giai đoạn mới: đổi ngưỡng trước khi so, để báo ngay nếu với ngưỡng mới trạm ra ngoài ngưỡng
             boolean thresholdChanged = applyStageThreshold(watch, today);
-            StationSnapshot snapshot = snapshots.computeIfAbsent(watch.getStation().getId(), watchService::snapshot);
-            Outlook outlook = StationWatchService.outlook(snapshot, watch.getThreshold(), watch.getMinThreshold(),
-                    watch.getRiskUntil(), now);
+            Outlook outlook = StationWatchService.outlook(snapshot.apply(watch.getStation().getId()), watch.getThreshold(),
+                    watch.getMinThreshold(), watch.getRiskUntil(), now);
             boolean stateChanged = outlook.exceeding() != watch.isForecastExceeding();
-            if (!stateChanged && Objects.equals(outlook.riskUntil(), watch.getRiskUntil())) {
+
+            // Theo dõi của ruộng: kế hoạch nước của ruộng, dùng chung số liệu trạm đã đọc
+            FieldPlan plan = null;
+            String digest = null;
+            if (watch.getFieldProfile() != null) {
+                if (et0 == null) et0 = fieldPlanService.et0ByMonth();
+                plan = fieldPlanService.plan(watch.getFieldProfile(), snapshot, et0, now).orElse(null);
+                digest = plan == null ? null : ActionPlan.digest(plan.actions());
+            }
+            Set<String> planChanges = watch.getPlanDigest() == null || digest == null ? Set.of()
+                    : ActionPlan.changes(watch.getPlanDigest(), digest, today);
+            boolean digestStored = Objects.equals(digest, watch.getPlanDigest());
+
+            if (!stateChanged && digestStored && Objects.equals(outlook.riskUntil(), watch.getRiskUntil())) {
                 if (thresholdChanged) changed.add(watch);
                 continue;
             }
-            if (stateChanged) {
+            // Mỗi theo dõi tối đa một thông báo một lượt: kế hoạch đổi thì báo kế hoạch (đã nói cả chuyện vượt ngưỡng)
+            if (!planChanges.isEmpty()) {
+                pushService.notifyUser(watch.getUser().getId(), planMessage(watch, plan, planChanges, today));
+                planReported++;
+            } else if (stateChanged) {
                 pushService.notifyUser(watch.getUser().getId(), message(watch, outlook));
-                watch.setForecastExceeding(outlook.exceeding());
                 reported++;
             }
+            watch.setForecastExceeding(outlook.exceeding());
             watch.setRiskUntil(outlook.riskUntil());
+            watch.setPlanDigest(digest);
             changed.add(watch);
         }
         watchRepository.saveAll(changed);
-        log.info("Theo dõi trạm: {} lượt đổi trạng thái đã báo", reported);
+        log.info("Theo dõi trạm: {} lượt đổi trạng thái, {} kế hoạch ruộng đổi đã báo", reported, planReported);
+    }
+
+    /**
+     * "Kế hoạch nước đổi: Ruộng sau nhà" với tối đa 3 việc quan trọng, việc mới trước. Không còn việc nào (hết ngày mặn)
+     * thì nói câu trả lời của kế hoạch.
+     */
+    static PushMessage planMessage(StationWatch watch, FieldPlan plan, Set<String> changes, LocalDate today) {
+        List<PlanAction> important = plan.actions().stream().filter(ActionPlan::important).toList();
+        List<PlanAction> ordered = new ArrayList<>(important.stream()
+                .filter(a -> changes.contains(ActionPlan.normalizedKey(a, today))).toList());
+        important.stream().filter(a -> !ordered.contains(a)).forEach(ordered::add);
+        String body = ordered.isEmpty() ? plan.headline()
+                : ordered.stream().limit(3).map(PlanAction::message).collect(Collectors.joining(". ")) + ".";
+        return new PushMessage("Kế hoạch nước đổi: " + watch.getFieldProfile().getName(), body, "/fields",
+                "watch-" + watch.getId());
     }
 
     /**
