@@ -55,6 +55,10 @@ public class StationWatch {
     @Column(name = "risk_until")
     private LocalDate riskUntil;
 
+    /** Việc quan trọng của kế hoạch nước lần báo trước (ActionPlan.digest), chỉ với theo dõi của ruộng (V20) */
+    @Column(name = "plan_digest", columnDefinition = "TEXT")
+    private String planDigest;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 

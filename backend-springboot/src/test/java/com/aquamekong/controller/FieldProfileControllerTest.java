@@ -4,6 +4,7 @@ import com.aquamekong.controller.field.FieldProfileController;
 import com.aquamekong.security.JsonAuthErrorHandler;
 import com.aquamekong.security.JwtService;
 import com.aquamekong.security.SecurityConfig;
+import com.aquamekong.service.field.FieldPlanService;
 import com.aquamekong.service.field.FieldProfileService;
 import com.aquamekong.service.field.SalinityExposureService;
 import com.aquamekong.service.field.WaterPlanService;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(FieldProfileController.class)
@@ -39,6 +41,7 @@ class FieldProfileControllerTest {
     @MockBean FieldProfileService fieldService;
     @MockBean SalinityExposureService exposureService;
     @MockBean WaterPlanService waterPlanService;
+    @MockBean FieldPlanService fieldPlanService;
     @MockBean UserDetailsService userDetailsService;
 
     @Test
@@ -71,6 +74,23 @@ class FieldProfileControllerTest {
         when(waterPlanService.plan(5L)).thenReturn(java.util.Optional.empty());
         mvc.perform(get("/api/v1/fields/4/water-plan")).andExpect(status().isOk());
         mvc.perform(get("/api/v1/fields/5/water-plan")).andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void guestsSeeTheActionPlanAndGetNoContentWhenItCannotBeMade() throws Exception {
+        java.time.LocalDate day = java.time.LocalDate.of(2026, 11, 16);
+        when(fieldPlanService.plan(4L)).thenReturn(java.util.Optional.of(new com.aquamekong.dto.field.FieldDtos.FieldPlan(
+                "YELLOW", "Có, tới hết ngày 16/11; từ 17/11 nước sông mặn.",
+                java.util.List.of(new com.aquamekong.dto.field.FieldDtos.PlanAction("STORE", "HIGH", day, day, null,
+                        "Trữ đầy ao trước hết ngày 16/11", "WATER")),
+                new com.aquamekong.dto.field.FieldDtos.WaterPlan(java.util.List.of(), null, 0))));
+        when(fieldPlanService.plan(5L)).thenReturn(java.util.Optional.empty());
+        mvc.perform(get("/api/v1/fields/4/plan")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.verdict").value("YELLOW"))
+                .andExpect(jsonPath("$.actions[0].from").value("2026-11-16"))
+                .andExpect(jsonPath("$.actions[0].source").value("WATER"));
+        mvc.perform(get("/api/v1/fields/5/plan")).andExpect(status().isNoContent());
     }
 
     @Test

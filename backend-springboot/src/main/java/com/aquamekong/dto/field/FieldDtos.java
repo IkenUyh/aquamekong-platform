@@ -152,4 +152,31 @@ public final class FieldDtos {
     public record Storage(double dailyNeedM3, double kc, double et0, String kcSource, String et0Source, String et0Label,
                           int unsafeDays, Double pondVolumeM3, int pondDays, int pondDaysWithMix, LocalDate fillBy, long extraNeededM3) {
     }
+    /**
+     * Kế hoạch việc cần làm của một ruộng (tính sẵn từ kế hoạch nước và các nguồn khác), với một câu trả lời ngắn cho
+     * "Tuần này lấy nước được không?".
+     *
+     * @param verdict   RED (hôm nay vượt ngưỡng), YELLOW (hôm nay chưa vượt nhưng trong tuần có ngày mặn), GREEN (cả
+     *                  tuần trong ngưỡng), GREY (trạm mất tín hiệu, chưa biết hôm nay)
+     * @param headline  câu trả lời một dòng theo verdict
+     * @param actions   việc cần làm, theo ngày; "Lấy nước được" để cuối
+     * @param waterPlan kế hoạch nước 7 ngày tới đã dùng để lập
+     */
+    public record FieldPlan(String verdict, String headline, List<PlanAction> actions, WaterPlan waterPlan) {
+    }
+
+    /**
+     * Một việc cần làm trong khoảng ngày.
+     *
+     * @param kind     STORE, MIX, POND_ONLY, STOP_INTAKE, CHECK, POND_EMPTY, STAGE_CHANGE, TAKE_WATER (nguồn khác thêm
+     *                 loại riêng)
+     * @param priority HIGH, MEDIUM, LOW
+     * @param from     ngày bắt đầu
+     * @param until    ngày cuối (bằng from khi chỉ một ngày)
+     * @param fraction phần nước ao đã làm tròn lên (MIX: 1/4 – 3/4; POND_ONLY: 1), null với loại khác
+     * @param source   nguồn lập ra việc này: WATER (kế hoạch nước); bón phân sẽ thêm FERTILIZER
+     */
+    public record PlanAction(String kind, String priority, LocalDate from, LocalDate until, Double fraction,
+                             String message, String source) {
+    }
 }

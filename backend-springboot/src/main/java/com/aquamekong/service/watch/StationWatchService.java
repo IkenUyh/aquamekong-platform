@@ -133,6 +133,8 @@ public class StationWatchService {
         watch.setMinThreshold(minThreshold);
         String crop = field.getCrop().getName();
         watch.setCrop(crop.length() > 30 ? crop.substring(0, 30) : crop);
+        // Người dùng vừa sửa ruộng và thấy kế hoạch mới trên app: lượt job sau chỉ lưu kế hoạch, không báo đổi
+        watch.setPlanDigest(null);
         if (changed) {
             Outlook outlook = outlook(snapshot(field.getStation().getId()), threshold, minThreshold, null, Instant.now());
             watch.setForecastExceeding(outlook.exceeding());
