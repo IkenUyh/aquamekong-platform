@@ -39,7 +39,7 @@ public class SecurityConfig {
     static final String[] PUBLIC_READ_PATHS = {
             "/api/v1/stations/**", "/api/v1/rivers/**",
             "/api/v1/measurements/**", "/api/v1/telemetry/**",
-            "/api/v1/forecasts/**", "/api/v1/reports/**", "/api/v1/recommendations/**",
+            "/api/v1/forecasts/**", "/api/v1/reports/**", "/api/v1/recommendations/**", "/api/v1/crops",
             "/api/v1/alerts", "/api/v1/alerts/station/**", "/api/v1/alerts/status/**",
     };
 

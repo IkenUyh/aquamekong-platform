@@ -32,6 +32,10 @@ public class StationWatch {
     @Column(nullable = false)
     private Double threshold;
 
+    /** Cận dưới (‰) cho mức cần khoảng mặn như nuôi tôm: báo cả khi độ mặn xuống dưới mức này, null = không có (V14) */
+    @Column(name = "min_threshold")
+    private Double minThreshold;
+
     /** Tên loại cây người dùng chọn (vd. "Lúa"), null = tự đặt ngưỡng */
     @Column(length = 30)
     private String crop;

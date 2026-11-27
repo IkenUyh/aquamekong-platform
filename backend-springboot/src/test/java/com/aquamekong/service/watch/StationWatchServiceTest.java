@@ -125,6 +125,55 @@ class StationWatchServiceTest {
     }
 
     @Test
+    void readingBelowTheMinimumIsOutOfRange() {
+        Outlook outlook = StationWatchService.outlook(new StationSnapshot(reading(4.0, 8), List.of(forecast(10, 8.0))),
+                35.0, 5.0, null, NOW);
+
+        assertThat(outlook.exceeding()).isTrue();
+        assertThat(outlook.firstBelowDate()).isNull();
+        assertThat(outlook.firstExceedDate()).isNull();
+    }
+
+    @Test
+    void forecastBelowTheMinimumGivesTheFirstDayAndTheLowest() {
+        StationSnapshot snapshot = new StationSnapshot(reading(8.0, 8),
+                List.of(forecast(10, 6.0), forecast(11, 4.5), forecast(12, 3.2)));
+
+        Outlook outlook = StationWatchService.outlook(snapshot, 35.0, 5.0, null, NOW);
+
+        assertThat(outlook.exceeding()).isTrue();
+        assertThat(outlook.firstBelowDate()).isEqualTo(LocalDate.of(2026, 10, 11));
+        assertThat(outlook.forecastMin()).isEqualTo(3.2);
+    }
+
+    @Test
+    void insideTheRangeIsNotExceeding() {
+        StationSnapshot snapshot = new StationSnapshot(reading(8.0, 8), List.of(forecast(10, 6.0), forecast(12, 20.0)));
+
+        assertThat(StationWatchService.outlook(snapshot, 35.0, 5.0, null, NOW).exceeding()).isFalse();
+        // Không có cận dưới thì mặn thấp không bao giờ là vượt ngưỡng
+        assertThat(StationWatchService.outlook(new StationSnapshot(reading(0.1, 8), List.of()), 2.0, null, NOW)
+                .exceeding()).isFalse();
+    }
+
+    @Test
+    void minimumMustBeBelowTheThreshold() {
+        assertThatThrownBy(() -> service.save("alice", new WatchRequest(3L, 5.0, "Nuôi tôm sú", 5.0)))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(watchRepository, never()).save(any());
+    }
+
+    @Test
+    void savingStoresTheMinimum() {
+        when(watchRepository.findByUserIdAndStationId(1L, 3L)).thenReturn(Optional.empty());
+
+        var dto = service.save("alice", new WatchRequest(3L, 35.0, "Nuôi tôm sú", 5.0));
+
+        assertThat(dto.minThreshold()).isEqualTo(5.0);
+        verify(watchRepository).save(argThat(w -> w.getMinThreshold() == 5.0));
+    }
+
+    @Test
     void latestReadingAboveThresholdCountsEvenWithoutForecast() {
         Outlook outlook = StationWatchService.outlook(new StationSnapshot(reading(2.5, 8), List.of()), 2.0, null, NOW);
 
