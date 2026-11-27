@@ -67,7 +67,7 @@ class WaterPlanServiceTest {
                 .forecastDate(TODAY.plusDays(i)).predictedSalinity(i < 2 ? 1.0 : 6.0).build()).toList();
         when(watchService.snapshot(3L)).thenReturn(new StationSnapshot(
                 Measurement.builder().value(1.0).recordedAt(TODAY.atStartOfDay().atOffset(VN)).build(), forecasts));
-        when(et0Repository.findAll()).thenReturn(List.of(Et0Monthly.builder().month(3).et0MmDay(5.0).source("FAO").build()));
+        when(et0Repository.findAll()).thenReturn(List.of(Et0Monthly.builder().month(3).et0MmDay(5.0).source("FAO").label("ước lượng").build()));
     }
 
     @Test
@@ -85,6 +85,7 @@ class WaterPlanServiceTest {
         assertThat(plan.storage().pondDays()).isEqualTo(6);
         assertThat(plan.storage().fillBy()).isEqualTo(TODAY.plusDays(1));
         assertThat(plan.storage().et0Source()).isEqualTo("FAO");
+        assertThat(plan.storage().et0Label()).isEqualTo("ước lượng");
         verify(watchService).snapshot(3L);
     }
 

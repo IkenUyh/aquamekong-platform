@@ -22,4 +22,8 @@ public class Et0Monthly {
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String source;
+
+    /** Cụm ngắn hiện trên app: số lấy từ đâu */
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String label;
 }

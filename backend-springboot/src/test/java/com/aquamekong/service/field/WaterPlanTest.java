@@ -27,7 +27,7 @@ class WaterPlanTest {
     private static final ZoneOffset VN = ZoneOffset.ofHours(7);
     private static final LocalDate TODAY = LocalDate.of(2026, 3, 10);
     private static final Instant NOW = OffsetDateTime.of(2026, 3, 10, 8, 0, 0, 0, VN).toInstant();
-    private static final Map<Integer, Et0> ET0 = Map.of(3, new Et0(5.0, "FAO"), 4, new Et0(5.0, "FAO"));
+    private static final Map<Integer, Et0> ET0 = Map.of(3, new Et0(5.0, "FAO", "ước lượng"), 4, new Et0(5.0, "FAO", "ước lượng"));
 
     /** Như V14 + V19: 95 ngày = 30 đẻ nhánh + 35 làm đòng + 30 chín; ngưỡng làm đòng đặt 2‰ để thấy đổi ngưỡng */
     private static Crop rice() {
@@ -175,6 +175,7 @@ class WaterPlanTest {
         assertThat(s.dailyNeedM3()).isEqualTo(50.0);
         assertThat(s.kc()).isEqualTo(1.0);
         assertThat(s.et0()).isEqualTo(5.0);
+        assertThat(s.et0Label()).isEqualTo("ước lượng");
         // 160 m³: toàn nước ao đủ 3 ngày (150); pha 2/3 × 50 ≈ 33,3 m³/ngày → đủ 4 ngày (133), ngày 5 thiếu
         assertThat(s.pondDays()).isEqualTo(3);
         assertThat(s.pondDaysWithMix()).isEqualTo(4);

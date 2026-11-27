@@ -42,8 +42,8 @@ public final class WaterPlan {
     private WaterPlan() {
     }
 
-    /** ET₀ của một tháng và nguồn của nó */
-    public record Et0(double mmDay, String source) {
+    /** ET₀ của một tháng, nguồn của nó và cụm ngắn hiện trên app */
+    public record Et0(double mmDay, String source, String label) {
     }
 
     /** Hôm nay .. hôm nay + OUTLOOK_DAYS, mỗi ngày một trạng thái */
@@ -157,7 +157,7 @@ public final class WaterPlan {
         }
 
         return new Storage(round1(dailyNeedM3(areaHa, refStage.getKc(), refEt0.mmDay())), refStage.getKc(),
-                refEt0.mmDay(), refStage.getKcSource(), refEt0.source(), unsafe.size(), pondVolumeM3, pondDays, mixDays,
+                refEt0.mmDay(), refStage.getKcSource(), refEt0.source(), refEt0.label(), unsafe.size(), pondVolumeM3, pondDays, mixDays,
                 fillBy(days), (long) Math.ceil(Math.max(0, mixedTotal - volume) - 1e-9));
     }
 

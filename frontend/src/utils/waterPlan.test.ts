@@ -16,7 +16,8 @@ const plan = (statuses: WaterDayStatus[], fractions: Array<number | null> = []):
 });
 
 const storage = (over: Partial<WaterStorage>): WaterStorage => ({
-  dailyNeedM3: 50, kc: 1, et0: 5, kcSource: 'FAO 56', et0Source: 'FAO', unsafeDays: 5, pondVolumeM3: 160,
+  dailyNeedM3: 50, kc: 1, et0: 5, kcSource: 'FAO 56', et0Source: 'FAO',
+  et0Label: 'tính cho trạm Cần Thơ, trung bình 2008 – 2017', unsafeDays: 5, pondVolumeM3: 160,
   pondDays: 3, pondDaysWithMix: 5, fillBy: '2026-03-11', extraNeededM3: 0, ...over,
 });
 
@@ -118,6 +119,7 @@ describe('storageLines', () => {
   it('says rice needs more than this', () => {
     expect(storageNote(storage({ kc: 1.2 }), true)).toContain('Với lúa đây là mức tối thiểu');
     expect(storageNote(storage({ kc: 1.2 }), false)).toBe(
-      'Theo FAO 56: Kc 1,2 × ET₀ 5 mm/ngày (ET₀ là mức ước lượng thô của FAO cho vùng nóng ẩm).');
+      'Theo FAO 56: Kc 1,2 × ET₀ 5 mm/ngày (ET₀ tính cho trạm Cần Thơ, trung bình 2008 – 2017).');
+    expect(storageNote(storage({ et0Label: null }), false)).toBe('Theo FAO 56: Kc 1 × ET₀ 5 mm/ngày.');
   });
 });

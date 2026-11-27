@@ -50,7 +50,7 @@ public class WaterPlanService {
         List<WaterDay> days = WaterPlan.days(watchService.snapshot(field.getStation().getId()), field.getCrop(),
                 field.getPlantedOn(), field.getVarietyDays(), now);
         Map<Integer, Et0> et0 = new HashMap<>();
-        et0Repository.findAll().forEach(e -> et0.put(e.getMonth(), new Et0(e.getEt0MmDay(), e.getSource())));
+        et0Repository.findAll().forEach(e -> et0.put(e.getMonth(), new Et0(e.getEt0MmDay(), e.getSource(), e.getLabel())));
         Storage storage = WaterPlan.storage(days, field.getCrop(), field.getPlantedOn(), field.getVarietyDays(),
                 field.getAreaHa(), field.isHasPond() ? field.getPondVolumeM3() : null, et0);
         return Optional.of(new FieldDtos.WaterPlan(days, storage, WaterPlan.POND_SALINITY));

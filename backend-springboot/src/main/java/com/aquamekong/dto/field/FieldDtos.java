@@ -140,6 +140,7 @@ public final class FieldDtos {
      * @param dailyNeedM3     nước cây cần mỗi ngày (m³), ở ngày mặn đầu tiên (không có thì hôm nay)
      * @param kc              Kc của giai đoạn ngày đó
      * @param et0             ET₀ tháng đó (mm/ngày)
+     * @param et0Label        cụm ngắn nói ET₀ đó lấy từ đâu (trạm Cần Thơ, hay ước lượng thô của FAO)
      * @param unsafeDays      số ngày mặn trong 8 ngày
      * @param pondVolumeM3    dung tích ao, null khi ruộng không có ao
      * @param pondDays        số ngày mặn ao đủ nếu chỉ tưới nước ao, tính liền từ ngày mặn đầu tiên
@@ -148,7 +149,7 @@ public final class FieldDtos {
      *                        hoặc không có ngày mặn
      * @param extraNeededM3   cần trữ thêm (m³) để đủ mọi ngày mặn khi pha, 0 khi đã đủ
      */
-    public record Storage(double dailyNeedM3, double kc, double et0, String kcSource, String et0Source, int unsafeDays,
-                          Double pondVolumeM3, int pondDays, int pondDaysWithMix, LocalDate fillBy, long extraNeededM3) {
+    public record Storage(double dailyNeedM3, double kc, double et0, String kcSource, String et0Source, String et0Label,
+                          int unsafeDays, Double pondVolumeM3, int pondDays, int pondDaysWithMix, LocalDate fillBy, long extraNeededM3) {
     }
 }

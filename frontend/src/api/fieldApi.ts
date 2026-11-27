@@ -122,6 +122,8 @@ export interface WaterStorage {
   et0: number;
   kcSource: string | null;
   et0Source: string | null;
+  /** Cụm ngắn: ET₀ đó lấy từ đâu (trạm Cần Thơ, hay ước lượng thô của FAO cho mùa mưa) */
+  et0Label: string | null;
   unsafeDays: number;
   /** null khi ruộng không có ao */
   pondVolumeM3: number | null;

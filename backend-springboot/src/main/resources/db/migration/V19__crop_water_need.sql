@@ -14,7 +14,9 @@ ALTER TABLE crop_stages
 CREATE TABLE et0_monthly (
     month      INT              PRIMARY KEY CHECK (month BETWEEN 1 AND 12),
     et0_mm_day DOUBLE PRECISION NOT NULL CHECK (et0_mm_day > 0 AND et0_mm_day <= 15),
-    source     TEXT             NOT NULL
+    source     TEXT             NOT NULL,
+    -- cụm ngắn hiện trên app sau "ET₀ ...", nói số lấy từ đâu
+    label      TEXT             NOT NULL
 );
 
 -- ------------------------------------------------------------
@@ -52,12 +54,21 @@ WHERE cs.code = v.code AND cs.crop_id = (SELECT id FROM crops WHERE code = v.cro
 -- không có các cây này, chưa tìm được số của SOFRI hay nghiên cứu ở ĐBSCL); nước sinh hoạt và thuỷ sản không dùng Kc.
 
 -- ------------------------------------------------------------
--- ET₀: chưa tìm được bảng ET₀ theo tháng của trạm Cần Thơ đọc được (CLIMWAT/CROPWAT của FAO chỉ phát qua phần mềm;
--- các bài tiếng Việt tìm được không đọc được bảng). Tạm dùng mức chỉ dẫn của FAO cho vùng ẩm, nhiệt độ trung bình
--- trên 25°C: 5 – 6 mm/ngày, lấy đầu thấp 5 cho mọi tháng. FAO ghi đây là ước lượng thô. Thay bằng số trạm
--- (CLIMWAT Cần Thơ hoặc nguồn Việt Nam) bằng một migration mới khi có.
+-- ET₀ mùa khô (tháng 11 – 4, là mùa mặn): số tính cho trạm Cần Thơ theo Penman-Monteith, đọc từ bài gốc.
+-- Cùng bảng có An Giang và Sóc Trăng, lệch Cần Thơ không quá 0,22 mm/ngày mỗi tháng, nên dùng Cần Thơ cho cả vùng
+-- dọc sông Hậu. Bài không có trạm ven biển phía đông (Bến Tre, Trà Vinh) hay Cà Mau.
 -- ------------------------------------------------------------
-INSERT INTO et0_monthly (month, et0_mm_day, source)
+INSERT INTO et0_monthly (month, et0_mm_day, source, label)
+SELECT v.m, v.et0,
+       'Lê Anh Tuấn (2020), "Water balance for agriculture production in the dry seasons of the Mekong river delta in Vietnam", Vietnam Journal of Science, Technology and Engineering 62(3), tr. 56 – 61, doi:10.31276/VJSTE.62(3).56-61, Table 4 (tr. 59): ETo (mm/ngày) theo Penman-Monteith, số liệu trạm khí tượng 2008 – 2017, dòng Can Tho: tháng 11 3,35; 12 3,16; 1 3,43; 2 4,39; 3 5,21; 4 5,73. Cùng bảng: An Giang 3,27 / 3,04 / 3,28 / 4,48 / 5,43 / 5,82; Sóc Trăng 3,32 / 3,08 / 3,36 / 4,35 / 5,06 / 5,62. https://vietnamscience.vjst.vn/index.php/vjste/article/view/111',
+       'tính cho trạm Cần Thơ, trung bình 2008 – 2017'
+FROM (VALUES (11, 3.35), (12, 3.16), (1, 3.43), (2, 4.39), (3, 5.21), (4, 5.73)) AS v(m, et0);
+
+-- ET₀ mùa mưa (tháng 5 – 10): bài trên chỉ có mùa khô, chưa tìm được số trạm. Tạm dùng mức chỉ dẫn của FAO cho vùng
+-- ẩm, nhiệt độ trung bình trên 25°C: 5 – 6 mm/ngày, lấy đầu thấp 5. FAO ghi đây là ước lượng thô; tháng 4 ở Cần Thơ
+-- là 5,73 và tháng 11 là 3,35, nên 5 có thể cao ở các tháng mưa nhiều. Thay bằng số trạm khi có.
+INSERT INTO et0_monthly (month, et0_mm_day, source, label)
 SELECT m, 5.0,
-       'FAO Irrigation Water Management Training Manual No. 3 "Irrigation Water Needs" (Brouwer & Heibloem 1986), mục 3.1.5, Table 5 "Indicative values of ETo": vùng ẩm (Humid), nhiệt độ trung bình ngày trên 25°C: 5 – 6 mm/ngày; app lấy 5. https://www.fao.org/4/s2022e/s2022e07.htm. Ước lượng thô, không theo tháng, không riêng cho ĐBSCL.'
-FROM generate_series(1, 12) AS m;
+       'FAO Irrigation Water Management Training Manual No. 3 "Irrigation Water Needs" (Brouwer & Heibloem 1986), mục 3.1.5, Table 5 "Indicative values of ETo": vùng ẩm (Humid), nhiệt độ trung bình ngày trên 25°C: 5 – 6 mm/ngày; app lấy 5. https://www.fao.org/4/s2022e/s2022e07.htm. Ước lượng thô, không theo tháng, không riêng cho ĐBSCL.',
+       'mức ước lượng thô của FAO cho vùng nóng ẩm, chưa có số trạm cho mùa mưa'
+FROM generate_series(5, 10) AS m;

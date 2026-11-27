@@ -132,7 +132,8 @@ export function storageLines(s: WaterStorage): string[] {
 
 /** Ghi chú cách tính, nhỏ dưới khối */
 export function storageNote(s: WaterStorage, isRice: boolean): string {
-  const base = `Theo FAO 56: Kc ${formatNumber(s.kc)} × ET₀ ${formatNumber(s.et0)} mm/ngày (ET₀ là mức ước lượng thô của FAO cho vùng nóng ẩm).`;
+  const from = s.et0Label ? ` (ET₀ ${s.et0Label})` : '';
+  const base = `Theo FAO 56: Kc ${formatNumber(s.kc)} × ET₀ ${formatNumber(s.et0)} mm/ngày${from}.`;
   return isRice
     ? `${base} Với lúa đây là mức tối thiểu: chưa tính nước giữ mặt ruộng, nước thấm và thất thoát khi dẫn nước.`
     : base;
