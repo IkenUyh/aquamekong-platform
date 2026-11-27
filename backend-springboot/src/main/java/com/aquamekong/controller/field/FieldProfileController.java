@@ -3,8 +3,10 @@ package com.aquamekong.controller.field;
 import com.aquamekong.dto.field.FieldDtos.Exposure;
 import com.aquamekong.dto.field.FieldDtos.FieldDto;
 import com.aquamekong.dto.field.FieldDtos.FieldRequest;
+import com.aquamekong.dto.field.FieldDtos.WaterPlan;
 import com.aquamekong.service.field.FieldProfileService;
 import com.aquamekong.service.field.SalinityExposureService;
+import com.aquamekong.service.field.WaterPlanService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -26,6 +28,7 @@ public class FieldProfileController {
 
     private final FieldProfileService fieldService;
     private final SalinityExposureService exposureService;
+    private final WaterPlanService waterPlanService;
 
     @GetMapping
     @Operation(summary = "Mọi ruộng đã khai, kèm giai đoạn cây, ngưỡng và tình hình mặn của trạm")
@@ -37,6 +40,12 @@ public class FieldProfileController {
     @Operation(summary = "Mức mặn cây đã chịu trong mùa và năng suất có thể giảm (FAO 29); 204 khi không tính được")
     public ResponseEntity<Exposure> exposure(@PathVariable Long id) {
         return exposureService.exposure(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/{id}/water-plan")
+    @Operation(summary = "Kế hoạch nước 7 ngày tới: ngày lấy được nước sông, tỷ lệ pha, ao đủ bao lâu; 204 khi ruộng không có trạm hoặc ngưỡng")
+    public ResponseEntity<WaterPlan> waterPlan(@PathVariable Long id) {
+        return waterPlanService.plan(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @PostMapping
