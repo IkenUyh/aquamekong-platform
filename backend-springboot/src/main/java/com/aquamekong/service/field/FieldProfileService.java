@@ -119,13 +119,18 @@ public class FieldProfileService {
 
     /** Cây chia giai đoạn (lúa) cần ngày gieo và số ngày giống, dài hơn tổng các giai đoạn cố định */
     static void validateSchedule(Crop crop, FieldRequest request) {
+        validateSchedule(crop, request.plantedOn(), request.varietyDays());
+    }
+
+    /** Như {@link #validateSchedule(Crop, FieldRequest)}, cho nơi không có {@link FieldRequest} (tra nhanh) */
+    static void validateSchedule(Crop crop, LocalDate plantedOn, Integer varietyDays) {
         List<CropStage> stages = crop.getStages();
         if (!CropStages.needsSchedule(stages)) return;
-        if (request.plantedOn() == null || request.varietyDays() == null) {
+        if (plantedOn == null || varietyDays == null) {
             throw new IllegalArgumentException("Cần ngày gieo và số ngày của giống để tính giai đoạn " + crop.getName().toLowerCase());
         }
         int fixed = CropStages.fixedDays(stages);
-        if (request.varietyDays() <= fixed) {
+        if (varietyDays <= fixed) {
             throw new IllegalArgumentException("Số ngày của giống phải lớn hơn " + fixed + " ngày");
         }
     }

@@ -64,4 +64,11 @@ public class CropStage {
 
     @Column(name = "sensitivity_source", columnDefinition = "TEXT")
     private String sensitivitySource;
+
+    /** Hệ số cây trồng FAO 56 (ETc = Kc × ET₀, V19), null = chưa có nguồn: không tính lượng nước trữ */
+    @Column(name = "kc")
+    private Double kc;
+
+    @Column(name = "kc_source", columnDefinition = "TEXT")
+    private String kcSource;
 }

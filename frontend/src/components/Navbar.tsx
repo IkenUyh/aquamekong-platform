@@ -1,16 +1,19 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Logo } from './Logo';
-import { initials, NAV_ITEMS, topRoleLabel } from './navItems';
+import { useFarmerMode } from '../hooks/useFarmerMode';
+import { initials, NAV_ITEMS, topRoleLabel, visibleNavItems } from './navItems';
 
 export function Navbar() {
   const isOfflineMode = useSelector((state: RootState) => state.network.isOfflineMode);
   const { user, logout, hasRole } = useAuth();
-  const navItems = NAV_ITEMS.filter((item) => !item.roles || hasRole(...item.roles));
+  const farmer = useFarmerMode();
+  const navigate = useNavigate();
+  const navItems = visibleNavItems(NAV_ITEMS, hasRole, farmer.on);
   const roleLabel = topRoleLabel(user?.roles);
   const { pathname } = useLocation();
 
@@ -46,6 +49,18 @@ export function Navbar() {
       </div>
 
       <div className="flex items-center gap-3 xl:gap-4">
+        {/* Chế độ Nông dân: một màn hình "Tuần này lấy nước được không?" (≥ lg; điện thoại: trong "Thêm") */}
+        <button type="button" role="switch" aria-checked={farmer.on}
+          onClick={() => {
+            farmer.setOn(!farmer.on);
+            if (!farmer.on) navigate('/nong-dan');
+          }}
+          className="hidden lg:inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-white/80 hover:text-white hover:bg-white/10 whitespace-nowrap">
+          <span className={`relative inline-block h-4 w-7 rounded-full transition-colors ${farmer.on ? 'bg-white' : 'bg-white/30'}`} aria-hidden="true">
+            <span className={`absolute top-0.5 h-3 w-3 rounded-full transition-all ${farmer.on ? 'left-3.5 bg-primary' : 'left-0.5 bg-white'}`} />
+          </span>
+          Chế độ Nông dân
+        </button>
         {status}
 
         {/* User + đăng xuất (≥ lg) */}

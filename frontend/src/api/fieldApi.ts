@@ -92,6 +92,89 @@ export interface FieldDamage {
   lossVnd: number | null;
 }
 
+export type WaterDayStatus = 'SAFE' | 'RISK' | 'EXCEED' | 'UNKNOWN';
+
+/** Một ngày của kế hoạch nước (backend WaterPlan): độ mặn cao nhất ngày đó ở trạm so với ngưỡng của giai đoạn cây */
+export interface WaterDay {
+  /** YYYY-MM-DD */
+  date: string;
+  /**
+   * SAFE: lấy được nước sông; RISK: dự báo trong ngưỡng nhưng mức có thể lên tới vượt; EXCEED: vượt ngưỡng (thuỷ sản:
+   * ra ngoài khoảng); UNKNOWN: trạm mất tín hiệu hoặc không có dự báo ngày đó
+   */
+  status: WaterDayStatus;
+  salinity: number | null;
+  riskSalinity: number | null;
+  /** salinity là số đo (chỉ hôm nay), không phải dự báo */
+  measured: boolean;
+  threshold: number | null;
+  minThreshold: number | null;
+  /** Phần nước ao trong hỗn hợp tưới (0 – 1), null với thuỷ sản hoặc khi không biết độ mặn */
+  freshFraction: number | null;
+}
+
+/** Nước trữ trong ao so với nhu cầu của cây trong các ngày mặn (FAO 56: Kc × ET₀) */
+export interface WaterStorage {
+  /** m³ nước cây cần mỗi ngày, ở ngày mặn đầu tiên (không có thì hôm nay) */
+  dailyNeedM3: number;
+  kc: number;
+  /** mm/ngày */
+  et0: number;
+  kcSource: string | null;
+  et0Source: string | null;
+  /** Cụm ngắn: ET₀ đó lấy từ đâu (trạm Cần Thơ, hay ước lượng thô của FAO cho mùa mưa) */
+  et0Label: string | null;
+  unsafeDays: number;
+  /** null khi ruộng không có ao */
+  pondVolumeM3: number | null;
+  /** Số ngày mặn ao đủ nếu chỉ tưới nước ao */
+  pondDays: number;
+  /** Số ngày mặn ao đủ nếu pha nước ao với nước sông */
+  pondDaysWithMix: number;
+  /** YYYY-MM-DD, ngày cuối còn lấy được nước sông vào ao; null khi hôm nay đã mặn hoặc không có ngày mặn */
+  fillBy: string | null;
+  /** m³ cần trữ thêm để đủ mọi ngày mặn khi pha */
+  extraNeededM3: number;
+}
+
+/** Kế hoạch nước hôm nay + 7 ngày của một ruộng */
+export interface WaterPlan {
+  days: WaterDay[];
+  /** null khi không tính được lượng nước: không phải cây trồng, cây chưa có Kc, ruộng chưa nhập diện tích */
+  storage: WaterStorage | null;
+  /** Độ mặn nước ao app giả định (‰), hiện là 0 */
+  pondSalinityAssumed: number;
+}
+
+/** RED: hôm nay vượt; YELLOW: hôm nay chưa vượt nhưng tuần này có ngày mặn; GREEN: cả tuần an toàn; GREY: chưa biết */
+export type PlanVerdict = 'RED' | 'YELLOW' | 'GREEN' | 'GREY';
+
+/**
+ * Một việc cần làm (backend ActionPlan). kind của kế hoạch nước: STORE, MIX, POND_ONLY, STOP_INTAKE, CHECK, POND_EMPTY,
+ * STAGE_CHANGE, TAKE_WATER; nguồn khác (bón phân) thêm loại riêng nên để string.
+ */
+export interface PlanAction {
+  kind: string;
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  /** YYYY-MM-DD */
+  from: string;
+  until: string;
+  /** Phần nước ao đã làm tròn (MIX 1/4 – 3/4, POND_ONLY 1), null với loại khác */
+  fraction: number | null;
+  message: string;
+  /** WATER (kế hoạch nước), FERTILIZER (bón phân) */
+  source: string;
+}
+
+/** Kế hoạch việc cần làm của một ruộng, với câu trả lời "Tuần này lấy nước được không?" */
+export interface FieldPlan {
+  verdict: PlanVerdict;
+  headline: string;
+  /** Theo ngày, "Lấy nước được" ở cuối */
+  actions: PlanAction[];
+  waterPlan: WaterPlan;
+}
+
 export interface FieldRequest {
   name: string;
   stationId: number;
@@ -114,4 +197,24 @@ export const fieldApi = {
   /** null (204) khi không tính được: không có trạm, không phải cây trồng, chưa gieo, hoặc chưa có ngưỡng */
   exposure: (id: number) => apiClient.get<FieldExposure | ''>(`/fields/${id}/exposure`)
     .then((r) => (r.status === 204 || !r.data ? null : r.data)),
+  /** null (204) khi ruộng không có trạm hoặc giai đoạn cây hôm nay không có ngưỡng */
+  waterPlan: (id: number) => apiClient.get<WaterPlan | ''>(`/fields/${id}/water-plan`)
+    .then((r) => (r.status === 204 || !r.data ? null : r.data)),
+  /** null (204) khi không lập được kế hoạch (như waterPlan) */
+  plan: (id: number) => apiClient.get<FieldPlan | ''>(`/fields/${id}/plan`)
+    .then((r) => (r.status === 204 || !r.data ? null : r.data)),
+  /**
+   * Chế độ Nông dân: kế hoạch theo trạm + cây mà không khai ruộng (không ao, không diện tích). null (204) khi không
+   * lập được.
+   */
+  quickPlan: (q: QuickPlanQuery) => apiClient.get<FieldPlan | ''>('/plan/quick', { params: q })
+    .then((r) => (r.status === 204 || !r.data ? null : r.data)),
 };
+
+export interface QuickPlanQuery {
+  stationId: number;
+  cropCode: string;
+  /** YYYY-MM-DD, bắt buộc với cây chia giai đoạn (lúa) */
+  plantedOn?: string;
+  varietyDays?: number;
+}

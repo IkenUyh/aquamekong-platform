@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, Menu, UserRound } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUnresolvedAlerts } from '../hooks/useAlerts';
-import { NAV_ITEMS, topRoleLabel } from './navItems';
+import { useFarmerMode } from '../hooks/useFarmerMode';
+import { NAV_ITEMS, topRoleLabel, visibleNavItems } from './navItems';
 
 const tabClass = (active: boolean) =>
   `flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] ${
@@ -25,7 +26,9 @@ export function BottomNav() {
     setMoreOpen(false);
   }
 
-  const items = NAV_ITEMS.filter((item) => !item.roles || hasRole(...item.roles));
+  const farmer = useFarmerMode();
+  const navigate = useNavigate();
+  const items = visibleNavItems(NAV_ITEMS, hasRole, farmer.on);
   const primary = items.filter((item) => item.primary);
   const more = items.filter((item) => !item.primary);
   const inMore = pathname === '/account' || more.some((item) => pathname.startsWith(item.path));
@@ -49,6 +52,23 @@ export function BottomNav() {
                 </NavLink>
               ))}
             </nav>
+            <div className="border-t border-gray-100 px-3 py-2">
+              <button type="button" role="switch" aria-checked={farmer.on}
+                onClick={() => {
+                  farmer.setOn(!farmer.on);
+                  setMoreOpen(false);
+                  if (!farmer.on) navigate('/nong-dan');
+                }}
+                className="flex w-full items-center justify-between gap-3 py-2 text-sm text-gray-800">
+                <span className="text-left">
+                  <span className="block font-medium">Chế độ Nông dân</span>
+                  <span className="block text-xs text-gray-500">Một màn hình: tuần này lấy nước được không</span>
+                </span>
+                <span className={`relative inline-block h-6 w-11 shrink-0 rounded-full transition-colors ${farmer.on ? 'bg-primary' : 'bg-gray-300'}`} aria-hidden="true">
+                  <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${farmer.on ? 'left-[22px]' : 'left-0.5'}`} />
+                </span>
+              </button>
+            </div>
             <div className="border-t border-gray-100 p-3">
               {user ? (
                 <div className="flex items-center justify-between gap-2">

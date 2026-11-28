@@ -11,6 +11,8 @@ export interface NavItem {
   roles?: string[];
   /** Có tab riêng ở thanh dưới trên điện thoại, còn lại nằm trong "Thêm" */
   primary?: boolean;
+  /** Trang cho cán bộ / người xem số liệu sâu: ẩn khi bật chế độ Nông dân */
+  expert?: boolean;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -21,10 +23,17 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Trạm quan trắc', short: 'Trạm',      path: '/stations', icon: RadioTower },
   { label: 'Dự báo',         short: 'Dự báo',    path: '/forecast', icon: TrendingUp,      primary: true },
   { label: 'Cảnh báo',       short: 'Cảnh báo',  path: '/alerts',   icon: Bell,            primary: true },
-  { label: 'Báo cáo',        short: 'Báo cáo',   path: '/reports',  icon: FileBarChart },
-  { label: 'Phát lại',       short: 'Phát lại',  path: '/replay',   icon: History },
-  { label: 'Quản trị',       short: 'Quản trị',  path: '/admin',    icon: Settings, roles: ['ROLE_OPERATOR', 'ROLE_ADMIN'] },
+  { label: 'Báo cáo',        short: 'Báo cáo',   path: '/reports',  icon: FileBarChart,    expert: true },
+  { label: 'Phát lại',       short: 'Phát lại',  path: '/replay',   icon: History,         expert: true },
+  { label: 'Quản trị',       short: 'Quản trị',  path: '/admin',    icon: Settings, roles: ['ROLE_OPERATOR', 'ROLE_ADMIN'], expert: true },
 ];
+
+/** Trang hiện trên thanh điều hướng: đủ vai trò, và bỏ trang chuyên sâu khi bật chế độ Nông dân */
+export function visibleNavItems(
+  items: NavItem[], hasRole: (...roles: string[]) => boolean, farmerMode: boolean,
+): NavItem[] {
+  return items.filter((item) => (!item.roles || hasRole(...item.roles)) && !(farmerMode && item.expert));
+}
 
 /** 2 chữ cái đầu của tên, dùng làm avatar */
 export const initials = (name: string) =>

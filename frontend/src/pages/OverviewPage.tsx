@@ -9,11 +9,12 @@ import { DataFreshnessBanner } from '../components/DataFreshnessBanner';
 import { NearbyStations } from '../components/NearbyStations';
 import { SituationStrip } from '../components/SituationStrip';
 import { RecommendationList } from '../components/RecommendationList';
+import { useRecommendations } from '../hooks/useRecommendations';
+import { isPersonal } from '../utils/actionPlan';
 import { Disclaimer } from '../components/Disclaimer';
 import { StationsMiniMap } from '../components/shared/StationsMiniMap';
 import { useStationsList } from '../hooks/useStations';
 import { useUnresolvedAlerts } from '../hooks/useAlerts';
-import { recommendationApi } from '../api/recommendationApi';
 import { percentChange, reportApi } from '../api/reportApi';
 import type { Station } from '../types';
 import {
@@ -78,10 +79,7 @@ export function OverviewPage() {
     mapSection.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
   const { data: openAlerts = [] } = useUnresolvedAlerts();
-  const { data: recommendations = [] } = useQuery({
-    queryKey: ['recommendations'],
-    queryFn: recommendationApi.getRecommendations,
-  });
+  const { data: recommendations = [] } = useRecommendations();
   // Số đo theo ngày: 24 giờ qua thường chưa có số nào, nên lấy trung bình 7 ngày (cùng query với trang Báo cáo)
   const { data: lastWeek } = useQuery({ queryKey: ['reports', 'overview', 7], queryFn: () => reportApi.getOverview(7) });
   const { data: trend = [] } = useQuery({ queryKey: ['reports', 'trend', 7], queryFn: () => reportApi.getTrend(7) });
@@ -206,7 +204,9 @@ export function OverviewPage() {
             </section>
 
             <section className="card p-4">
-              <h2 className="text-sm font-semibold text-gray-900 mb-3">Khuyến nghị vận hành</h2>
+              <h2 className="text-sm font-semibold text-gray-900 mb-3">
+                {isPersonal(recommendations) ? 'Việc cần làm cho ruộng của bạn' : 'Khuyến nghị vận hành'}
+              </h2>
               <RecommendationList items={recommendations} />
               <Disclaimer className="mt-3" />
             </section>

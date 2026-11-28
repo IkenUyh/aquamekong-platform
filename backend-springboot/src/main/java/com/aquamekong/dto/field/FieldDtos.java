@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Size;
 import com.aquamekong.dto.watch.WatchDtos.Outlook;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /** DTO cho /api/v1/fields: hồ sơ ruộng của tài khoản đang đăng nhập. */
 public final class FieldDtos {
@@ -105,5 +106,77 @@ public final class FieldDtos {
      */
     public record Damage(Double areaHa, Double yieldTHa, boolean yieldDefault, Double priceVndKg, boolean priceDefault,
                          LocalDate priceAsOf, Long seasonValueVnd, Long perPercentVnd, Long lossVnd) {
+    }
+
+    /**
+     * Kế hoạch nước 7 ngày tới (hôm nay + 7 ngày) cho một ruộng: ngày nào lấy được nước sông, pha thế nào, ao đủ bao lâu.
+     *
+     * @param days                hôm nay .. hôm nay + 7, theo thứ tự ngày
+     * @param storage             lượng nước trữ, null khi không tính được (không phải cây trồng, cây chưa có Kc,
+     *                            ruộng chưa nhập diện tích)
+     * @param pondSalinityAssumed độ mặn nước ao app giả định khi tính tỷ lệ pha (‰); hiện cố định 0
+     */
+    public record WaterPlan(List<WaterDay> days, Storage storage, double pondSalinityAssumed) {
+    }
+
+    /**
+     * @param status        SAFE, RISK (dự báo trong ngưỡng nhưng mức có thể lên tới vượt ngưỡng), EXCEED (vượt ngưỡng,
+     *                      hoặc ra ngoài khoảng với thuỷ sản), UNKNOWN (trạm mất tín hiệu hoặc không có dự báo ngày đó)
+     * @param salinity      độ mặn cao nhất ngày đó (‰): dự báo, hôm nay thì lấy cả số đo mới nhất nếu còn mới
+     * @param riskSalinity  mức có thể lên tới của mô hình rủi ro (‰)
+     * @param measured      salinity lấy từ số đo, không phải dự báo
+     * @param threshold     ngưỡng trên của giai đoạn cây ngày đó (‰), null khi giai đoạn không có ngưỡng
+     * @param minThreshold  cận dưới (‰), chỉ với thuỷ sản cần khoảng mặn
+     * @param freshFraction phần nước ngọt (ao) trong hỗn hợp để nước tưới không vượt ngưỡng, 0 – 1; null với thuỷ sản
+     *                      hoặc khi không biết độ mặn
+     */
+    public record WaterDay(LocalDate date, String status, Double salinity, Double riskSalinity, boolean measured,
+                           Double threshold, Double minThreshold, Double freshFraction) {
+    }
+
+    /**
+     * Lượng nước trữ trong ao so với nhu cầu của cây trong các ngày mặn (EXCEED + RISK), theo FAO 56: ETc = Kc × ET₀.
+     *
+     * @param dailyNeedM3     nước cây cần mỗi ngày (m³), ở ngày mặn đầu tiên (không có thì hôm nay)
+     * @param kc              Kc của giai đoạn ngày đó
+     * @param et0             ET₀ tháng đó (mm/ngày)
+     * @param et0Label        cụm ngắn nói ET₀ đó lấy từ đâu (trạm Cần Thơ, hay ước lượng thô của FAO)
+     * @param unsafeDays      số ngày mặn trong 8 ngày
+     * @param pondVolumeM3    dung tích ao, null khi ruộng không có ao
+     * @param pondDays        số ngày mặn ao đủ nếu chỉ tưới nước ao, tính liền từ ngày mặn đầu tiên
+     * @param pondDaysWithMix số ngày mặn ao đủ nếu pha nước ao với nước sông theo freshFraction
+     * @param fillBy          ngày cuối còn lấy được nước sông trước ngày mặn đầu tiên, null khi hôm nay đã mặn
+     *                        hoặc không có ngày mặn
+     * @param extraNeededM3   cần trữ thêm (m³) để đủ mọi ngày mặn khi pha, 0 khi đã đủ
+     */
+    public record Storage(double dailyNeedM3, double kc, double et0, String kcSource, String et0Source, String et0Label,
+                          int unsafeDays, Double pondVolumeM3, int pondDays, int pondDaysWithMix, LocalDate fillBy, long extraNeededM3) {
+    }
+    /**
+     * Kế hoạch việc cần làm của một ruộng (tính sẵn từ kế hoạch nước và các nguồn khác), với một câu trả lời ngắn cho
+     * "Tuần này lấy nước được không?".
+     *
+     * @param verdict   RED (hôm nay vượt ngưỡng), YELLOW (hôm nay chưa vượt nhưng trong tuần có ngày mặn), GREEN (cả
+     *                  tuần trong ngưỡng), GREY (trạm mất tín hiệu, chưa biết hôm nay)
+     * @param headline  câu trả lời một dòng theo verdict
+     * @param actions   việc cần làm, theo ngày; "Lấy nước được" để cuối
+     * @param waterPlan kế hoạch nước 7 ngày tới đã dùng để lập
+     */
+    public record FieldPlan(String verdict, String headline, List<PlanAction> actions, WaterPlan waterPlan) {
+    }
+
+    /**
+     * Một việc cần làm trong khoảng ngày.
+     *
+     * @param kind     STORE, MIX, POND_ONLY, STOP_INTAKE, CHECK, POND_EMPTY, STAGE_CHANGE, TAKE_WATER (nguồn khác thêm
+     *                 loại riêng)
+     * @param priority HIGH, MEDIUM, LOW
+     * @param from     ngày bắt đầu
+     * @param until    ngày cuối (bằng from khi chỉ một ngày)
+     * @param fraction phần nước ao đã làm tròn lên (MIX: 1/4 – 3/4; POND_ONLY: 1), null với loại khác
+     * @param source   nguồn lập ra việc này: WATER (kế hoạch nước); bón phân sẽ thêm FERTILIZER
+     */
+    public record PlanAction(String kind, String priority, LocalDate from, LocalDate until, Double fraction,
+                             String message, String source) {
     }
 }

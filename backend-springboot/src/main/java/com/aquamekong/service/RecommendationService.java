@@ -1,6 +1,15 @@
 package com.aquamekong.service;
 
 import com.aquamekong.dto.RecommendationDto;
+import com.aquamekong.dto.field.FieldDtos.FieldPlan;
+import com.aquamekong.dto.field.FieldDtos.PlanAction;
+import com.aquamekong.entity.field.FieldProfile;
+import com.aquamekong.repository.field.FieldProfileRepository;
+import com.aquamekong.service.field.ActionPlan;
+import com.aquamekong.service.field.FieldPlanService;
+import com.aquamekong.service.field.WaterPlan.Et0;
+import com.aquamekong.service.watch.StationWatchService;
+import com.aquamekong.service.watch.StationWatchService.StationSnapshot;
 import com.aquamekong.entity.forecast.SalinityForecast;
 import com.aquamekong.entity.station.Station;
 import com.aquamekong.entity.telemetry.Measurement;
@@ -18,6 +27,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -26,6 +36,10 @@ import java.util.stream.Collectors;
 /**
  * Khuyến nghị vận hành theo ngưỡng chung 4‰: trạm đang vượt (số đo mới nhất), và trạm chưa vượt nhưng dự báo
  * hoặc mức có thể lên tới (mô hình rủi ro) vượt trong 7 ngày tới, để kịp trữ nước ngọt trước khi mặn vào.
+ * <p>
+ * Người dùng đã đăng nhập và có ruộng: thay bằng việc cần làm của từng ruộng ({@link ActionPlan}, ngưỡng theo cây và
+ * giai đoạn), "Ruộng sau nhà (lúa): Trữ đầy ao trước hết ngày 16/11". Không lập được kế hoạch cho ruộng nào thì vẫn là
+ * khuyến nghị chung.
  */
 @Service
 @RequiredArgsConstructor
@@ -42,14 +56,75 @@ public class RecommendationService {
 
     private final MeasurementRepository measurementRepository;
     private final SalinityForecastRepository forecastRepository;
+    private final FieldProfileRepository fieldRepository;
+    private final FieldPlanService fieldPlanService;
+    private final StationWatchService watchService;
 
     /** Trạm chưa vượt nhưng có thể vượt: ngày đầu tiên và mức cao nhất có thể lên tới */
     private record Risk(Station station, LocalDate firstDate, double peak) {
     }
 
+    /** Khuyến nghị chung theo 4‰ (khách) */
     @Transactional(readOnly = true)
     public List<RecommendationDto> getRecommendations() {
+        return general(Instant.now());
+    }
+
+    /** @param username tài khoản đang xem, null = khách */
+    @Transactional(readOnly = true)
+    public List<RecommendationDto> getRecommendations(String username) {
         Instant now = Instant.now();
+        if (username != null) {
+            List<RecommendationDto> personal = forFields(fieldRepository.findByUserUsernameOrderByCreatedAtAsc(username), now);
+            if (!personal.isEmpty()) return personal;
+        }
+        return general(now);
+    }
+
+    /** Việc cần làm của từng ruộng, việc gấp trước (giữ thứ tự ruộng và ngày trong cùng mức) */
+    List<RecommendationDto> forFields(List<FieldProfile> fields, Instant now) {
+        if (fields.isEmpty()) return List.of();
+        Map<Long, StationSnapshot> snapshots = new HashMap<>();
+        Map<Integer, Et0> et0 = fieldPlanService.et0ByMonth();
+        List<RecommendationDto> out = new ArrayList<>();
+        for (FieldProfile field : fields) {
+            FieldPlan plan = fieldPlanService.plan(field, id -> snapshots.computeIfAbsent(id, watchService::snapshot), et0, now)
+                    .orElse(null);
+            if (plan == null) continue;
+            String prefix = field.getName() + " (" + field.getCrop().getName().toLowerCase(VI) + "): ";
+            for (PlanAction a : plan.actions()) {
+                out.add(RecommendationDto.builder()
+                        .type(type(a.kind()))
+                        .priority(a.priority())
+                        .message(prefix + a.message())
+                        .fieldId(field.getId())
+                        .fieldName(field.getName())
+                        .from(a.from())
+                        .until(a.until())
+                        .build());
+            }
+        }
+        return out.stream().sorted(Comparator.comparingInt(r -> priorityRank(r.getPriority()))).toList();
+    }
+
+    private static String type(String kind) {
+        return switch (kind) {
+            case ActionPlan.STORE -> "WATER_STORAGE";
+            case ActionPlan.TAKE_WATER -> "WATER_SAVING";
+            case ActionPlan.STAGE_CHANGE -> "CROP_STAGE";
+            default -> "IRRIGATION";
+        };
+    }
+
+    private static int priorityRank(String priority) {
+        return switch (priority == null ? "" : priority) {
+            case "HIGH" -> 0;
+            case "MEDIUM" -> 1;
+            default -> 2;
+        };
+    }
+
+    private List<RecommendationDto> general(Instant now) {
         LocalDate today = now.atZone(ZONE).toLocalDate();
         List<Measurement> latest = measurementRepository.findLatestMeasurementPerStation().stream()
                 .filter(m -> "salinity".equalsIgnoreCase(m.getMetricType()) && m.getValue() != null && m.getStation() != null

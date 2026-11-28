@@ -37,9 +37,9 @@ public class StationWatchService {
 
     static final int MAX_WATCHES_PER_USER = 20;
     /** Số đo cũ hơn mốc này (trạm mất tín hiệu) không dùng để so ngưỡng */
-    static final Duration MAX_MEASUREMENT_AGE = Duration.ofDays(3);
+    public static final Duration MAX_MEASUREMENT_AGE = Duration.ofDays(3);
     /** Chỉ xét dự báo tới hôm nay + ngần này ngày (lượt chạy tay 14 ngày cũng chỉ xét 7 ngày đầu) */
-    static final int OUTLOOK_DAYS = 7;
+    public static final int OUTLOOK_DAYS = 7;
     private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final StationWatchRepository watchRepository;
@@ -133,6 +133,8 @@ public class StationWatchService {
         watch.setMinThreshold(minThreshold);
         String crop = field.getCrop().getName();
         watch.setCrop(crop.length() > 30 ? crop.substring(0, 30) : crop);
+        // Người dùng vừa sửa ruộng và thấy kế hoạch mới trên app: lượt job sau chỉ lưu kế hoạch, không báo đổi
+        watch.setPlanDigest(null);
         if (changed) {
             Outlook outlook = outlook(snapshot(field.getStation().getId()), threshold, minThreshold, null, Instant.now());
             watch.setForecastExceeding(outlook.exceeding());
