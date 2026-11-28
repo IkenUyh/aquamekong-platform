@@ -44,6 +44,11 @@ public class WaterPlanService {
     Optional<FieldDtos.WaterPlan> plan(Long fieldId, Instant now) {
         FieldProfile field = fieldRepository.findById(fieldId)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy ruộng: " + fieldId));
+        return plan(field, now);
+    }
+
+    /** Cho một ruộng đã nạp hoặc chưa lưu (tra nhanh ở chế độ Nông dân); cây và giai đoạn phải nạp được */
+    public Optional<FieldDtos.WaterPlan> plan(FieldProfile field, Instant now) {
         return plan(field, watchService::snapshot, et0ByMonth(), now);
     }
 

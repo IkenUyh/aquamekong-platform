@@ -44,7 +44,15 @@ public class FieldPlanService {
     public Optional<FieldPlan> plan(Long fieldId) {
         FieldProfile field = fieldRepository.findById(fieldId)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy ruộng: " + fieldId));
-        return plan(field, watchService::snapshot, waterPlanService.et0ByMonth(), Instant.now());
+        return plan(field, Instant.now());
+    }
+
+    /**
+     * Cho một ruộng đã nạp hoặc chưa lưu ({@link QuickPlanService}: chế độ Nông dân tra theo trạm + cây, không tạo
+     * ruộng). Cây và giai đoạn phải nạp được (gọi trong transaction).
+     */
+    public Optional<FieldPlan> plan(FieldProfile field, Instant now) {
+        return plan(field, watchService::snapshot, waterPlanService.et0ByMonth(), now);
     }
 
     /**
