@@ -203,4 +203,18 @@ export const fieldApi = {
   /** null (204) khi không lập được kế hoạch (như waterPlan) */
   plan: (id: number) => apiClient.get<FieldPlan | ''>(`/fields/${id}/plan`)
     .then((r) => (r.status === 204 || !r.data ? null : r.data)),
+  /**
+   * Chế độ Nông dân: kế hoạch theo trạm + cây mà không khai ruộng (không ao, không diện tích). null (204) khi không
+   * lập được.
+   */
+  quickPlan: (q: QuickPlanQuery) => apiClient.get<FieldPlan | ''>('/plan/quick', { params: q })
+    .then((r) => (r.status === 204 || !r.data ? null : r.data)),
 };
+
+export interface QuickPlanQuery {
+  stationId: number;
+  cropCode: string;
+  /** YYYY-MM-DD, bắt buộc với cây chia giai đoạn (lúa) */
+  plantedOn?: string;
+  varietyDays?: number;
+}
